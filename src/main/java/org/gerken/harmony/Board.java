@@ -1,0 +1,137 @@
+package org.gerken.harmony;
+
+/**
+ * Represents the puzzle board - a grid of tiles with target colors for each row.
+ * Rows are labeled A, B, C, etc. and columns are labeled 1, 2, 3, etc.
+ * Colors are represented as integers for efficiency.
+ */
+public class Board {
+
+    private final Tile[][] grid;
+    private final int[] rowTargetColors;
+
+    /**
+     * Creates a new board with the specified dimensions and target colors.
+     *
+     * @param rowCount the number of rows
+     * @param columnCount the number of columns
+     * @param rowTargetColors array of target color IDs for each row
+     */
+    public Board(int rowCount, int columnCount, int[] rowTargetColors) {
+        this.grid = new Tile[rowCount][columnCount];
+        this.rowTargetColors = rowTargetColors.clone();
+    }
+
+    /**
+     * Creates a new board from an existing grid and target colors.
+     *
+     * @param grid the tile grid
+     * @param rowTargetColors the target color IDs for each row
+     */
+    public Board(Tile[][] grid, int[] rowTargetColors) {
+        this.grid = deepCopyGrid(grid);
+        this.rowTargetColors = rowTargetColors.clone();
+    }
+
+    /**
+     * Gets the tile at the specified position.
+     *
+     * @param row the row index (0-based)
+     * @param col the column index (0-based)
+     * @return the tile at that position
+     */
+    public Tile getTile(int row, int col) {
+        return grid[row][col];
+    }
+
+    /**
+     * Sets the tile at the specified position.
+     *
+     * @param row the row index (0-based)
+     * @param col the column index (0-based)
+     * @param tile the tile to place
+     */
+    public void setTile(int row, int col, Tile tile) {
+        grid[row][col] = tile;
+    }
+
+    /**
+     * Gets the number of rows in the board.
+     *
+     * @return the row count
+     */
+    public int getRowCount() {
+        return grid.length;
+    }
+
+    /**
+     * Gets the number of columns in the board.
+     *
+     * @return the column count
+     */
+    public int getColumnCount() {
+        return grid.length > 0 ? grid[0].length : 0;
+    }
+
+    /**
+     * Gets the target color ID for the specified row.
+     *
+     * @param row the row index (0-based)
+     * @return the target color ID for that row
+     */
+    public int getRowTargetColor(int row) {
+        return rowTargetColors[row];
+    }
+
+    /**
+     * Checks if this board is in a solved state.
+     * A board is solved when all tiles match their row's target color
+     * and all tiles have zero remaining moves.
+     *
+     * @return true if the board is solved
+     */
+    public boolean isSolved() {
+        for (int row = 0; row < getRowCount(); row++) {
+            int targetColor = rowTargetColors[row];
+            for (int col = 0; col < getColumnCount(); col++) {
+                Tile tile = grid[row][col];
+                if (tile.getRemainingMoves() != 0 || tile.getColor() != targetColor) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Creates a deep copy of the grid.
+     */
+    private Tile[][] deepCopyGrid(Tile[][] original) {
+        Tile[][] copy = new Tile[original.length][];
+        for (int i = 0; i < original.length; i++) {
+            copy[i] = original[i].clone();
+        }
+        return copy;
+    }
+
+    /**
+     * Creates a new board with two tiles swapped.
+     *
+     * @param row1 first tile row
+     * @param col1 first tile column
+     * @param row2 second tile row
+     * @param col2 second tile column
+     * @return a new board with the tiles swapped and moves decremented
+     */
+    public Board swap(int row1, int col1, int row2, int col2) {
+        Board newBoard = new Board(grid, rowTargetColors);
+
+        Tile tile1 = grid[row1][col1].decrementMoves();
+        Tile tile2 = grid[row2][col2].decrementMoves();
+
+        newBoard.setTile(row1, col1, tile2);
+        newBoard.setTile(row2, col2, tile1);
+
+        return newBoard;
+    }
+}

@@ -1,0 +1,20 @@
+# Generated Harmony Puzzle
+# Dimensions: 2x2
+
+ROWS 2
+COLS 2
+
+# Color definitions (name -> ID)
+COLORS
+RED 0
+BLUE 1
+
+TARGETS RED BLUE
+
+# Initial configuration
+# Format: Position ColorID Moves
+TILES
+A1 1 1
+A2 0 1
+B1 1 1
+B2 0 3

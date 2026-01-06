@@ -1,0 +1,26 @@
+# Simple 3x3 Harmony Puzzle
+# This is a basic test puzzle
+
+ROWS 3
+COLS 3
+
+# Color definitions (name -> ID)
+COLORS
+RED 0
+BLUE 1
+GREEN 2
+
+TARGETS RED BLUE GREEN
+
+# Initial tile configuration
+# Format: Position ColorID Moves
+TILES
+A1 0 2
+A2 1 2
+A3 2 2
+B1 1 2
+B2 2 2
+B3 0 2
+C1 2 2
+C2 0 2
+C3 1 2
