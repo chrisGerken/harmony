@@ -132,20 +132,23 @@ java -cp target/classes org.gerken.harmony.HarmonySolver \
 ### Source Code
 ```
 src/main/java/org/gerken/harmony/
-├── HarmonySolver.java              # Main solver
-├── PuzzleGenerator.java            # Puzzle generator
-├── BoardParser.java                # Input parser
-├── StateProcessor.java             # Worker thread
-├── ProgressReporter.java           # Progress monitor
-├── InvalidityTest.java             # Test interface
-├── InvalidityTestCoordinator.java  # Test runner
-├── StuckTileTest.java              # Pruning test: stuck tile with 1 move
-├── WrongRowZeroMovesTest.java      # Pruning test: 0 moves in wrong row
-├── BlockedSwapTest.java            # Pruning test: blocked swap scenario
-├── Tile.java                       # Data models
-├── Board.java
-├── BoardState.java
-└── Move.java
+├── HarmonySolver.java              # Main solver application
+├── PuzzleGenerator.java            # Puzzle generator utility
+├── model/                          # Core data models (immutable)
+│   ├── Tile.java                   # Individual tile (color + moves)
+│   ├── Board.java                  # Game board grid
+│   ├── BoardState.java             # Board + move history
+│   └── Move.java                   # Swap operation
+├── logic/                          # Processing logic
+│   ├── BoardParser.java            # Input file parser
+│   ├── StateProcessor.java         # Worker thread for BFS
+│   └── ProgressReporter.java       # Progress monitoring
+└── invalidity/                     # Pruning tests
+    ├── InvalidityTest.java         # Test interface
+    ├── InvalidityTestCoordinator.java  # Test coordinator
+    ├── StuckTileTest.java          # Detects stuck tile scenarios
+    ├── WrongRowZeroMovesTest.java  # Detects 0-move tiles in wrong row
+    └── BlockedSwapTest.java        # Detects blocked swap scenarios
 ```
 
 ### Documentation
@@ -157,9 +160,11 @@ docs/
 └── DEVELOPMENT.md        # Build, extend, test guide
 ```
 
-### Configuration
+### Configuration & Scripts
 ```
 pom.xml                   # Maven: org.gerken:harmony-solver:1.0-SNAPSHOT
+solve.sh                  # Convenience script to run solver
+generate.sh               # Convenience script to generate puzzles
 ```
 
 ### Example Puzzles
@@ -308,7 +313,23 @@ When making future changes, update:
 - Updated all documentation with new test details
 - Documented performance characteristics and complexity limits
 
-**Status**: Production-ready, tested, fully documented
+**Code Refactoring Session (January 2026)**:
+- **Package Reorganization**: Moved classes into logical subpackages
+  - Created `org.gerken.harmony.model` for core data models (Board, BoardState, Move, Tile)
+  - Created `org.gerken.harmony.logic` for processing logic (BoardParser, ProgressReporter, StateProcessor)
+  - Created `org.gerken.harmony.invalidity` for pruning tests (all InvalidityTest implementations + coordinator)
+- **Performance Optimizations**: Optimized all three invalidity tests
+  - `WrongRowZeroMovesTest`: Now only checks the 2 tiles from last move (instead of all tiles)
+  - `BlockedSwapTest`: Now only checks the 2 tiles from last move (instead of all tiles)
+  - `StuckTileTest`: Now only checks 1-2 rows from last move (instead of all rows)
+  - These optimizations significantly reduce pruning overhead per state
+- **Configuration Change**: Changed default thread count from CPU cores to 2 threads
+  - More predictable behavior across machines
+  - Better resource control
+  - Updated all documentation and code comments
+- **Bash Scripts**: Verified existence of `solve.sh` and `generate.sh` convenience scripts
+
+**Status**: Production-ready, tested, fully documented, optimized
 
 ## Performance Characteristics
 
@@ -344,13 +365,26 @@ Based on testing with current invalidity tests (StuckTileTest, WrongRowZeroMoves
 
 ```bash
 # 1. Compile the project
-javac -d target/classes src/main/java/org/gerken/harmony/*.java
+javac -d target/classes -sourcepath src/main/java \
+  src/main/java/org/gerken/harmony/*.java \
+  src/main/java/org/gerken/harmony/model/*.java \
+  src/main/java/org/gerken/harmony/logic/*.java \
+  src/main/java/org/gerken/harmony/invalidity/*.java
+
+# OR use Maven
+mvn compile
 
 # 2. Generate a puzzle (recommended: use moderate difficulty)
+./generate.sh 3 3 RED,BLUE,GREEN 10 test.txt
+# OR
 java -cp target/classes org.gerken.harmony.PuzzleGenerator \
   3 3 RED,BLUE,GREEN 10 test.txt
 
-# 3. Solve it (recommended: use 2-4 threads)
+# 3. Solve it (default: 2 threads, recommended for most cases)
+./solve.sh test.txt
+# OR with custom options
+./solve.sh -t 4 -r 10 test.txt
+# OR
 java -cp target/classes org.gerken.harmony.HarmonySolver -t 2 -r 10 test.txt
 
 # 4. Verify solution found
@@ -364,9 +398,13 @@ java -cp target/classes org.gerken.harmony.HarmonySolver -t 2 puzzle-4x4.txt
 
 ### Important Notes for Future Sessions
 
-- **Thread count**: Use 2-4 threads for best performance and control
+- **Default thread count**: Now 2 threads (changed from CPU cores)
+- **Thread count**: 2-4 threads recommended for best performance and control
 - **Puzzle difficulty**: Keep 4x4 puzzles to 8-12 moves; 15+ moves may be intractable
 - **Progress monitoring**: Use `-r 10` for 10-second intervals to see progress more frequently
 - **Testing**: Always test with small puzzles first (2x2 or 3x3) before attempting large ones
+- **Package structure**: Code is now organized into `model`, `logic`, and `invalidity` subpackages
+- **Convenience scripts**: Use `./solve.sh` and `./generate.sh` for easier invocation
+- **Pruning optimizations**: All invalidity tests now check only affected tiles/rows for better performance
 
 **Everything is working and ready for iteration!**

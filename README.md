@@ -25,7 +25,10 @@ mvn package
 ### Generate a Puzzle
 
 ```bash
-# Generate a 3x3 puzzle with 10 random moves
+# Using convenience script (recommended)
+./generate.sh 3 3 RED,BLUE,GREEN 10 puzzle.txt
+
+# OR run directly with Java
 java -cp target/classes org.gerken.harmony.PuzzleGenerator 3 3 RED,BLUE,GREEN 10 puzzle.txt
 
 # Recommended difficulty levels:
@@ -41,14 +44,17 @@ java -cp target/classes org.gerken.harmony.PuzzleGenerator 3 3 RED,BLUE,GREEN 10
 ### Solve a Puzzle
 
 ```bash
-# Run with default settings (2 threads, 30s report interval)
+# Using convenience script (recommended)
+./solve.sh puzzle.txt
+
+# With custom options
+./solve.sh -t 4 -r 10 puzzle.txt
+
+# OR run directly with Java
 java -cp target/classes org.gerken.harmony.HarmonySolver puzzle.txt
 
-# Use more threads if needed
-java -cp target/classes org.gerken.harmony.HarmonySolver -t 4 -r 10 puzzle.txt
-
 # After packaging:
-java -jar target/harmony-solver-1.0-SNAPSHOT.jar -t 2 puzzle.txt
+java -jar target/harmony-solver-1.0-SNAPSHOT.jar puzzle.txt
 ```
 
 ### Command-Line Options
@@ -75,6 +81,8 @@ Based on testing with current invalidity tests:
 - **[Invalidity Tests](docs/INVALIDITY_TESTS.md)** - Pruning system for invalid board states
 - **[Development Guide](docs/DEVELOPMENT.md)** - Building, testing, and extending the solver
 - **[Original Design](DESIGN.md)** - Initial design specifications
+- **[Refactoring Notes](REFACTORING_NOTES.md)** - Recent code reorganization and optimizations
+- **[Implementation Summary](IMPLEMENTATION_SUMMARY.md)** - Complete implementation notes for future sessions
 
 ## Key Features
 
@@ -115,8 +123,12 @@ A3 2 2
 ```
 harmony/
 ├── pom.xml                              # Maven project configuration
-├── DESIGN.md                            # Original + implementation notes
+├── solve.sh                             # Convenience script to run solver
+├── generate.sh                          # Convenience script to generate puzzles
 ├── README.md                            # This file
+├── DESIGN.md                            # Original design
+├── IMPLEMENTATION_SUMMARY.md            # Complete implementation notes
+├── REFACTORING_NOTES.md                 # Recent code reorganization
 ├── docs/                                # Detailed documentation
 │   ├── ARCHITECTURE.md                  # System architecture
 │   ├── DATA_MODELS.md                   # Data structure documentation
@@ -125,24 +137,27 @@ harmony/
 ├── puzzles/                             # Example puzzle files
 │   ├── tiny.txt                         # 2x2 test puzzle
 │   ├── simple.txt                       # 3x3 test puzzle
-│   ├── easy.txt                         # Generated 2x2
-│   ├── medium.txt                       # Generated 4x4
-│   └── hard.txt                         # Generated 5x5
+│   ├── easy.txt                         # Generated puzzles
+│   ├── medium.txt
+│   └── hard.txt
 └── src/main/java/org/gerken/harmony/    # Source code
     ├── HarmonySolver.java               # Main solver application
     ├── PuzzleGenerator.java             # Puzzle generator utility
-    ├── BoardParser.java                 # Input file parser
-    ├── StateProcessor.java              # Worker thread
-    ├── ProgressReporter.java            # Progress monitoring
-    ├── InvalidityTest.java              # Test interface
-    ├── InvalidityTestCoordinator.java   # Test coordinator
-    ├── StuckTileTest.java               # Pruning tests
-    ├── WrongRowZeroMovesTest.java
-    ├── BlockedSwapTest.java
-    ├── Tile.java                        # Core data models
-    ├── Board.java
-    ├── BoardState.java
-    └── Move.java
+    ├── model/                           # Core data models (immutable)
+    │   ├── Board.java
+    │   ├── BoardState.java
+    │   ├── Move.java
+    │   └── Tile.java
+    ├── logic/                           # Processing logic
+    │   ├── BoardParser.java
+    │   ├── ProgressReporter.java
+    │   └── StateProcessor.java
+    └── invalidity/                      # Pruning tests
+        ├── InvalidityTest.java
+        ├── InvalidityTestCoordinator.java
+        ├── StuckTileTest.java
+        ├── WrongRowZeroMovesTest.java
+        └── BlockedSwapTest.java
 ```
 
 ## Technology Stack
