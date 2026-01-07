@@ -49,6 +49,7 @@ public class ProgressReporter implements Runnable {
         long generated = pendingStates.getStatesGenerated();
         long pruned = pendingStates.getStatesPruned();
         int queueSize = pendingStates.size();
+        int percentComplete = pendingStates.getPercentComplete();
         long elapsedMs = System.currentTimeMillis() - startTime;
 
         // Calculate statistics
@@ -65,11 +66,12 @@ public class ProgressReporter implements Runnable {
 
         // Format and print progress
         System.out.printf(
-            "[%s] Processed: %,d | Queue: %,d | Generated: %,d | Pruned: %,d (%.1f%%) | " +
+            "[%s] Processed: %,d | Queue: %,d | Complete: %d%% | Generated: %,d | Pruned: %,d (%.1f%%) | " +
             "Rate: %.1f states/s | ETA: %s%n",
             formatDuration(elapsedSeconds),
             processed,
             queueSize,
+            percentComplete,
             generated,
             pruned,
             pruneRate,

@@ -35,6 +35,7 @@ public class PendingStates {
     private final AtomicLong statesProcessed;
     private final AtomicLong statesGenerated;
     private final AtomicLong statesPruned;
+    private final AtomicLong oneMoveStatesAdded;
 
     /**
      * Creates a new pending states container with all counters initialized to zero.
@@ -48,6 +49,7 @@ public class PendingStates {
         this.statesProcessed = new AtomicLong(0);
         this.statesGenerated = new AtomicLong(0);
         this.statesPruned = new AtomicLong(0);
+        this.oneMoveStatesAdded = new AtomicLong(0);
     }
 
     // ========== Queue Operations (Depth-First Strategy) ==========
@@ -64,6 +66,11 @@ public class PendingStates {
 
         // Update max move count if this is deeper than we've seen before
         maxMoveCount.updateAndGet(current -> Math.max(current, moveCount));
+
+        // Track all one-move states for progress calculation
+        if (moveCount == 1) {
+            oneMoveStatesAdded.incrementAndGet();
+        }
 
         // Get or create queue for this move depth
         ConcurrentLinkedQueue<BoardState> queue = queuesByMoveCount.computeIfAbsent(
@@ -220,5 +227,29 @@ public class PendingStates {
      */
     public long getStatesPruned() {
         return statesPruned.get();
+    }
+
+    /**
+     * Calculates percent complete based on one-move queue progress.
+     * Returns floor(current * 100 / all) where:
+     * - all = total number of one-move states ever added
+     * - current = current size of one-move queue
+     *
+     * This provides an estimate of progress through the initial branching layer.
+     *
+     * @return percentage complete (0-100), or 0 if no one-move states have been added
+     */
+    public int getPercentComplete() {
+        long all = oneMoveStatesAdded.get();
+        if (all == 0) {
+            return 0;
+        }
+
+        // Get current size of the one-move queue
+        ConcurrentLinkedQueue<BoardState> oneMoveQueue = queuesByMoveCount.get(1);
+        long current = (oneMoveQueue != null) ? oneMoveQueue.size() : 0;
+
+        // Calculate percentage: floor(current * 100 / all)
+        return (int) ((current * 100) / all);
     }
 }
