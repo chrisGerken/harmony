@@ -20,4 +20,4 @@ if [ ! -d "$CLASSPATH" ]; then
 fi
 
 # Run the solver with all provided arguments
-java -cp "$CLASSPATH" org.gerken.harmony.HarmonySolver "$@"
+java -Xms6G -Xmx12G -cp "$CLASSPATH" org.gerken.harmony.HarmonySolver "$@"

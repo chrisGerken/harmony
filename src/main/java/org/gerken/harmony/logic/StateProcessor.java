@@ -8,10 +8,6 @@ import org.gerken.harmony.model.Tile;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Worker thread that processes board states from the queue.
@@ -19,38 +15,17 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class StateProcessor implements Runnable {
 
-    private final ConcurrentLinkedQueue<BoardState> queue;
-    private final AtomicBoolean solutionFound;
-    private final AtomicReference<BoardState> solution;
-    private final AtomicLong statesProcessed;
-    private final AtomicLong statesGenerated;
-    private final AtomicLong statesPruned;
+    private final PendingStates pendingStates;
     private final InvalidityTestCoordinator coordinator;
     private final long pollTimeoutMs;
 
     /**
      * Creates a new state processor.
      *
-     * @param queue the shared queue of pending states
-     * @param solutionFound flag to signal when solution is found
-     * @param solution reference to store the solution
-     * @param statesProcessed counter for processed states
-     * @param statesGenerated counter for generated states
-     * @param statesPruned counter for pruned states
+     * @param pendingStates the shared container of pending states and statistics
      */
-    public StateProcessor(
-            ConcurrentLinkedQueue<BoardState> queue,
-            AtomicBoolean solutionFound,
-            AtomicReference<BoardState> solution,
-            AtomicLong statesProcessed,
-            AtomicLong statesGenerated,
-            AtomicLong statesPruned) {
-        this.queue = queue;
-        this.solutionFound = solutionFound;
-        this.solution = solution;
-        this.statesProcessed = statesProcessed;
-        this.statesGenerated = statesGenerated;
-        this.statesPruned = statesPruned;
+    public StateProcessor(PendingStates pendingStates) {
+        this.pendingStates = pendingStates;
         this.coordinator = InvalidityTestCoordinator.getInstance();
         this.pollTimeoutMs = 100; // Short timeout to check solution flag
     }
@@ -58,13 +33,13 @@ public class StateProcessor implements Runnable {
     @Override
     public void run() {
         try {
-            while (!solutionFound.get()) {
-                BoardState state = queue.poll();
+            while (!pendingStates.isSolutionFound()) {
+                BoardState state = pendingStates.poll();
 
                 // If queue is empty, wait a bit before checking again
                 if (state == null) {
                     // Check if queue is truly empty and no more work will be added
-                    if (queue.isEmpty()) {
+                    if (pendingStates.isEmpty()) {
                         Thread.sleep(pollTimeoutMs);
                         continue;
                     }
@@ -74,15 +49,13 @@ public class StateProcessor implements Runnable {
                 // Check if this state is the solution
                 if (state.isSolved()) {
                     // Found solution! Signal all threads to stop
-                    if (solutionFound.compareAndSet(false, true)) {
-                        solution.set(state);
-                    }
+                    pendingStates.markSolutionFound(state);
                     return;
                 }
 
                 // Process this state: generate and queue valid successors
                 processState(state);
-                statesProcessed.incrementAndGet();
+                pendingStates.incrementStatesProcessed();
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -98,29 +71,27 @@ public class StateProcessor implements Runnable {
 
         for (Move move : possibleMoves) {
             // Stop generating states if solution was found
-            if (solutionFound.get()) {
+            if (pendingStates.isSolutionFound()) {
                 return;
             }
 
             BoardState nextState = state.applyMove(move);
-            statesGenerated.incrementAndGet();
+            pendingStates.incrementStatesGenerated();
 
             // Check if this is the solution
             if (nextState.isSolved()) {
-                if (solutionFound.compareAndSet(false, true)) {
-                    solution.set(nextState);
-                }
+                pendingStates.markSolutionFound(nextState);
                 return;
             }
 
             // Prune invalid states
             if (coordinator.isInvalid(nextState)) {
-                statesPruned.incrementAndGet();
+                pendingStates.incrementStatesPruned();
                 continue;
             }
 
             // Valid state - add to queue for processing
-            queue.add(nextState);
+            pendingStates.add(nextState);
         }
     }
 

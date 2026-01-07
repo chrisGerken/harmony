@@ -2,6 +2,7 @@ package org.gerken.harmony;
 
 import org.gerken.harmony.invalidity.InvalidityTestCoordinator;
 import org.gerken.harmony.logic.BoardParser;
+import org.gerken.harmony.logic.PendingStates;
 import org.gerken.harmony.logic.ProgressReporter;
 import org.gerken.harmony.logic.StateProcessor;
 import org.gerken.harmony.model.BoardState;
@@ -10,20 +11,16 @@ import org.gerken.harmony.model.Move;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Main class for the Harmony Puzzle Solver.
  * A multi-threaded solver for color-matching tile puzzles using breadth-first search with pruning.
  *
  * Architecture:
- * - Uses parallel BFS with ConcurrentLinkedQueue for state management
+ * - Uses parallel BFS with PendingStates container for state management
  * - Employs 3 invalidity tests for intelligent pruning (40-70% pruning rate)
  * - Worker threads process states in parallel, coordinator detects solution
  * - Progress reporter provides periodic status updates
@@ -112,15 +109,10 @@ public class HarmonySolver {
      */
     private static BoardState solve(BoardState initialState, Config config) {
         // Initialize shared data structures
-        ConcurrentLinkedQueue<BoardState> queue = new ConcurrentLinkedQueue<>();
-        AtomicBoolean solutionFound = new AtomicBoolean(false);
-        AtomicReference<BoardState> solution = new AtomicReference<>(null);
-        AtomicLong statesProcessed = new AtomicLong(0);
-        AtomicLong statesGenerated = new AtomicLong(0);
-        AtomicLong statesPruned = new AtomicLong(0);
+        PendingStates pendingStates = new PendingStates();
 
         // Add initial state to queue
-        queue.add(initialState);
+        pendingStates.add(initialState);
 
         // Create worker threads
         ExecutorService workerPool = Executors.newFixedThreadPool(config.threadCount);
@@ -128,18 +120,14 @@ public class HarmonySolver {
 
         System.out.println("Starting " + config.threadCount + " worker threads...");
         for (int i = 0; i < config.threadCount; i++) {
-            StateProcessor processor = new StateProcessor(
-                queue, solutionFound, solution,
-                statesProcessed, statesGenerated, statesPruned
-            );
+            StateProcessor processor = new StateProcessor(pendingStates);
             processors.add(processor);
             workerPool.submit(processor);
         }
 
         // Create and start progress reporter thread
         ProgressReporter reporter = new ProgressReporter(
-            queue, solutionFound,
-            statesProcessed, statesGenerated, statesPruned,
+            pendingStates,
             config.reportInterval
         );
         Thread reporterThread = new Thread(reporter);
@@ -151,11 +139,12 @@ public class HarmonySolver {
         // Wait for solution or queue exhaustion
         try {
             // Check periodically if we should stop
-            while (!solutionFound.get()) {
+            while (!pendingStates.isSolutionFound()) {
                 Thread.sleep(1000);
 
                 // Check if queue is empty and no more work will be generated
-                if (queue.isEmpty() && statesProcessed.get() == statesGenerated.get()) {
+                if (pendingStates.isEmpty() &&
+                    pendingStates.getStatesProcessed() == pendingStates.getStatesGenerated()) {
                     // All generated states have been processed
                     // If we haven't found a solution, puzzle is unsolvable
                     break;
@@ -163,14 +152,14 @@ public class HarmonySolver {
             }
 
             // Shutdown worker threads
-            solutionFound.set(true); // Signal threads to stop
+            pendingStates.setSolutionFound(); // Signal threads to stop
             workerPool.shutdown();
             workerPool.awaitTermination(5, TimeUnit.SECONDS);
 
             // Print final summary
-            reporter.printFinalSummary(solution.get() != null);
+            reporter.printFinalSummary(pendingStates.getSolution() != null);
 
-            return solution.get();
+            return pendingStates.getSolution();
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

@@ -1,47 +1,23 @@
 package org.gerken.harmony.logic;
 
-import org.gerken.harmony.model.BoardState;
-
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-
 /**
  * Periodically reports progress during the solving process.
  * Runs as a background thread and outputs statistics at configurable intervals.
  */
 public class ProgressReporter implements Runnable {
 
-    private final ConcurrentLinkedQueue<BoardState> queue;
-    private final AtomicBoolean solutionFound;
-    private final AtomicLong statesProcessed;
-    private final AtomicLong statesGenerated;
-    private final AtomicLong statesPruned;
+    private final PendingStates pendingStates;
     private final long reportIntervalMs;
     private final long startTime;
 
     /**
      * Creates a new progress reporter.
      *
-     * @param queue the shared queue of pending states
-     * @param solutionFound flag indicating if solution was found
-     * @param statesProcessed counter for processed states
-     * @param statesGenerated counter for generated states
-     * @param statesPruned counter for pruned states
+     * @param pendingStates the shared container of pending states and statistics
      * @param reportIntervalSeconds interval between reports (in seconds)
      */
-    public ProgressReporter(
-            ConcurrentLinkedQueue<BoardState> queue,
-            AtomicBoolean solutionFound,
-            AtomicLong statesProcessed,
-            AtomicLong statesGenerated,
-            AtomicLong statesPruned,
-            int reportIntervalSeconds) {
-        this.queue = queue;
-        this.solutionFound = solutionFound;
-        this.statesProcessed = statesProcessed;
-        this.statesGenerated = statesGenerated;
-        this.statesPruned = statesPruned;
+    public ProgressReporter(PendingStates pendingStates, int reportIntervalSeconds) {
+        this.pendingStates = pendingStates;
         this.reportIntervalMs = reportIntervalSeconds * 1000L;
         this.startTime = System.currentTimeMillis();
     }
@@ -49,11 +25,11 @@ public class ProgressReporter implements Runnable {
     @Override
     public void run() {
         try {
-            while (!solutionFound.get()) {
+            while (!pendingStates.isSolutionFound()) {
                 Thread.sleep(reportIntervalMs);
 
                 // Don't report if solution was found during sleep
-                if (solutionFound.get()) {
+                if (pendingStates.isSolutionFound()) {
                 	System.out.println("Reporter sees that a solution is found. Stopping");
                     break;
                 }
@@ -69,10 +45,10 @@ public class ProgressReporter implements Runnable {
      * Prints the current progress statistics.
      */
     private void printProgress() {
-        long processed = statesProcessed.get();
-        long generated = statesGenerated.get();
-        long pruned = statesPruned.get();
-        int queueSize = queue.size();
+        long processed = pendingStates.getStatesProcessed();
+        long generated = pendingStates.getStatesGenerated();
+        long pruned = pendingStates.getStatesPruned();
+        int queueSize = pendingStates.size();
         long elapsedMs = System.currentTimeMillis() - startTime;
 
         // Calculate statistics
@@ -127,9 +103,9 @@ public class ProgressReporter implements Runnable {
      * Prints a final summary when solving is complete.
      */
     public void printFinalSummary(boolean foundSolution) {
-        long processed = statesProcessed.get();
-        long generated = statesGenerated.get();
-        long pruned = statesPruned.get();
+        long processed = pendingStates.getStatesProcessed();
+        long generated = pendingStates.getStatesGenerated();
+        long pruned = pendingStates.getStatesPruned();
         long elapsedMs = System.currentTimeMillis() - startTime;
         double elapsedSeconds = elapsedMs / 1000.0;
         double statesPerSecond = processed / elapsedSeconds;
