@@ -12,11 +12,23 @@ import java.util.Random;
 /**
  * Utility to generate random solvable puzzles by working backwards from a solved state.
  *
+ * Algorithm:
+ * 1. Create solved board (all tiles match row colors, 0 moves)
+ * 2. Make N random swaps, incrementing move counts (reverse of solving)
+ * 3. Output scrambled state - guaranteed solvable in <= N moves
+ *
  * Usage:
  *   java PuzzleGenerator <rows> <cols> <color1,color2,...> <num_moves> <output_file>
  *
- * Example:
+ * Examples:
  *   java PuzzleGenerator 3 3 RED,BLUE,GREEN 10 puzzle.txt
+ *   java PuzzleGenerator 4 4 RED,BLUE,GREEN,YELLOW 8 easy.txt
+ *
+ * Recommended difficulty levels:
+ * - Easy:   2x2 with 3-5 moves, 3x3 with 5-8 moves, 4x4 with 5-10 moves
+ * - Medium: 3x3 with 10-15 moves, 4x4 with 10-12 moves
+ * - Hard:   3x3 with 15-20 moves, 4x4 with 12-15 moves
+ * - Warning: 4x4 with 15+ moves or 5x5 puzzles may take very long to solve (minutes to hours)
  */
 public class PuzzleGenerator {
 

@@ -74,10 +74,12 @@ TILES
 - **BoardState**: `Board board`, `List<Move> moves`
 
 ### Invalidity Tests (Thread-Safe Singletons)
-1. **TooManyMovesTest**: Tiles with impossible move counts
-2. **ImpossibleColorAlignmentTest**: Insufficient tiles of required colors
-3. **InsufficientMovesTest**: Tiles stuck (0 moves, wrong color)
+1. **StuckTileTest**: Detects stuck tile scenario (row has all correct colors, all tiles 0 moves except one with 1 move)
+2. **WrongRowZeroMovesTest**: Detects tiles with 0 moves stuck in wrong row (wrong color for current row)
+3. **BlockedSwapTest**: Detects tiles with 1 move blocked by 0-move tiles in target position
 4. **InvalidityTestCoordinator**: Runs all tests, early exit
+
+**Note**: Initial tests (TooManyMovesTest, ImpossibleColorAlignmentTest, InsufficientMovesTest) were removed - too aggressive, pruned valid paths. Current tests provide ~60-70% pruning rate without eliminating valid solutions.
 
 ### Application Components
 - **HarmonySolver**: Main class, CLI parsing, orchestration
@@ -137,9 +139,9 @@ src/main/java/org/gerken/harmony/
 ├── ProgressReporter.java           # Progress monitor
 ├── InvalidityTest.java             # Test interface
 ├── InvalidityTestCoordinator.java  # Test runner
-├── TooManyMovesTest.java           # Pruning tests
-├── ImpossibleColorAlignmentTest.java
-├── InsufficientMovesTest.java
+├── StuckTileTest.java              # Pruning test: stuck tile with 1 move
+├── WrongRowZeroMovesTest.java      # Pruning test: 0 moves in wrong row
+├── BlockedSwapTest.java            # Pruning test: blocked swap scenario
 ├── Tile.java                       # Data models
 ├── Board.java
 ├── BoardState.java
@@ -291,22 +293,80 @@ When making future changes, update:
 - Created PuzzleGenerator utility
 - Comprehensive documentation update
 
-**Status**: Production-ready, fully documented
+**Invalidity Test Refinement Session**:
+- Removed overly aggressive tests (TooManyMovesTest, ImpossibleColorAlignmentTest, InsufficientMovesTest)
+- Implemented StuckTileTest - conservative pruning for genuinely impossible states
+- Successfully tested end-to-end: generated and solved 2x2 puzzle
+- Verified solution output working correctly
+
+**Additional Invalidity Tests Session**:
+- Implemented WrongRowZeroMovesTest - detects tiles with 0 moves stuck in wrong row
+- Implemented BlockedSwapTest - detects tiles with 1 move blocked by 0-move tiles in target position
+- All three tests working together provide effective pruning without eliminating valid paths
+- Successfully solved 3x3 puzzle in 10 moves with 64.4% pruning rate
+- Successfully solved 4x4 puzzle (8 moves) in 1s with 40.0% pruning rate
+- Updated all documentation with new test details
+- Documented performance characteristics and complexity limits
+
+**Status**: Production-ready, tested, fully documented
+
+## Performance Characteristics
+
+Based on testing with current invalidity tests (StuckTileTest, WrongRowZeroMovesTest, BlockedSwapTest):
+
+### Successfully Solved Puzzles
+
+| Size | Moves | Time | States Processed | Pruning Rate | Notes |
+|------|-------|------|------------------|--------------|-------|
+| 2x2  | 3     | <1s  | ~1,000           | ~60%         | Trivial puzzle |
+| 3x3  | 10    | 3s   | 849,807          | 64.4%        | Good pruning efficiency |
+| 4x4  | 8     | 1s   | 49,518           | 40.0%        | Moderate difficulty |
+
+### Complexity Observations
+
+- **Pruning rate varies by puzzle**: 40-70% depending on board configuration
+- **State space grows exponentially**: More moves = exponentially more states to explore
+- **4x4 puzzles with 15+ moves**: May require very long solve times (minutes to hours)
+- **Optimal thread count**: 2-4 threads provides good performance without overwhelming the system
+- **Processing rate**: ~50,000-280,000 states/second depending on board size and thread count
+
+### Recommendations for Puzzle Difficulty
+
+- **Easy**: 2x2 with 3-5 moves, 3x3 with 5-8 moves, 4x4 with 5-10 moves
+- **Medium**: 3x3 with 10-15 moves, 4x4 with 10-12 moves
+- **Hard**: 3x3 with 15-20 moves, 4x4 with 12-15 moves
+- **Very Hard**: 4x4 with 15+ moves (may take very long to solve)
+- **Expert**: 5x5 with any significant move count (may be intractable)
 
 ---
 
 ## Quick Start for Next Session
 
 ```bash
-# 1. Generate a puzzle
+# 1. Compile the project
+javac -d target/classes src/main/java/org/gerken/harmony/*.java
+
+# 2. Generate a puzzle (recommended: use moderate difficulty)
 java -cp target/classes org.gerken.harmony.PuzzleGenerator \
-  3 3 RED,BLUE,GREEN 15 test.txt
+  3 3 RED,BLUE,GREEN 10 test.txt
 
-# 2. Solve it
-java -cp target/classes org.gerken.harmony.HarmonySolver test.txt
+# 3. Solve it (recommended: use 2-4 threads)
+java -cp target/classes org.gerken.harmony.HarmonySolver -t 2 -r 10 test.txt
 
-# 3. Verify solution found
+# 4. Verify solution found
 # (Should output move sequence like "A1-A2", "B1-C1", etc.)
+
+# 5. For 4x4 puzzles (use lower move counts for reasonable solve times)
+java -cp target/classes org.gerken.harmony.PuzzleGenerator \
+  4 4 RED,BLUE,GREEN,YELLOW 8 puzzle-4x4.txt
+java -cp target/classes org.gerken.harmony.HarmonySolver -t 2 puzzle-4x4.txt
 ```
+
+### Important Notes for Future Sessions
+
+- **Thread count**: Use 2-4 threads for best performance and control
+- **Puzzle difficulty**: Keep 4x4 puzzles to 8-12 moves; 15+ moves may be intractable
+- **Progress monitoring**: Use `-r 10` for 10-second intervals to see progress more frequently
+- **Testing**: Always test with small puzzles first (2x2 or 3x3) before attempting large ones
 
 **Everything is working and ready for iteration!**

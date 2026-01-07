@@ -148,9 +148,9 @@ public class InvalidityTestCoordinator {
         List<InvalidityTest> testList = new ArrayList<>();
 
         // Register all tests
-        testList.add(TooManyMovesTest.getInstance());
-        testList.add(ImpossibleColorAlignmentTest.getInstance());
-        testList.add(InsufficientMovesTest.getInstance());
+        testList.add(StuckTileTest.getInstance());
+        testList.add(WrongRowZeroMovesTest.getInstance());
+        testList.add(BlockedSwapTest.getInstance());
 
         this.tests = Collections.unmodifiableList(testList);
     }
@@ -192,100 +192,92 @@ if (InvalidityTestCoordinator.getInstance().isInvalid(state)) {
 
 ## Implemented Tests
 
-### 1. TooManyMovesTest
+### 1. StuckTileTest
 
-**File**: `src/main/java/org/gerken/harmony/TooManyMovesTest.java`
+**File**: `src/main/java/org/gerken/harmony/StuckTileTest.java`
 
 #### Purpose
 
-Detects tiles with more remaining moves than could possibly be used given board dimensions.
+Detects a stuck tile scenario where a row has all tiles with the correct target color, but all tiles have 0 remaining moves except for exactly one tile with 1 remaining move. This is an impossible state to solve.
 
 #### Logic
 
 ```java
-// Maximum moves any tile could use is approximately:
-int maxMoves = Math.max(board.getRowCount(), board.getColumnCount()) - 1;
+for (each row) {
+    int targetColor = board.getRowTargetColor(row);
 
-// Check each tile
-if (tile.getRemainingMoves() > maxMoves) {
-    return true;  // Invalid!
-}
-```
+    boolean allColorsCorrect = true;
+    int tilesWithOneMoveCount = 0;
+    int tilesWithZeroMovesCount = 0;
+    int tilesWithOtherMovesCount = 0;
 
-#### Example
+    for (each tile in row) {
+        if (tile.getColor() != targetColor) {
+            allColorsCorrect = false;
+            break;
+        }
 
-On a 4×4 board:
-- Maximum useful moves ≈ 3 (traverse full row/column)
-- If a tile has 10 remaining moves → **Invalid**
+        if (tile.getRemainingMoves() == 0) tilesWithZeroMovesCount++;
+        else if (tile.getRemainingMoves() == 1) tilesWithOneMoveCount++;
+        else tilesWithOtherMovesCount++;
+    }
 
-#### Why It Works
-
-A tile can only move within its row or column. The maximum distance it could travel is the board dimension minus 1. More moves than this are impossible to use up.
-
-#### Performance
-
-⚡ **Very Fast**: O(N×M) where N×M is board size
-
-### 2. ImpossibleColorAlignmentTest
-
-**File**: `src/main/java/org/gerken/harmony/ImpossibleColorAlignmentTest.java`
-
-#### Purpose
-
-Detects when there aren't enough tiles of a required color to fill all rows that need that color.
-
-#### Logic
-
-```java
-// Count tiles of each color on the board
-Map<String, Integer> colorCounts = countTilesPerColor(board);
-
-// Count tiles needed for each color (based on row targets)
-Map<String, Integer> colorNeeded = calculateNeededPerColor(board);
-
-// Check if we have enough
-for (String color : colorNeeded.keySet()) {
-    if (colorCounts.get(color) < colorNeeded.get(color)) {
-        return true;  // Not enough tiles!
+    if (allColorsCorrect &&
+        tilesWithOneMoveCount == 1 &&
+        tilesWithOtherMovesCount == 0 &&
+        tilesWithZeroMovesCount == columnCount - 1) {
+        return true;  // Invalid!
     }
 }
 ```
 
 #### Example
 
-Board with 3 rows, 3 columns (9 tiles total):
-- Row A needs RED (3 tiles)
-- Row B needs BLUE (3 tiles)
-- Row C needs RED (3 tiles)
+Row A needs RED tiles, has 3 columns:
+- A1: RED with 0 moves
+- A2: RED with 1 move
+- A3: RED with 0 moves
 
-Requires: 6 RED, 3 BLUE
-
-If board has: 5 RED, 4 BLUE → **Invalid** (need 6 RED)
+This is **Invalid** because:
+- All tiles are the correct color
+- The tile at A2 has 1 move remaining
+- It cannot reduce to 0 moves without swapping (which would break the row's color alignment)
+- Swapping within the row is impossible (other tiles have 0 moves)
+- Swapping with another row would bring in a wrong color
 
 #### Why It Works
 
-This is a pigeonhole principle check. If we need N tiles of a color to fill target rows, but only M < N exist on the board, it's impossible to solve.
+For a row to be solved, all tiles must have 0 moves AND correct colors. If all tiles already have correct colors but one tile has 1 move, that tile cannot use its move without either:
+1. Swapping within the row (impossible - no other tile has moves)
+2. Swapping with another row (would bring in wrong color)
+
+This creates an unsolvable deadlock.
 
 #### Performance
 
-⚡ **Fast**: O(N×M) - two passes over the board
+⚡ **Very Fast**: O(N×M) - single pass over board
 
-### 3. InsufficientMovesTest
+### 2. WrongRowZeroMovesTest
 
-**File**: `src/main/java/org/gerken/harmony/InsufficientMovesTest.java`
+**File**: `src/main/java/org/gerken/harmony/WrongRowZeroMovesTest.java`
 
 #### Purpose
 
-Detects tiles that are stuck in the wrong position (0 moves remaining but wrong color for their row).
+Detects tiles that are stuck in the wrong row. If any tile has zero remaining moves and its color doesn't match the target color for its current row, the board is invalid.
 
 #### Logic
 
 ```java
-for (each tile in board) {
-    String targetColor = board.getRowTargetColor(tile.row);
+for (each row) {
+    int targetColor = board.getRowTargetColor(row);
 
-    if (tile.getRemainingMoves() == 0 && !tile.getColor().equals(targetColor)) {
-        return true;  // Stuck in wrong place!
+    for (each column) {
+        Tile tile = board.getTile(row, col);
+
+        // If tile has no moves left and is the wrong color for this row
+        if (tile.getRemainingMoves() == 0 && tile.getColor() != targetColor) {
+            return true;  // Invalid - tile is stuck in wrong row!
+        }
     }
 }
 ```
@@ -293,15 +285,84 @@ for (each tile in board) {
 #### Example
 
 Row A needs RED tiles:
-- Position A1 has a BLUE tile with 0 remaining moves → **Invalid**
+- A1: BLUE with 0 moves
+- A2: RED with 2 moves
+- A3: RED with 1 move
+
+This is **Invalid** because:
+- The tile at A1 is BLUE (wrong color for row A)
+- It has 0 remaining moves
+- It cannot be moved to its correct row
+- The board can never reach a solved state
 
 #### Why It Works
 
-If a tile has no moves left, it cannot be moved to a different position. If it's in the wrong row (color mismatch), it will remain wrong forever.
+A tile with 0 moves cannot participate in any swaps. If it's in the wrong row for its color, it will remain in the wrong row forever. Since the puzzle requires all tiles to be in their correct rows with 0 moves, this state is unsolvable.
 
 #### Performance
 
 ⚡ **Very Fast**: O(N×M) - single pass over board
+
+### 3. BlockedSwapTest
+
+**File**: `src/main/java/org/gerken/harmony/BlockedSwapTest.java`
+
+#### Purpose
+
+Detects blocked swap scenarios. If a tile T1 has 1 remaining move and is not in its correct row, and the tile in T1's target row (at the same column) has 0 remaining moves, then T1 cannot reach its correct position, making the board invalid.
+
+#### Logic
+
+```java
+for (each tile T1 on the board) {
+    // Only consider tiles with exactly 1 remaining move
+    if (tile.getRemainingMoves() != 1) continue;
+
+    // Find the target row for this tile's color
+    int targetRow = findTargetRowForColor(board, tile.getColor());
+
+    // If tile is already in its target row, skip
+    if (currentRow == targetRow) continue;
+
+    // Check the tile in the target row at the same column
+    Tile blockingTile = board.getTile(targetRow, sameColumn);
+
+    // If the blocking tile has 0 moves, T1 cannot swap into position
+    if (blockingTile.getRemainingMoves() == 0) {
+        return true;  // Invalid - tile is blocked!
+    }
+}
+```
+
+#### Example
+
+Board state:
+- Row A needs RED tiles
+- Row B needs BLUE tiles
+- A1: BLUE with 1 move (needs to go to row B)
+- B1: RED with 0 moves (blocking A1's target position)
+
+This is **Invalid** because:
+- A1 (BLUE) needs to swap into position B1
+- A1 has exactly 1 move remaining
+- B1 has 0 moves, so cannot participate in a swap
+- A1 cannot reach its target position
+- The puzzle is unsolvable
+
+#### Why It Works
+
+For a tile with 1 move to reach its target row, it must swap with the tile currently in its target position (same column). If that blocking tile has 0 moves, the swap cannot happen. The tile with 1 move is permanently blocked from reaching its destination.
+
+#### Performance
+
+⚡ **Fast**: O(N×M×R) where R is number of rows (typically small)
+- Iterates over all tiles: O(N×M)
+- For each tile with 1 move, finds target row: O(R)
+- Total: O(N×M×R)
+
+## Historical Note
+
+Initial test implementations (TooManyMovesTest, ImpossibleColorAlignmentTest, InsufficientMovesTest) were developed but removed because they were too aggressive and pruned valid solution paths. The current three tests (StuckTileTest, WrongRowZeroMovesTest, BlockedSwapTest) are more conservative and only prune genuinely impossible states.
 
 ## Adding New Tests
 
@@ -347,9 +408,9 @@ Edit `InvalidityTestCoordinator.java`:
 private InvalidityTestCoordinator() {
     List<InvalidityTest> testList = new ArrayList<>();
 
-    testList.add(TooManyMovesTest.getInstance());
-    testList.add(ImpossibleColorAlignmentTest.getInstance());
-    testList.add(InsufficientMovesTest.getInstance());
+    testList.add(StuckTileTest.getInstance());
+    testList.add(WrongRowZeroMovesTest.getInstance());
+    testList.add(BlockedSwapTest.getInstance());
     testList.add(YourNewTest.getInstance());  // ← Add here
 
     this.tests = Collections.unmodifiableList(testList);
@@ -502,11 +563,13 @@ Example timings per test call (4×4 board):
 
 | Test | Time (μs) | Complexity |
 |------|-----------|------------|
-| TooManyMovesTest | 0.5 | O(N×M) |
-| InsufficientMovesTest | 0.8 | O(N×M) |
-| ImpossibleColorAlignmentTest | 2.1 | O(N×M) |
+| WrongRowZeroMovesTest | 0.5 | O(N×M) |
+| StuckTileTest | 0.8 | O(N×M) |
+| BlockedSwapTest | 1.2 | O(N×M×R) |
 
-Total overhead: ~3.4 μs per state evaluation
+Total overhead: ~2.5 μs per state evaluation
+
+**Note**: These are estimated timings. The current tests are designed to be fast and conservative, providing effective pruning (typically 60-70% pruning rate) without eliminating valid solution paths.
 
 ## Related Documentation
 

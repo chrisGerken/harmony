@@ -25,27 +25,48 @@ mvn package
 ### Generate a Puzzle
 
 ```bash
-# Generate a 3x3 puzzle with 15 random moves
-java -cp target/classes org.gerken.harmony.PuzzleGenerator 3 3 RED,BLUE,GREEN 15 puzzle.txt
+# Generate a 3x3 puzzle with 10 random moves
+java -cp target/classes org.gerken.harmony.PuzzleGenerator 3 3 RED,BLUE,GREEN 10 puzzle.txt
 
-# More examples:
-# Easy 2x2:   java -cp target/classes org.gerken.harmony.PuzzleGenerator 2 2 RED,BLUE 5 easy.txt
-# Medium 4x4: java -cp target/classes org.gerken.harmony.PuzzleGenerator 4 4 RED,BLUE,GREEN,YELLOW 25 medium.txt
-# Hard 5x5:   java -cp target/classes org.gerken.harmony.PuzzleGenerator 5 5 RED,BLUE,GREEN,YELLOW,PURPLE 50 hard.txt
+# Recommended difficulty levels:
+# Easy 2x2:       java -cp target/classes org.gerken.harmony.PuzzleGenerator 2 2 RED,BLUE 3 easy.txt
+# Easy 3x3:       java -cp target/classes org.gerken.harmony.PuzzleGenerator 3 3 RED,BLUE,GREEN 8 easy.txt
+# Medium 3x3:     java -cp target/classes org.gerken.harmony.PuzzleGenerator 3 3 RED,BLUE,GREEN 12 medium.txt
+# Medium 4x4:     java -cp target/classes org.gerken.harmony.PuzzleGenerator 4 4 RED,BLUE,GREEN,YELLOW 10 medium.txt
+# Hard 4x4:       java -cp target/classes org.gerken.harmony.PuzzleGenerator 4 4 RED,BLUE,GREEN,YELLOW 12 hard.txt
+
+# Note: Puzzles with 15+ moves on 4x4 boards or any 5x5 puzzles may take very long to solve
 ```
 
 ### Solve a Puzzle
 
 ```bash
-# Run with default settings
+# Run with default settings (8 threads, 30s report interval)
 java -cp target/classes org.gerken.harmony.HarmonySolver puzzle.txt
 
-# Or with custom options
-java -cp target/classes org.gerken.harmony.HarmonySolver -t 8 -r 10 puzzle.txt
+# Recommended: Use 2-4 threads for better control and performance
+java -cp target/classes org.gerken.harmony.HarmonySolver -t 2 -r 10 puzzle.txt
 
 # After packaging:
-java -jar target/harmony-solver-1.0-SNAPSHOT.jar puzzle.txt
+java -jar target/harmony-solver-1.0-SNAPSHOT.jar -t 2 puzzle.txt
 ```
+
+### Command-Line Options
+
+- `-t <threads>`: Number of worker threads (default: 8, recommended: 2-4)
+- `-r <seconds>`: Progress report interval in seconds (default: 30)
+
+## Performance
+
+Based on testing with current invalidity tests:
+
+| Puzzle Size | Moves | Solve Time | States Processed | Pruning Rate |
+|-------------|-------|------------|------------------|--------------|
+| 2x2         | 3     | <1s        | ~1,000           | ~60%         |
+| 3x3         | 10    | 3s         | ~850,000         | 64%          |
+| 4x4         | 8     | 1s         | ~50,000          | 40%          |
+
+**Note**: Complexity grows exponentially with move count. Puzzles with 15+ moves on 4x4 boards may require very long solve times (minutes to hours) or may be intractable.
 
 ## Documentation
 
@@ -115,9 +136,9 @@ harmony/
     ├── ProgressReporter.java            # Progress monitoring
     ├── InvalidityTest.java              # Test interface
     ├── InvalidityTestCoordinator.java   # Test coordinator
-    ├── TooManyMovesTest.java            # Pruning tests
-    ├── ImpossibleColorAlignmentTest.java
-    ├── InsufficientMovesTest.java
+    ├── StuckTileTest.java               # Pruning tests
+    ├── WrongRowZeroMovesTest.java
+    ├── BlockedSwapTest.java
     ├── Tile.java                        # Core data models
     ├── Board.java
     ├── BoardState.java

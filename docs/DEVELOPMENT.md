@@ -57,17 +57,18 @@ harmony/
 │   │   ├── java/org/gerken/harmony/
 │   │   │   ├── InvalidityTest.java              # Test interface
 │   │   │   ├── InvalidityTestCoordinator.java   # Test coordinator
-│   │   │   ├── TooManyMovesTest.java            # Pruning tests
-│   │   │   ├── ImpossibleColorAlignmentTest.java
-│   │   │   ├── InsufficientMovesTest.java
+│   │   │   ├── StuckTileTest.java               # Pruning tests
+│   │   │   ├── WrongRowZeroMovesTest.java
+│   │   │   ├── BlockedSwapTest.java
 │   │   │   ├── Tile.java                        # Data models
 │   │   │   ├── Board.java
 │   │   │   ├── BoardState.java
 │   │   │   ├── Move.java
-│   │   │   ├── BoardParser.java                 # To be implemented
-│   │   │   ├── StateProcessor.java              # To be implemented
-│   │   │   ├── ProgressReporter.java            # To be implemented
-│   │   │   └── HarmonySolver.java               # Main class (TBI)
+│   │   │   ├── BoardParser.java                 # Input file parser
+│   │   │   ├── StateProcessor.java              # Worker thread
+│   │   │   ├── ProgressReporter.java            # Progress monitoring
+│   │   │   ├── PuzzleGenerator.java             # Puzzle generator
+│   │   │   └── HarmonySolver.java               # Main solver class
 │   │   └── resources/
 │   │       └── example-puzzles/                 # Sample input files
 │   └── test/
@@ -402,11 +403,11 @@ public void testTileDecrement() {
 
 @Test
 public void testInvalidityTest() {
-    // Create a board state that should be invalid
-    Board board = createInvalidBoard();
+    // Create a board state with a tile stuck in wrong row (0 moves)
+    Board board = createBoardWithStuckTile();
     BoardState state = new BoardState(board);
 
-    assertTrue(TooManyMovesTest.getInstance().isInvalid(state));
+    assertTrue(WrongRowZeroMovesTest.getInstance().isInvalid(state));
 }
 ```
 

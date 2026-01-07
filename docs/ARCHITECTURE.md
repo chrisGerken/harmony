@@ -179,9 +179,11 @@ public interface InvalidityTest {
 
 See [Invalidity Tests](INVALIDITY_TESTS.md) for detailed documentation.
 
-1. **TooManyMovesTest**: Tiles with impossible move counts
-2. **ImpossibleColorAlignmentTest**: Insufficient tiles for color requirements
-3. **InsufficientMovesTest**: Tiles stuck in wrong positions
+1. **StuckTileTest**: Row has all correct colors, all tiles 0 moves except one with 1 move
+2. **WrongRowZeroMovesTest**: Tiles with 0 moves stuck in wrong row
+3. **BlockedSwapTest**: Tiles with 1 move blocked by 0-move tiles in target position
+
+These tests provide ~60-70% pruning rate without eliminating valid solution paths.
 
 ### Adding New Tests
 

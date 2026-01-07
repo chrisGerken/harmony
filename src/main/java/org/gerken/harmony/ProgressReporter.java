@@ -52,6 +52,7 @@ public class ProgressReporter implements Runnable {
 
                 // Don't report if solution was found during sleep
                 if (solutionFound.get()) {
+                	System.out.println("Reporter sees that a solution is found. Stopping");
                     break;
                 }
 
