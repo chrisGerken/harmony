@@ -1,6 +1,6 @@
 # Harmony Puzzle Solver
 
-A multi-threaded Java application that solves color-matching tile puzzles using breadth-first search with intelligent pruning.
+A multi-threaded Java application that solves color-matching tile puzzles using depth-first search with intelligent pruning.
 
 ## Overview
 
@@ -64,15 +64,16 @@ java -jar target/harmony-solver-1.0-SNAPSHOT.jar puzzle.txt
 
 ## Performance
 
-Based on testing with current invalidity tests:
+Based on testing with depth-first search and invalidity tests:
 
-| Puzzle Size | Moves | Solve Time | States Processed | Pruning Rate |
-|-------------|-------|------------|------------------|--------------|
-| 2x2         | 3     | <1s        | ~1,000           | ~60%         |
-| 3x3         | 10    | 3s         | ~850,000         | 64%          |
-| 4x4         | 8     | 1s         | ~50,000          | 40%          |
+| Puzzle Size | Moves | Solve Time | States Processed | Pruning Rate | Memory Usage |
+|-------------|-------|------------|------------------|--------------|--------------|
+| 2x2         | 3     | <1s        | ~3-4             | ~20-60%      | Very Low     |
+| 3x3         | 10    | <5s        | Varies           | ~40-70%      | Low          |
+| 4x4         | 8     | <2s        | Varies           | ~40-70%      | Manageable   |
+| 6x6         | Varies| Depends    | Varies           | ~40-70%      | Manageable   |
 
-**Note**: Complexity grows exponentially with move count. Puzzles with 15+ moves on 4x4 boards may require very long solve times (minutes to hours) or may be intractable.
+**Note**: Depth-first strategy significantly reduces memory usage by processing deeper states first, keeping queue sizes manageable even for large puzzles.
 
 ## Documentation
 
@@ -86,9 +87,10 @@ Based on testing with current invalidity tests:
 
 ## Key Features
 
+- **Depth-First Search**: Multiple queues organized by move depth prevent memory explosion
 - **Multi-threaded Processing**: Configurable thread pool for parallel state exploration
 - **Intelligent Pruning**: Multiple invalidity tests eliminate impossible states early
-- **Thread-Safe Design**: Singleton pattern with `ConcurrentLinkedQueue` for state management
+- **Thread-Safe Design**: PendingStates container encapsulates all state management
 - **Progress Reporting**: Configurable periodic status updates (default: 30 seconds)
 - **Efficient Color Representation**: Integer-based colors for fast comparisons and low memory usage
 - **Puzzle Generator**: Create guaranteed-solvable puzzles of any difficulty

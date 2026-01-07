@@ -15,14 +15,17 @@
 
 ## Overview
 
-The Harmony Puzzle Solver is built around a parallel breadth-first search (BFS) algorithm with intelligent pruning. The system explores the state space of possible board configurations, searching for a solution that satisfies the win conditions.
+The Harmony Puzzle Solver is built around a parallel depth-first search (DFS) algorithm with intelligent pruning. The system explores the state space of possible board configurations, searching for a solution that satisfies the win conditions.
+
+The solver uses a novel multi-queue depth-first approach where states are organized by move depth, always processing the deepest states first. This prevents the queue explosion problem typical of breadth-first search while maintaining the benefits of parallel processing.
 
 ### Design Goals
 
 1. **Correctness**: Find valid solutions when they exist
 2. **Performance**: Leverage multi-core processors for parallel exploration
-3. **Scalability**: Handle large state spaces through pruning and offloading
-4. **Maintainability**: Clean separation of concerns, extensible design
+3. **Memory Efficiency**: Prevent queue explosion through depth-first strategy
+4. **Scalability**: Handle large state spaces through pruning and depth-first traversal
+5. **Maintainability**: Clean separation of concerns, extensible design
 
 ## High-Level Design
 
@@ -37,10 +40,19 @@ The Harmony Puzzle Solver is built around a parallel breadth-first search (BFS) 
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
-        ┌─────────────────────────────────────────┐
-        │     ConcurrentLinkedQueue<BoardState>    │
-        │          (Pending States)                │
-        └─────────────────────────────────────────┘
+        ┌─────────────────────────────────────────────────────┐
+        │             PendingStates Container                  │
+        │  - Multiple queues by move depth (DFS)              │
+        │  - Statistics counters                              │
+        │  - Solution coordination                            │
+        │                                                     │
+        │  Depth queues:                                      │
+        │    Move 0: Queue<BoardState>                       │
+        │    Move 1: Queue<BoardState>                       │
+        │    Move 2: Queue<BoardState>                       │
+        │    ...                                              │
+        │    Move N: Queue<BoardState> ← Poll from here first│
+        └─────────────────────────────────────────────────────┘
                               │
           ┌───────────────────┼───────────────────┐
           ▼                   ▼                   ▼
@@ -59,8 +71,8 @@ The Harmony Puzzle Solver is built around a parallel breadth-first search (BFS) 
           ┌───────────────────┼───────────────────┐
           ▼                   ▼                   ▼
     ┌──────────┐      ┌──────────────┐    ┌──────────────┐
-    │Too Many  │      │Impossible    │    │Insufficient  │
-    │Moves Test│      │Color Test    │    │Moves Test    │
+    │StuckTile │      │WrongRowZero  │    │BlockedSwap   │
+    │Test      │      │MovesTest     │    │Test          │
     └──────────┘      └──────────────┘    └──────────────┘
 ```
 
@@ -71,85 +83,184 @@ The Harmony Puzzle Solver is built around a parallel breadth-first search (BFS) 
 ```
 1. Read original board from input file
 2. Create initial BoardState with no moves
-3. Add initial state to pending queue
-4. Start N worker threads
-5. Each worker continuously:
-   a. Poll a BoardState from the queue
+3. Create PendingStates container
+4. Add initial state to PendingStates (goes to depth-0 queue)
+5. Start N worker threads
+6. Each worker continuously:
+   a. Poll a BoardState from PendingStates (gets from deepest queue)
    b. If queue is empty, wait or exit
-   c. If board is solved, output solution and terminate all threads
+   c. If board is solved, mark solution and terminate all threads
    d. Generate all possible moves from this state
    e. For each move:
       - Create new BoardState
       - Check if invalid using InvalidityTestCoordinator
-      - If valid and not solved, add to pending queue
-      - If solved, output solution and terminate
-6. Continue until solution found or queue exhausted
+      - If valid and not solved, add to PendingStates (routed by depth)
+      - If solved, mark solution and terminate
+7. Continue until solution found or all queues exhausted
 ```
 
-### State Space Exploration
+### Depth-First State Space Exploration
 
-The solver explores the state space as a tree:
+The solver explores the state space depth-first using multiple queues:
 
 ```
-                    Original Board
+                    Original Board (depth 0)
+                          │
+                    [Queue depth-0]
+                          │
                    /      |      \
-              Move 1    Move 2   Move 3
-              /  |  \   /  |  \   /  |  \
-           ...  ...  ... ... ... ... ... ...
+              Move 1    Move 2   Move 3 (depth 1)
+                   \     |      /
+                    [Queue depth-1]
+                          │
+              /     |     |     |     \
+           M2-M1  M2-M2  M2-M3 ...   ... (depth 2)
+                          │
+                    [Queue depth-2] ← Always poll from deepest first
+                          │
+                        ...
 ```
 
-Each node represents a `BoardState`, and edges represent `Move` operations.
+**Key Insight**: By always processing from the deepest available queue, we:
+- Quickly reach invalid states and prune them
+- Avoid accumulating shallow states
+- Keep memory usage low
+- Often find solutions faster
+
+Each node represents a `BoardState`, edges represent `Move` operations.
+States are automatically routed to the appropriate depth queue.
+
+## State Management
+
+### PendingStates Container
+
+The `PendingStates` class is the central coordination point for all state management:
+
+```java
+public class PendingStates {
+    // Depth-organized queues
+    private ConcurrentHashMap<Integer, ConcurrentLinkedQueue<BoardState>> queuesByMoveCount;
+    private AtomicInteger maxMoveCount;
+
+    // Solution coordination
+    private AtomicBoolean solutionFound;
+    private AtomicReference<BoardState> solution;
+
+    // Statistics
+    private AtomicLong statesProcessed;
+    private AtomicLong statesGenerated;
+    private AtomicLong statesPruned;
+}
+```
+
+**Key Operations**:
+
+1. **add(BoardState)**: Routes states to appropriate depth queue
+   - Extracts move count from state
+   - Updates max depth if necessary
+   - Creates queue on-demand if needed
+   - Thread-safe through `computeIfAbsent()`
+
+2. **poll()**: Retrieves from deepest queue first
+   - Starts at `maxMoveCount` and works backward
+   - Returns first non-null state found
+   - Returns null only when all queues empty
+   - O(depth) complexity, but depth typically small
+
+3. **Statistics**: Encapsulates all counters
+   - Processed/generated/pruned counts
+   - Solution found flag and state
+   - Thread-safe atomic operations
+
+**Design Benefits**:
+- Single source of truth for state management
+- Depth-first traversal guaranteed
+- Clean API hides complexity
+- Easy to extend with new features
 
 ## Concurrency Model
 
 ### Thread-Safe Components
 
-1. **ConcurrentLinkedQueue**: Thread-safe FIFO queue for pending states
+1. **PendingStates Container**: Encapsulates all state coordination
+   - Multiple concurrent queues (one per depth level)
+   - Thread-safe routing and retrieval
+   - Atomic counters and solution coordination
    - Multiple producers (workers generating new states)
    - Multiple consumers (workers polling next state to process)
 
-2. **InvalidityTest Singletons**: Thread-safe, stateless validators
+2. **ConcurrentHashMap**: Maps depth → queue
+   - Thread-safe queue creation via `computeIfAbsent()`
+   - Multiple threads can safely access different depth queues
+   - No contention for map operations
+
+3. **ConcurrentLinkedQueue**: One per depth level
+   - Lock-free FIFO operations
+   - High throughput under contention
+
+4. **InvalidityTest Singletons**: Thread-safe, stateless validators
    - Eagerly initialized singletons
    - No mutable state
    - Safe for concurrent access
 
-3. **Immutable Data Structures**: `Tile`, `Board`, `BoardState`, `Move`
+5. **Immutable Data Structures**: `Tile`, `Board`, `BoardState`, `Move`
    - All state changes create new objects
    - No synchronization needed
 
 ### Worker Thread Pattern
 
 Each worker is a `Runnable` that:
-1. Polls from the shared queue
+1. Polls from PendingStates (gets from deepest queue)
 2. Processes the state independently
-3. Adds new states back to the queue
+3. Adds new states back to PendingStates (routed by depth)
 4. No shared mutable state between workers
+5. Coordinates via PendingStates methods
 
 ### Configuration
 
-- **Thread Count**: Configurable via command-line argument
+- **Thread Count**: Configurable via command-line argument (`-t <threads>`)
 - **Default**: 2 threads
-
-## State Management
+- **Reasoning**: Predictable behavior across machines, resource control
 
 ### Queue Operations
 
 ```java
-// Worker pseudo-code
-while (running) {
-    BoardState state = pendingQueue.poll();
+// Worker pseudo-code (simplified)
+while (!pendingStates.isSolutionFound()) {
+    BoardState state = pendingStates.poll(); // Gets from deepest queue
     if (state == null) {
-        // Queue empty - wait or exit
+        // All queues empty - wait or exit
+        Thread.sleep(100);
         continue;
     }
 
-    processState(state);
+    if (state.isSolved()) {
+        pendingStates.markSolutionFound(state);
+        return;
+    }
+
+    processState(state); // Generates new states, adds via pendingStates.add()
+    pendingStates.incrementStatesProcessed();
 }
 ```
 
 ### Memory Management
 
-- Queue grows as new states are discovered
+**Depth-First Advantages**:
+- Queue size remains bounded and manageable
+- Processes deep states immediately rather than accumulating shallow ones
+- Only stores one "branch" of search tree at a time
+- Memory usage grows linearly with depth, not exponentially with breadth
+
+**Comparison**:
+- **BFS**: Queue size = O(branching_factor^depth) - exponential growth
+- **DFS**: Queue size = O(depth × branching_factor) - linear growth
+
+**Example**: For a puzzle with 6 possible moves per state:
+- At depth 10 with BFS: ~60 million potential states in queue
+- At depth 10 with DFS: ~60 states in queue (10 depths × 6 branches)
+
+**Note**: Actual numbers depend on pruning effectiveness, but DFS consistently uses far less memory
 - Pruning reduces queue growth
 - Filesystem offloading prevents OOM errors
 - Solved/invalid states are discarded immediately

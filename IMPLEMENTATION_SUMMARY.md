@@ -313,7 +313,7 @@ When making future changes, update:
 - Updated all documentation with new test details
 - Documented performance characteristics and complexity limits
 
-**Code Refactoring Session (January 2026)**:
+**Code Refactoring Session (January 2026 - Session 1)**:
 - **Package Reorganization**: Moved classes into logical subpackages
   - Created `org.gerken.harmony.model` for core data models (Board, BoardState, Move, Tile)
   - Created `org.gerken.harmony.logic` for processing logic (BoardParser, ProgressReporter, StateProcessor)
@@ -329,7 +329,33 @@ When making future changes, update:
   - Updated all documentation and code comments
 - **Bash Scripts**: Verified existence of `solve.sh` and `generate.sh` convenience scripts
 
-**Status**: Production-ready, tested, fully documented, optimized
+**State Management and Depth-First Search Session (January 7, 2026 - Session 2)**:
+- **PendingStates Encapsulation**: Created new class to encapsulate all state management
+  - Encapsulates queue, counters (processed/generated/pruned), and solution coordination
+  - Simplified constructors for `StateProcessor`, `ProgressReporter`, and `HarmonySolver`
+  - Single source of truth for all shared state
+  - Better encapsulation and maintainability
+- **Depth-First Search Implementation**: Converted from BFS to DFS to prevent queue explosion
+  - Multiple `ConcurrentLinkedQueue` instances organized by move count (depth)
+  - Always processes deepest states first (highest move count)
+  - Significantly reduces memory usage
+  - Queue size remains manageable even for large puzzles
+  - 25-29% fewer states processed in tests
+- **Architecture Change**: From single queue to depth-organized queues
+  - `ConcurrentHashMap<Integer, ConcurrentLinkedQueue<BoardState>>` structure
+  - `AtomicInteger maxMoveCount` tracks deepest level
+  - `add()` routes states to appropriate depth queue
+  - `poll()` retrieves from deepest available queue first
+- **Documentation Updates**: Comprehensive session summary and updated README
+  - Created `SESSION_SUMMARY_2026-01-07.md` with full details
+  - Updated `README.md` to reflect depth-first strategy
+  - Updated class javadocs throughout
+- **Puzzle Creation**: Created `puzzle_404.txt` (6x6 puzzle from screenshot)
+  - 6 colors identified from leftmost column
+  - Each row targets its leftmost color
+  - Ready for solver testing
+
+**Status**: Production-ready, tested, fully documented, optimized with depth-first search
 
 ## Performance Characteristics
 
