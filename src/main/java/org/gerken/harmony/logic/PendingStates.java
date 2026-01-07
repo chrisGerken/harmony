@@ -2,27 +2,34 @@ package org.gerken.harmony.logic;
 
 import org.gerken.harmony.model.BoardState;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Thread-safe container for pending board states and processing statistics.
- * Encapsulates the queue, counters, and coordination flags used by the
- * multi-threaded solver.
+ * Encapsulates multiple queues organized by move depth, counters, and
+ * coordination flags used by the multi-threaded solver.
  *
  * This class provides a clean abstraction layer for:
- * - Managing the pending states queue
+ * - Managing pending states using depth-first search strategy (multiple queues by move count)
  * - Tracking processing statistics (processed, generated, pruned counts)
  * - Coordinating solution discovery across threads
+ *
+ * The depth-first approach prevents queue explosion by always processing
+ * states with the most moves first, diving deep into the search tree
+ * before exploring other branches.
  *
  * All operations are thread-safe and can be safely accessed by multiple
  * worker threads and the progress reporter simultaneously.
  */
 public class PendingStates {
 
-    private final ConcurrentLinkedQueue<BoardState> queue;
+    private final ConcurrentHashMap<Integer, ConcurrentLinkedQueue<BoardState>> queuesByMoveCount;
+    private final AtomicInteger maxMoveCount;
     private final AtomicBoolean solutionFound;
     private final AtomicReference<BoardState> solution;
     private final AtomicLong statesProcessed;
@@ -31,9 +38,11 @@ public class PendingStates {
 
     /**
      * Creates a new pending states container with all counters initialized to zero.
+     * Initializes the depth-first queue structure.
      */
     public PendingStates() {
-        this.queue = new ConcurrentLinkedQueue<>();
+        this.queuesByMoveCount = new ConcurrentHashMap<>();
+        this.maxMoveCount = new AtomicInteger(0);
         this.solutionFound = new AtomicBoolean(false);
         this.solution = new AtomicReference<>(null);
         this.statesProcessed = new AtomicLong(0);
@@ -41,48 +50,83 @@ public class PendingStates {
         this.statesPruned = new AtomicLong(0);
     }
 
-    // ========== Queue Operations ==========
+    // ========== Queue Operations (Depth-First Strategy) ==========
 
     /**
-     * Adds a board state to the pending queue.
+     * Adds a board state to the appropriate depth-specific queue.
+     * States are organized by move count to implement depth-first search.
      * This operation is thread-safe and non-blocking.
      *
      * @param state the board state to add
      */
     public void add(BoardState state) {
+        int moveCount = state.getMoveCount();
+
+        // Update max move count if this is deeper than we've seen before
+        maxMoveCount.updateAndGet(current -> Math.max(current, moveCount));
+
+        // Get or create queue for this move depth
+        ConcurrentLinkedQueue<BoardState> queue = queuesByMoveCount.computeIfAbsent(
+            moveCount,
+            k -> new ConcurrentLinkedQueue<>()
+        );
+
         queue.add(state);
     }
 
     /**
-     * Retrieves and removes the next pending board state from the queue.
-     * Returns null if the queue is empty.
+     * Retrieves and removes the next pending board state using depth-first strategy.
+     * Always polls from the deepest queue (highest move count) first, then works
+     * backward to shallower queues. Returns null if all queues are empty.
      * This operation is thread-safe and non-blocking.
      *
-     * @return the next board state, or null if queue is empty
+     * @return the next board state from the deepest available queue, or null if all queues are empty
      */
     public BoardState poll() {
-        return queue.poll();
+        int currentMax = maxMoveCount.get();
+
+        // Try polling from deepest to shallowest
+        for (int moveCount = currentMax; moveCount >= 0; moveCount--) {
+            ConcurrentLinkedQueue<BoardState> queue = queuesByMoveCount.get(moveCount);
+            if (queue != null) {
+                BoardState state = queue.poll();
+                if (state != null) {
+                    return state;
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
-     * Checks if the pending states queue is empty.
+     * Checks if all pending states queues are empty.
      * This operation is thread-safe.
      *
-     * @return true if the queue contains no states
+     * @return true if all queues contain no states
      */
     public boolean isEmpty() {
-        return queue.isEmpty();
+        for (ConcurrentLinkedQueue<BoardState> queue : queuesByMoveCount.values()) {
+            if (!queue.isEmpty()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
-     * Returns the number of pending states in the queue.
+     * Returns the total number of pending states across all depth queues.
      * This operation is thread-safe but the value may be stale
      * by the time it's used in a multi-threaded environment.
      *
-     * @return the current size of the queue
+     * @return the current total size across all queues
      */
     public int size() {
-        return queue.size();
+        int total = 0;
+        for (ConcurrentLinkedQueue<BoardState> queue : queuesByMoveCount.values()) {
+            total += queue.size();
+        }
+        return total;
     }
 
     // ========== Solution Coordination ==========

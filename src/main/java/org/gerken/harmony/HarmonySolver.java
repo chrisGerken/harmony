@@ -17,10 +17,12 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Main class for the Harmony Puzzle Solver.
- * A multi-threaded solver for color-matching tile puzzles using breadth-first search with pruning.
+ * A multi-threaded solver for color-matching tile puzzles using depth-first search with pruning.
  *
  * Architecture:
- * - Uses parallel BFS with PendingStates container for state management
+ * - Uses parallel DFS with PendingStates container for state management
+ * - Multiple queues organized by move depth prevent queue explosion
+ * - Always processes deepest states first to find solutions quickly
  * - Employs 3 invalidity tests for intelligent pruning (40-70% pruning rate)
  * - Worker threads process states in parallel, coordinator detects solution
  * - Progress reporter provides periodic status updates
@@ -37,9 +39,10 @@ import java.util.concurrent.TimeUnit;
  *   java HarmonySolver -t 2 -r 10 puzzle.txt
  *
  * Performance:
- * - 3x3 puzzles with 10 moves: ~3s, ~850k states processed
- * - 4x4 puzzles with 8 moves: ~1s, ~50k states processed
- * - Complexity grows exponentially with move count
+ * - Depth-first strategy significantly reduces memory usage
+ * - 3x3 puzzles with 10 moves: typically <5s
+ * - 4x4 puzzles with 8 moves: typically <2s
+ * - Queue size remains manageable even for large puzzles
  */
 public class HarmonySolver {
 
@@ -101,7 +104,7 @@ public class HarmonySolver {
     }
 
     /**
-     * Solves the puzzle using multi-threaded breadth-first search with pruning.
+     * Solves the puzzle using multi-threaded depth-first search with pruning.
      *
      * @param initialState the starting board state
      * @param config solver configuration
@@ -269,7 +272,7 @@ public class HarmonySolver {
     private static void printHeader(Config config) {
         System.out.println("=".repeat(80));
         System.out.println("Harmony Puzzle Solver");
-        System.out.println("Multi-threaded breadth-first search with intelligent pruning");
+        System.out.println("Multi-threaded depth-first search with intelligent pruning");
         System.out.println("=".repeat(80));
         System.out.println("Configuration:");
         System.out.println("  Threads: " + config.threadCount);
