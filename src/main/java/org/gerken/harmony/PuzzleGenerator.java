@@ -1,5 +1,7 @@
 package org.gerken.harmony;
 
+import org.gerken.harmony.model.Tile;
+
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;

@@ -1,4 +1,4 @@
-package org.gerken.harmony;
+package org.gerken.harmony.model;
 
 /**
  * Represents a move in the puzzle - swapping two tiles in the same row or column.

@@ -1,4 +1,4 @@
-package org.gerken.harmony;
+package org.gerken.harmony.model;
 
 /**
  * Represents the puzzle board - a grid of tiles with target colors for each row.

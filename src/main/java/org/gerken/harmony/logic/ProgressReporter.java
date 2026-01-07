@@ -1,4 +1,6 @@
-package org.gerken.harmony;
+package org.gerken.harmony.logic;
+
+import org.gerken.harmony.model.BoardState;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;

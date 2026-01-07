@@ -1,4 +1,10 @@
-package org.gerken.harmony;
+package org.gerken.harmony.logic;
+
+import org.gerken.harmony.invalidity.InvalidityTestCoordinator;
+import org.gerken.harmony.model.Board;
+import org.gerken.harmony.model.BoardState;
+import org.gerken.harmony.model.Move;
+import org.gerken.harmony.model.Tile;
 
 import java.util.ArrayList;
 import java.util.List;

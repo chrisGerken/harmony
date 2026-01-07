@@ -1,5 +1,12 @@
 package org.gerken.harmony;
 
+import org.gerken.harmony.invalidity.InvalidityTestCoordinator;
+import org.gerken.harmony.logic.BoardParser;
+import org.gerken.harmony.logic.ProgressReporter;
+import org.gerken.harmony.logic.StateProcessor;
+import org.gerken.harmony.model.BoardState;
+import org.gerken.harmony.model.Move;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
  *   java HarmonySolver [-t <threads>] [-r <seconds>] <puzzle-file>
  *
  * Options:
- *   -t <threads>   Number of worker threads (default: CPU count, recommended: 2-4)
+ *   -t <threads>   Number of worker threads (default: 2)
  *   -r <seconds>   Progress report interval (default: 30)
  *
  * Examples:
@@ -39,7 +46,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class HarmonySolver {
 
-    private static final int DEFAULT_THREAD_COUNT = Runtime.getRuntime().availableProcessors();
+    private static final int DEFAULT_THREAD_COUNT = 2;
     private static final int DEFAULT_REPORT_INTERVAL = 30; // seconds
 
     /**
@@ -259,7 +266,7 @@ public class HarmonySolver {
         System.out.println("Usage: java -jar harmony-solver.jar [options] <puzzle-file>");
         System.out.println();
         System.out.println("Options:");
-        System.out.println("  -t, --threads <N>     Number of worker threads (default: CPU cores)");
+        System.out.println("  -t, --threads <N>     Number of worker threads (default: 2)");
         System.out.println("  -r, --report <N>      Progress report interval in seconds (default: 30)");
         System.out.println("  -h, --help            Show this help message");
         System.out.println();

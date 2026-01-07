@@ -1,4 +1,6 @@
-package org.gerken.harmony;
+package org.gerken.harmony.invalidity;
+
+import org.gerken.harmony.model.BoardState;
 
 import java.util.ArrayList;
 import java.util.Collections;

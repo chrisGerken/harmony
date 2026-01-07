@@ -266,7 +266,7 @@ java -cp target/classes org.gerken.harmony.HarmonySolver [options] <puzzle-file>
 java -jar target/harmony-solver-1.0-SNAPSHOT.jar [options] <puzzle-file>
 
 Options:
-  -t, --threads <N>    Number of worker threads (default: CPU cores)
+  -t, --threads <N>    Number of worker threads (default: 2)
   -r, --report <N>     Progress report interval in seconds (default: 30)
   -h, --help           Show help message
 

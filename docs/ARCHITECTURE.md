@@ -128,8 +128,7 @@ Each worker is a `Runnable` that:
 ### Configuration
 
 - **Thread Count**: Configurable via command-line argument
-- **Recommended**: Number of CPU cores or cores - 1
-- **Default**: Runtime.getRuntime().availableProcessors()
+- **Default**: 2 threads
 
 ## State Management
 

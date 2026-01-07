@@ -1,4 +1,8 @@
-package org.gerken.harmony;
+package org.gerken.harmony.logic;
+
+import org.gerken.harmony.model.Board;
+import org.gerken.harmony.model.BoardState;
+import org.gerken.harmony.model.Tile;
 
 import java.io.BufferedReader;
 import java.io.FileReader;

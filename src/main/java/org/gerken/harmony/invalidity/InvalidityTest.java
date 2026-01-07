@@ -1,4 +1,6 @@
-package org.gerken.harmony;
+package org.gerken.harmony.invalidity;
+
+import org.gerken.harmony.model.BoardState;
 
 /**
  * Interface for thread-safe singleton classes that test whether a board state is invalid.

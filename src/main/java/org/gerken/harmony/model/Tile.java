@@ -1,4 +1,4 @@
-package org.gerken.harmony;
+package org.gerken.harmony.model;
 
 /**
  * Represents a tile in the puzzle.
@@ -65,4 +65,3 @@ public class Tile {
         return 31 * color + remainingMoves;
     }
 }
-

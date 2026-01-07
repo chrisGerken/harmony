@@ -41,11 +41,11 @@ java -cp target/classes org.gerken.harmony.PuzzleGenerator 3 3 RED,BLUE,GREEN 10
 ### Solve a Puzzle
 
 ```bash
-# Run with default settings (8 threads, 30s report interval)
+# Run with default settings (2 threads, 30s report interval)
 java -cp target/classes org.gerken.harmony.HarmonySolver puzzle.txt
 
-# Recommended: Use 2-4 threads for better control and performance
-java -cp target/classes org.gerken.harmony.HarmonySolver -t 2 -r 10 puzzle.txt
+# Use more threads if needed
+java -cp target/classes org.gerken.harmony.HarmonySolver -t 4 -r 10 puzzle.txt
 
 # After packaging:
 java -jar target/harmony-solver-1.0-SNAPSHOT.jar -t 2 puzzle.txt
@@ -53,7 +53,7 @@ java -jar target/harmony-solver-1.0-SNAPSHOT.jar -t 2 puzzle.txt
 
 ### Command-Line Options
 
-- `-t <threads>`: Number of worker threads (default: 8, recommended: 2-4)
+- `-t <threads>`: Number of worker threads (default: 2)
 - `-r <seconds>`: Progress report interval in seconds (default: 30)
 
 ## Performance

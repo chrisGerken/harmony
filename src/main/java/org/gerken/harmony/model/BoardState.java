@@ -1,4 +1,4 @@
-package org.gerken.harmony;
+package org.gerken.harmony.model;
 
 import java.util.ArrayList;
 import java.util.Collections;
