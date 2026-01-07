@@ -250,6 +250,6 @@ public class PendingStates {
         long current = (oneMoveQueue != null) ? oneMoveQueue.size() : 0;
 
         // Calculate percentage: floor(current * 100 / all)
-        return (int) ((current * 100) / all);
+        return (int) (((all - current) * 100) / all);
     }
 }
