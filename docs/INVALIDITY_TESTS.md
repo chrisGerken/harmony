@@ -192,13 +192,114 @@ if (InvalidityTestCoordinator.getInstance().isInvalid(state)) {
 
 ## Implemented Tests
 
-### 1. StuckTileTest
+### 1. StuckTilesTest (Active)
 
-**File**: `src/main/java/org/gerken/harmony/StuckTileTest.java`
+**File**: `src/main/java/org/gerken/harmony/invalidity/StuckTilesTest.java`
+**Status**: Currently active in InvalidityTestCoordinator
+**Added**: 2026-01-08
 
 #### Purpose
 
-Detects a stuck tile scenario where a row has all tiles with the correct target color, but all tiles have 0 remaining moves except for exactly one tile with 1 remaining move. This is an impossible state to solve.
+Detects a stuck tiles scenario with **odd parity**: where a row has all tiles with the correct target color, all tiles have either 0 or 1 remaining moves, and there's an **odd number** of tiles with 1 remaining move. This is an impossible state to solve.
+
+This is a more comprehensive version of `StuckTileTest` that catches any odd number of stuck tiles (1, 3, 5, etc.), not just the single-tile case.
+
+#### Logic
+
+```java
+for (each row) {
+    int targetColor = board.getRowTargetColor(row);
+
+    boolean allColorsCorrect = true;
+    int tilesWithOneMoveCount = 0;
+    int tilesWithZeroMovesCount = 0;
+    int tilesWithOtherMovesCount = 0;
+
+    for (each tile in row) {
+        if (tile.getColor() != targetColor) {
+            allColorsCorrect = false;
+            break;
+        }
+
+        if (tile.getRemainingMoves() == 0) tilesWithZeroMovesCount++;
+        else if (tile.getRemainingMoves() == 1) tilesWithOneMoveCount++;
+        else tilesWithOtherMovesCount++;
+    }
+
+    // Check for odd parity
+    if (allColorsCorrect &&
+        tilesWithOtherMovesCount == 0 &&
+        tilesWithOneMoveCount > 0 &&
+        tilesWithOneMoveCount % 2 == 1) {
+        return true;  // Invalid - odd number of tiles with 1 move!
+    }
+}
+```
+
+#### Example 1: Three tiles with 1 move (odd)
+
+Row A needs RED tiles, has 4 columns:
+- A1: RED with 1 move
+- A2: RED with 1 move
+- A3: RED with 1 move
+- A4: RED with 0 moves
+
+This is **Invalid** because:
+- All tiles are the correct color
+- Three tiles have 1 move remaining (odd number)
+- Tiles can only swap within the row (swapping outside would break color constraint)
+- Each swap reduces two tiles from 1 move to 0 moves
+- 3 tiles cannot be paired off (3 ÷ 2 = 1 remainder)
+
+#### Example 2: Two tiles with 1 move (even) - Valid!
+
+Row A needs RED tiles, has 4 columns:
+- A1: RED with 1 move
+- A2: RED with 1 move
+- A3: RED with 0 moves
+- A4: RED with 0 moves
+
+This is **Valid** because:
+- Two tiles with 1 move can swap with each other
+- After the swap, both tiles will have 0 moves
+- Even number allows perfect pairing
+
+#### Why It Works
+
+When all tiles in a row have the correct color, they can only swap within the row (swapping outside would introduce the wrong color). Each swap reduces exactly two tiles' move counts by 1. Therefore:
+- **Even count** of tiles with 1 move → Can pair them all off → Solvable
+- **Odd count** of tiles with 1 move → Cannot pair them all off → Unsolvable
+
+This is a **parity problem**: an odd number minus pairs always leaves one unpaired.
+
+#### Optimization
+
+Only checks rows affected by the last move (not all rows), as only those rows could have transitioned to the stuck state.
+
+#### Performance
+
+⚡ **Very Fast**: O(N×M) - single pass over affected rows
+
+#### Comparison with StuckTileTest
+
+| Aspect | StuckTileTest (Old) | StuckTilesTest (New) |
+|--------|---------------------|----------------------|
+| Catches 1 tile with 1 move | ✅ Yes | ✅ Yes |
+| Catches 3 tiles with 1 move | ❌ No | ✅ Yes |
+| Catches 5 tiles with 1 move | ❌ No | ✅ Yes |
+| Allows 2 tiles with 1 move | ✅ Yes (valid) | ✅ Yes (valid) |
+| Allows 4 tiles with 1 move | ✅ Yes (valid) | ✅ Yes (valid) |
+| Status | Kept in codebase | **Active** |
+
+### 2. StuckTileTest (Legacy)
+
+**File**: `src/main/java/org/gerken/harmony/invalidity/StuckTileTest.java`
+**Status**: Kept in codebase but not active
+**Note**: Superseded by StuckTilesTest
+
+#### Purpose
+
+Detects a stuck tile scenario where a row has all tiles with the correct target color, but all tiles have 0 remaining moves except for **exactly one tile** with 1 remaining move. This is an impossible state to solve.
 
 #### Logic
 
@@ -257,9 +358,9 @@ This creates an unsolvable deadlock.
 
 ⚡ **Very Fast**: O(N×M) - single pass over board
 
-### 2. WrongRowZeroMovesTest
+### 3. WrongRowZeroMovesTest
 
-**File**: `src/main/java/org/gerken/harmony/WrongRowZeroMovesTest.java`
+**File**: `src/main/java/org/gerken/harmony/invalidity/WrongRowZeroMovesTest.java`
 
 #### Purpose
 
@@ -303,9 +404,9 @@ A tile with 0 moves cannot participate in any swaps. If it's in the wrong row fo
 
 ⚡ **Very Fast**: O(N×M) - single pass over board
 
-### 3. BlockedSwapTest
+### 4. BlockedSwapTest
 
-**File**: `src/main/java/org/gerken/harmony/BlockedSwapTest.java`
+**File**: `src/main/java/org/gerken/harmony/invalidity/BlockedSwapTest.java`
 
 #### Purpose
 
@@ -360,9 +461,81 @@ For a tile with 1 move to reach its target row, it must swap with the tile curre
 - For each tile with 1 move, finds target row: O(R)
 - Total: O(N×M×R)
 
+### 5. IsolatedTileTest
+
+**File**: `src/main/java/org/gerken/harmony/invalidity/IsolatedTileTest.java`
+
+#### Purpose
+
+Detects isolated tiles that have moves remaining but no valid swap partners. If a tile has moves remaining but no other tile in its row or column has moves remaining, it cannot use its moves, making the board invalid.
+
+#### Logic
+
+```java
+for (each row) {
+    for (each col) {
+        Tile tile = board.getTile(row, col);
+
+        if (tile.getRemainingMoves() > 0) {
+            // Check if any other tile in same row has moves
+            boolean hasRowPartner = false;
+            for (each other column in row) {
+                if (board.getTile(row, otherCol).getRemainingMoves() > 0) {
+                    hasRowPartner = true;
+                    break;
+                }
+            }
+
+            // Check if any other tile in same column has moves
+            boolean hasColPartner = false;
+            for (each other row in column) {
+                if (board.getTile(otherRow, col).getRemainingMoves() > 0) {
+                    hasColPartner = true;
+                    break;
+                }
+            }
+
+            // If tile has no valid swap partners, board is invalid
+            if (!hasRowPartner && !hasColPartner) {
+                return true;
+            }
+        }
+    }
+}
+```
+
+#### Example
+
+Row A needs RED, Row B needs BLUE:
+- A1: RED with 2 moves
+- A2: RED with 0 moves
+- B1: BLUE with 0 moves
+- B2: RED with 0 moves
+
+This is **Invalid** because:
+- A1 has 2 moves remaining
+- No other tile in row A has moves (A2 has 0)
+- No other tile in column 1 has moves (B1 has 0)
+- A1 cannot use its 2 moves (no valid swap partners)
+- The puzzle cannot reach a state where all tiles have 0 moves
+
+#### Why It Works
+
+For a tile to reduce its move count, it must swap with another tile. The other tile must also have moves remaining. If a tile has moves but no potential swap partners (no other tiles with moves in its row or column), it's stuck with non-zero moves forever.
+
+#### Performance
+
+⚡ **Fast**: O(N×M×(N+M)) - for each tile, checks row and column
+- Best case: O(N×M) when partners found quickly
+- Worst case: O(N×M×(N+M)) when checking all positions
+
 ## Historical Note
 
-Initial test implementations (TooManyMovesTest, ImpossibleColorAlignmentTest, InsufficientMovesTest) were developed but removed because they were too aggressive and pruned valid solution paths. The current three tests (StuckTileTest, WrongRowZeroMovesTest, BlockedSwapTest) are more conservative and only prune genuinely impossible states.
+Initial test implementations (TooManyMovesTest, ImpossibleColorAlignmentTest, InsufficientMovesTest) were developed but removed because they were too aggressive and pruned valid solution paths.
+
+The current active tests (StuckTilesTest, WrongRowZeroMovesTest, BlockedSwapTest, IsolatedTileTest) are more conservative and only prune genuinely impossible states. They collectively provide 35-37% pruning on typical puzzles without eliminating valid solution paths.
+
+**2026-01-08 Update**: StuckTilesTest (odd parity version) replaced StuckTileTest as the active test, providing more comprehensive detection of stuck tile scenarios.
 
 ## Adding New Tests
 

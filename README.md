@@ -98,11 +98,13 @@ Based on testing with depth-first search, intelligent move filtering, and invali
   - Last-move filtering: Prevents tiles from wasting final moves on non-productive swaps
 - **Multi-threaded Processing**: Configurable thread pool for parallel state exploration
 - **Thread-Local Caching**: Near-solution states cached per-thread to reduce queue contention (configurable threshold)
-- **Smart Pruning**: 4 invalidity tests eliminate impossible states early
-  - StuckTileTest: Detects rows with unsolvable tile configurations
+- **Smart Pruning**: 4 invalidity tests eliminate impossible states early (35-37% pruning rate)
+  - StuckTilesTest: Detects odd parity scenarios (odd number of tiles with 1 move in correct-color rows)
   - WrongRowZeroMovesTest: Catches tiles stuck in wrong rows with no moves
   - BlockedSwapTest: Identifies tiles blocked from reaching target positions
   - IsolatedTileTest: Detects tiles with moves but no valid swap partners
+- **Compact Progress Display**: Human-readable number formatting (123.5M, 2.4B) for better readability
+- **Optimized Color Lookups**: O(1) HashMap-based color-to-row mapping for performance
 - **Thread-Safe Design**: PendingStates container encapsulates all state management
 - **Progress Reporting**: Configurable periodic status updates (default: 30 seconds)
 - **Efficient Color Representation**: Integer-based colors for fast comparisons and low memory usage

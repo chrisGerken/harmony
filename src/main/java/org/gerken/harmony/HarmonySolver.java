@@ -74,6 +74,7 @@ public class HarmonySolver {
             System.out.println("Puzzle loaded successfully.");
             System.out.println("Board size: " + initialState.getBoard().getRowCount() +
                              "x" + initialState.getBoard().getColumnCount());
+            System.out.println("Moves required: " + initialState.getRemainingMoves());
             System.out.println();
 
             // Check if already solved

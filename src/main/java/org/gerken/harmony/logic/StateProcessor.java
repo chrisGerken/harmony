@@ -7,7 +7,9 @@ import org.gerken.harmony.model.Move;
 import org.gerken.harmony.model.Tile;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Worker thread that processes board states from the queue.
@@ -131,6 +133,9 @@ public class StateProcessor implements Runnable {
         int rows = board.getRowCount();
         int cols = board.getColumnCount();
 
+        // Build color-to-row mapping once for O(1) lookup performance
+        Map<Integer, Integer> colorToTargetRow = buildColorToRowMap(board);
+
         // Generate all row swaps
         for (int row = 0; row < rows; row++) {
             for (int col1 = 0; col1 < cols; col1++) {
@@ -207,9 +212,14 @@ public class StateProcessor implements Runnable {
             Tile tile1 = board.getTile(row1, col1);
             Tile tile2 = board.getTile(row2, col2);
 
-            // Find the target row for each tile's color
-            int targetRowForTile1 = findTargetRowForColor(board, tile1.getColor());
-            int targetRowForTile2 = findTargetRowForColor(board, tile2.getColor());
+            // Find the target row for each tile's color using O(1) HashMap lookup
+            Integer targetRowForTile1 = colorToTargetRow.get(tile1.getColor());
+            Integer targetRowForTile2 = colorToTargetRow.get(tile2.getColor());
+
+            // Handle case where color not found (shouldn't happen in valid puzzles)
+            if (targetRowForTile1 == null || targetRowForTile2 == null) {
+                continue;
+            }
 
             boolean shouldInclude = true;
 
@@ -232,16 +242,19 @@ public class StateProcessor implements Runnable {
     }
 
     /**
-     * Finds which row has the given color as its target.
-     * Returns -1 if no row has this color as target.
+     * Builds a HashMap mapping color IDs to their target row indices.
+     * This enables O(1) lookup performance instead of O(n) iteration.
+     *
+     * @param board the board to build mapping for
+     * @return map from color ID to target row index
      */
-    private int findTargetRowForColor(Board board, int color) {
+    private Map<Integer, Integer> buildColorToRowMap(Board board) {
+        Map<Integer, Integer> colorToRow = new HashMap<>();
         for (int row = 0; row < board.getRowCount(); row++) {
-            if (board.getRowTargetColor(row) == color) {
-                return row;
-            }
+            int targetColor = board.getRowTargetColor(row);
+            colorToRow.put(targetColor, row);
         }
-        return -1; // Color not found (shouldn't happen in valid puzzles)
+        return colorToRow;
     }
 
     /**

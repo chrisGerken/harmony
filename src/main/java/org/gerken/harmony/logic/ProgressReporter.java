@@ -66,18 +66,39 @@ public class ProgressReporter implements Runnable {
 
         // Format and print progress
         System.out.printf(
-            "[%s] Processed: %,d | Queue: %,d | Complete: %d%% | Generated: %,d | Pruned: %,d (%.1f%%) | " +
+            "[%s] Processed: %s | Queue: %s | Complete: %d%% | Generated: %s | Pruned: %s (%.1f%%) | " +
             "Rate: %.1f states/s | ETA: %s%n",
             formatDuration(elapsedSeconds),
-            processed,
-            queueSize,
+            formatCount(processed),
+            formatCount(queueSize),
             percentComplete,
-            generated,
-            pruned,
+            formatCount(generated),
+            formatCount(pruned),
             pruneRate,
             statesPerSecond,
             eta
         );
+    }
+
+    /**
+     * Formats a count with compact suffixes (T, B, M, K) with exactly one decimal place.
+     * Examples: 123456789 → "123.5M", 5432 → "5.4K", 123 → "123"
+     *
+     * @param count the count to format
+     * @return formatted string with suffix
+     */
+    private String formatCount(long count) {
+        if (count >= 1_000_000_000_000L) {
+            return String.format("%.1fT", count / 1_000_000_000_000.0);
+        } else if (count >= 1_000_000_000L) {
+            return String.format("%.1fB", count / 1_000_000_000.0);
+        } else if (count >= 1_000_000L) {
+            return String.format("%.1fM", count / 1_000_000.0);
+        } else if (count >= 1_000L) {
+            return String.format("%.1fK", count / 1_000.0);
+        } else {
+            return String.valueOf(count);
+        }
     }
 
     /**
@@ -117,9 +138,9 @@ public class ProgressReporter implements Runnable {
         System.out.println(foundSolution ? "SOLUTION FOUND!" : "Search complete");
         System.out.println("=".repeat(80));
         System.out.printf("Total time:        %s%n", formatDuration(elapsedSeconds));
-        System.out.printf("States processed:  %,d%n", processed);
-        System.out.printf("States generated:  %,d%n", generated);
-        System.out.printf("States pruned:     %,d (%.1f%%)%n", pruned, pruneRate);
+        System.out.printf("States processed:  %s%n", formatCount(processed));
+        System.out.printf("States generated:  %s%n", formatCount(generated));
+        System.out.printf("States pruned:     %s (%.1f%%)%n", formatCount(pruned), pruneRate);
         System.out.printf("Processing rate:   %.1f states/second%n", statesPerSecond);
         System.out.println("=".repeat(80));
     }

@@ -4,27 +4,30 @@ This document details the optimization strategies implemented in the Harmony Puz
 
 ## Overview
 
-The solver employs five complementary optimization strategies that work together to dramatically reduce the search space and improve performance:
+The solver employs six complementary optimization strategies that work together to dramatically reduce the search space and improve performance:
 
 1. **Invalidity Tests** - Prune impossible states after generation
 2. **Perfect Swap Detection** - Force optimal endgame moves
 3. **Move Filtering** - Eliminate wasteful moves before generation
 4. **Thread-Local Caching** - Reduce contention on shared queues *(Added: 2026-01-08)*
 5. **Cached State Metrics** - Avoid recalculating remaining moves *(Added: 2026-01-08)*
+6. **HashMap Color Lookups** - O(1) color-to-row mapping *(Added: 2026-01-08)*
 
 ## 1. Invalidity Tests
 
 Four invalidity tests identify board states that cannot lead to solutions. These tests run after a state is generated but before successor states are explored.
 
-### StuckTileTest
+### StuckTilesTest *(Updated: 2026-01-08)*
 
-**Detects:** Rows where all tiles have correct colors but one tile has 1 remaining move and all others have 0.
+**Detects:** Rows where all tiles have correct colors, all tiles have 0 or 1 remaining moves, and there's an **odd number** of tiles with 1 remaining move.
 
-**Why Invalid:** The tile with 1 move cannot reduce to 0 without:
-- Breaking the row (swapping within row impossible - other tiles have 0 moves)
-- Bringing in wrong color (swapping to another row)
+**Why Invalid:** When all tiles have correct colors, they can only swap within the row (swapping outside introduces wrong colors). Each swap reduces two tiles from 1 move to 0. An odd number of tiles with 1 move cannot all be paired off - one will always remain.
+
+**Example:** 3 tiles with 1 move cannot all reach 0 (3 ÷ 2 = 1 remainder).
 
 **Optimization:** Only checks rows affected by the last move.
+
+**Improvement over StuckTileTest:** The original StuckTileTest only caught the case of exactly 1 tile with 1 move. StuckTilesTest catches any odd number (1, 3, 5, etc.), providing more comprehensive pruning.
 
 ### WrongRowZeroMovesTest
 
@@ -261,6 +264,75 @@ public BoardState applyMove(Move move) {
 - **Benefit scales**: More significant on larger boards (4x4, 5x5, 6x6)
 
 On a 4x4 board generating millions of states, this optimization eliminates billions of tile iterations.
+
+## 6. HashMap Color Lookups *(Added: 2026-01-08)*
+
+### Problem
+
+During move generation with last-move filtering, the solver needs to find which row has a given color as its target. The original implementation used linear search through all rows:
+
+```java
+private int findTargetRowForColor(Board board, int color) {
+    for (int row = 0; row < board.getRowCount(); row++) {
+        if (board.getRowTargetColor(row) == color) {
+            return row;
+        }
+    }
+    return -1;
+}
+```
+
+For a board with `r` rows and `m` moves to evaluate, this created O(m × r) overhead for every board state processed.
+
+### Solution
+
+Build a HashMap once per board to map colors to their target rows:
+
+```java
+private Map<Integer, Integer> buildColorToRowMap(Board board) {
+    Map<Integer, Integer> colorToRow = new HashMap<>();
+    for (int row = 0; row < board.getRowCount(); row++) {
+        int targetColor = board.getRowTargetColor(row);
+        colorToRow.put(targetColor, row);
+    }
+    return colorToRow;
+}
+```
+
+Then use O(1) lookups instead of O(r) searches:
+
+```java
+private List<Move> generateAllMoves(Board board) {
+    // Build map once
+    Map<Integer, Integer> colorToTargetRow = buildColorToRowMap(board);
+
+    // ... generate moves ...
+
+    // O(1) lookup instead of O(r) search
+    Integer targetRow = colorToTargetRow.get(tile.getColor());
+}
+```
+
+### Performance Impact
+
+**Complexity Improvement:**
+- **Before**: O(m × r) for all color lookups
+- **After**: O(r + m) - build map once O(r), then O(1) per lookup
+
+**Example**: For a 6x6 board (r=6) evaluating 100 moves (m=100):
+- **Before**: 100 × 6 = 600 operations
+- **After**: 6 + 100 = 106 operations
+- **Improvement**: 5.7× faster
+
+**Benefits Scale**:
+- More significant for larger boards (4x4, 5x5, 6x6)
+- Called once per `generateAllMoves()`, which processes millions of states
+- On complex puzzles, eliminates tens of millions of linear searches
+
+### Code Location
+
+- **File**: `StateProcessor.java`
+- **Method**: `buildColorToRowMap()` (new), `generateAllMoves()` (updated)
 
 ## Future Optimization Opportunities
 
