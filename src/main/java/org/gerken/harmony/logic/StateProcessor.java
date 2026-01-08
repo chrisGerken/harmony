@@ -246,7 +246,8 @@ public class StateProcessor implements Runnable {
 
     /**
      * Gets the next board state to process.
-     * First checks the local cache for near-solution states (< 4 moves remaining).
+     * First checks the local cache for near-solution states (< cacheThreshold moves remaining).
+     * Uses LIFO (stack) order to maintain depth-first search behavior and minimize cache growth.
      * If cache is empty, polls from the shared pending states queue.
      * This reduces contention on the shared ConcurrentLinkedQueue.
      *
@@ -254,7 +255,7 @@ public class StateProcessor implements Runnable {
      */
     private BoardState getNextBoardState() {
         if (!cache.isEmpty()) {
-            return cache.remove(0);
+            return cache.remove(cache.size() - 1);  // LIFO: process most recent state
         }
         return pendingStates.poll();
     }

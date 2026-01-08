@@ -194,8 +194,12 @@ Represents a node in the search space - a board configuration plus the sequence 
 public class BoardState {
     private final Board board;           // Current board configuration
     private final List<Move> moves;      // Sequence of moves from original state
+    private final int remainingMoves;    // Cached count (sum of tile moves / 2)
 }
 ```
+
+**Optimization Note** (Added 2026-01-08):
+The `remainingMoves` field is cached to avoid recalculating on every state. For the original board state, it's computed by summing all tiles' remaining moves and dividing by 2. For successor states, it's simply decremented by 1 (since each move decrements two tiles by 1 each, net effect is -1 remaining move).
 
 ### Key Methods
 
@@ -206,6 +210,7 @@ public class BoardState {
 | `getBoard()` | `Board` | Current board configuration |
 | `getMoves()` | `List<Move>` | Unmodifiable list of moves taken |
 | `getMoveCount()` | `int` | Number of moves taken |
+| `getRemainingMoves()` | `int` | Cached count of remaining moves |
 | `isSolved()` | `boolean` | Delegates to `board.isSolved()` |
 
 #### Operations
@@ -224,8 +229,10 @@ Move move = new Move(0, 0, 0, 1);
 
 BoardState next = current.applyMove(move);
 // current is unchanged
-// next has updated board and move history
+// next has updated board, move history, and remainingMoves - 1
 ```
+
+**Performance**: The `applyMove()` method uses a private constructor that accepts a pre-calculated `remainingMoves` value, avoiding the need to iterate through all tiles on every state transition. This provides significant performance gains on large puzzles.
 
 ### Search Space
 

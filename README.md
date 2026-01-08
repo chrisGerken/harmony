@@ -61,6 +61,7 @@ java -jar target/harmony-solver-1.0-SNAPSHOT.jar puzzle.txt
 
 - `-t <threads>`: Number of worker threads (default: 2)
 - `-r <seconds>`: Progress report interval in seconds (default: 30)
+- `-c <threshold>`: Cache threshold for near-solution states (default: 4)
 
 ## Performance
 
@@ -96,6 +97,7 @@ Based on testing with depth-first search, intelligent move filtering, and invali
   - Perfect swap detection: Forces optimal endgame moves
   - Last-move filtering: Prevents tiles from wasting final moves on non-productive swaps
 - **Multi-threaded Processing**: Configurable thread pool for parallel state exploration
+- **Thread-Local Caching**: Near-solution states cached per-thread to reduce queue contention (configurable threshold)
 - **Smart Pruning**: 4 invalidity tests eliminate impossible states early
   - StuckTileTest: Detects rows with unsolvable tile configurations
   - WrongRowZeroMovesTest: Catches tiles stuck in wrong rows with no moves
@@ -104,6 +106,7 @@ Based on testing with depth-first search, intelligent move filtering, and invali
 - **Thread-Safe Design**: PendingStates container encapsulates all state management
 - **Progress Reporting**: Configurable periodic status updates (default: 30 seconds)
 - **Efficient Color Representation**: Integer-based colors for fast comparisons and low memory usage
+- **Cached State Metrics**: Remaining moves cached in BoardState, computed once and decremented per move
 - **Puzzle Generator**: Create guaranteed-solvable puzzles of any difficulty
 - **Command-Line Interface**: No GUI dependencies, runs anywhere Java is available
 

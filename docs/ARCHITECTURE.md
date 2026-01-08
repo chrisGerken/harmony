@@ -210,26 +210,37 @@ public class PendingStates {
 ### Worker Thread Pattern
 
 Each worker is a `Runnable` that:
-1. Polls from PendingStates (gets from deepest queue)
+1. Polls next state (checks thread-local cache first, then PendingStates)
 2. Processes the state independently
-3. Adds new states back to PendingStates (routed by depth)
-4. No shared mutable state between workers
+3. Stores new states (local cache if < threshold moves, else PendingStates)
+4. No shared mutable state between workers (except PendingStates coordination)
 5. Coordinates via PendingStates methods
+
+**Thread-Local Caching** (Added 2026-01-08):
+- Each worker maintains a private `ArrayList<BoardState>` cache
+- Near-solution states (remaining moves < configurable threshold, default 4) cached locally
+- Uses LIFO (stack) order to maintain depth-first behavior and minimize cache growth
+- Significantly reduces contention on shared `ConcurrentLinkedQueue` instances
+- Improves scalability as thread count increases
 
 ### Configuration
 
 - **Thread Count**: Configurable via command-line argument (`-t <threads>`)
-- **Default**: 2 threads
-- **Reasoning**: Predictable behavior across machines, resource control
+  - **Default**: 2 threads
+  - **Reasoning**: Predictable behavior across machines, resource control
+- **Cache Threshold**: Configurable via command-line argument (`-c <threshold>`)
+  - **Default**: 4 moves remaining
+  - **Reasoning**: Balance between reducing contention and maintaining work distribution
 
 ### Queue Operations
 
 ```java
-// Worker pseudo-code (simplified)
+// Worker pseudo-code (simplified, updated 2026-01-08)
 while (!pendingStates.isSolutionFound()) {
-    BoardState state = pendingStates.poll(); // Gets from deepest queue
+    // Check local cache first (LIFO), then shared queue
+    BoardState state = getNextBoardState();
     if (state == null) {
-        // All queues empty - wait or exit
+        // Cache and queues empty - wait or exit
         Thread.sleep(100);
         continue;
     }
@@ -239,8 +250,17 @@ while (!pendingStates.isSolutionFound()) {
         return;
     }
 
-    processState(state); // Generates new states, adds via pendingStates.add()
+    processState(state); // Generates new states, stores via storeBoardState()
     pendingStates.incrementStatesProcessed();
+}
+
+// Storage decision based on remaining moves
+private void storeBoardState(BoardState state) {
+    if (state.getRemainingMoves() < cacheThreshold) {
+        cache.add(state);  // Keep locally
+    } else {
+        pendingStates.add(state);  // Share globally
+    }
 }
 ```
 

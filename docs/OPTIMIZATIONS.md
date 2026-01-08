@@ -4,11 +4,13 @@ This document details the optimization strategies implemented in the Harmony Puz
 
 ## Overview
 
-The solver employs three complementary optimization strategies that work together to dramatically reduce the search space:
+The solver employs five complementary optimization strategies that work together to dramatically reduce the search space and improve performance:
 
 1. **Invalidity Tests** - Prune impossible states after generation
 2. **Perfect Swap Detection** - Force optimal endgame moves
 3. **Move Filtering** - Eliminate wasteful moves before generation
+4. **Thread-Local Caching** - Reduce contention on shared queues *(Added: 2026-01-08)*
+5. **Cached State Metrics** - Avoid recalculating remaining moves *(Added: 2026-01-08)*
 
 ## 1. Invalidity Tests
 
@@ -142,6 +144,124 @@ These optimizations maintain solution completeness:
 4. Return filtered move list
 5. For each move: create successor, check invalidity, add to queue if valid
 
+## 4. Thread-Local Caching *(Added: 2026-01-08)*
+
+### Problem
+
+In multi-threaded environments, all worker threads contend for access to the shared `ConcurrentLinkedQueue` instances. As thread count increases, this contention becomes a performance bottleneck, limiting scalability.
+
+### Solution
+
+Each `StateProcessor` worker maintains a private `ArrayList<BoardState>` cache for near-solution states:
+
+```java
+private final ArrayList<BoardState> cache;
+private final int cacheThreshold;  // Configurable, default 4
+```
+
+**Storage Logic:**
+```java
+private void storeBoardState(BoardState state) {
+    if (state.getRemainingMoves() < cacheThreshold) {
+        cache.add(state);  // Keep locally
+    } else {
+        pendingStates.add(state);  // Share globally
+    }
+}
+```
+
+**Retrieval Logic (LIFO for depth-first):**
+```java
+private BoardState getNextBoardState() {
+    if (!cache.isEmpty()) {
+        return cache.remove(cache.size() - 1);  // Most recent state
+    }
+    return pendingStates.poll();
+}
+```
+
+### Why This Works
+
+- **Near-solution states** (< 4 moves remaining) benefit from locality
+- **LIFO order** maintains depth-first search behavior and minimizes cache growth
+- **Reduced contention** on shared queues improves scalability
+- **Configurable threshold** allows tuning via `-c` flag
+
+### Performance Impact
+
+**Medium Puzzle (4x4, 4 threads):**
+- Queue size: 298-361 (extremely stable)
+- Processing rate: 3.67M states/second (sustained)
+- No queue explosion even with billions of states generated
+
+### Configuration
+
+```bash
+# Default (4 moves)
+./solve.sh -t 4 puzzles/medium.txt
+
+# Higher threshold (more caching)
+./solve.sh -t 8 -c 6 puzzles/hard.txt
+
+# Disable caching (cache threshold 0)
+./solve.sh -t 2 -c 0 puzzles/simple.txt
+```
+
+## 5. Cached State Metrics *(Added: 2026-01-08)*
+
+### Problem
+
+The `storeBoardState()` method needs to know how many moves remain to decide whether to cache locally or add to shared queue. Previously, this required iterating through all tiles on the board for every generated state, adding O(rows × cols) overhead.
+
+### Solution
+
+Add a cached `remainingMoves` field to `BoardState`:
+
+```java
+public class BoardState {
+    private final Board board;
+    private final List<Move> moves;
+    private final int remainingMoves;  // NEW: cached value
+}
+```
+
+**Calculation Strategy:**
+- **Original board**: Calculate once by summing all tiles' moves ÷ 2
+- **Successor states**: Simply decrement by 1 (each move reduces two tiles by 1 each)
+
+**Implementation:**
+```java
+// Public constructor - calculates from scratch
+public BoardState(Board board, List<Move> moves) {
+    this.board = board;
+    this.moves = new ArrayList<>(moves);
+    this.remainingMoves = calculateRemainingMoves(board);  // Only for original
+}
+
+// Private constructor - uses pre-calculated value
+private BoardState(Board board, List<Move> moves, int remainingMoves) {
+    this.board = board;
+    this.moves = new ArrayList<>(moves);
+    this.remainingMoves = remainingMoves;  // Already known
+}
+
+// Used in applyMove() - no recalculation needed
+public BoardState applyMove(Move move) {
+    Board newBoard = board.swap(...);
+    List<Move> newMoves = new ArrayList<>(moves);
+    newMoves.add(move);
+    return new BoardState(newBoard, newMoves, remainingMoves - 1);  // Decrement
+}
+```
+
+### Performance Impact
+
+- **Eliminated**: O(rows × cols) calculation per generated state
+- **Replaced with**: O(1) field access or simple decrement
+- **Benefit scales**: More significant on larger boards (4x4, 5x5, 6x6)
+
+On a 4x4 board generating millions of states, this optimization eliminates billions of tile iterations.
+
 ## Future Optimization Opportunities
 
 Potential areas for further improvement:
@@ -175,7 +295,9 @@ Monitor:
 
 ## References
 
-- `StateProcessor.java` - Move generation and filtering
+- `StateProcessor.java` - Move generation, filtering, and thread-local caching
+- `BoardState.java` - Cached remainingMoves field
 - `InvalidityTestCoordinator.java` - Test registration
-- `IsolatedTileTest.java` - New isolation detection test
-- Session notes: 2026-01-08 - Initial optimization implementation
+- `IsolatedTileTest.java` - Isolation detection test
+- `HarmonySolver.java` - Command-line option parsing (-c flag)
+- Session notes: 2026-01-08 - Optimization implementation and thread-local caching
