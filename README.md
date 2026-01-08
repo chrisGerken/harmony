@@ -64,22 +64,26 @@ java -jar target/harmony-solver-1.0-SNAPSHOT.jar puzzle.txt
 
 ## Performance
 
-Based on testing with depth-first search and invalidity tests:
+Based on testing with depth-first search, intelligent move filtering, and invalidity tests:
 
-| Puzzle Size | Moves | Solve Time | States Processed | Pruning Rate | Memory Usage |
-|-------------|-------|------------|------------------|--------------|--------------|
-| 2x2         | 3     | <1s        | ~3-4             | ~20-60%      | Very Low     |
-| 3x3         | 10    | <5s        | Varies           | ~40-70%      | Low          |
-| 4x4         | 8     | <2s        | Varies           | ~40-70%      | Manageable   |
-| 6x6         | Varies| Depends    | Varies           | ~40-70%      | Manageable   |
+| Puzzle Size | Moves | Solve Time | States Generated | Pruning Rate | Notes |
+|-------------|-------|------------|------------------|--------------|-------|
+| 2x2         | 3     | <1s        | 3-4              | 0% (optimal) | Only generates solution path |
+| 3x3         | 10    | <1s        | ~36K             | ~31%         | 90% reduction from unfiltered |
+| 4x4         | 8     | <1s        | ~30              | 0% (optimal) | Highly optimized path |
+| 4x4         | 10+   | Minutes+   | Millions         | ~35%         | Complex, benefits from filtering |
+| 5x5         | Varies| Extended   | Billions         | ~35-38%      | Very large search space |
 
-**Note**: Depth-first strategy significantly reduces memory usage by processing deeper states first, keeping queue sizes manageable even for large puzzles.
+**Optimization Impact**: Move filtering reduces generated states by up to 91% on complex puzzles by eliminating wasteful moves before they enter the search space. Queue sizes remain stable (300-1,200 states) even on difficult puzzles.
+
+**Note**: Depth-first strategy combined with move filtering significantly reduces memory usage and focuses search on high-quality candidate moves.
 
 ## Documentation
 
 - **[Architecture](docs/ARCHITECTURE.md)** - System design and technical approach
 - **[Data Models](docs/DATA_MODELS.md)** - Core classes: Tile, Board, Move, BoardState
 - **[Invalidity Tests](docs/INVALIDITY_TESTS.md)** - Pruning system for invalid board states
+- **[Optimizations](docs/OPTIMIZATIONS.md)** - Move filtering and search optimizations (NEW)
 - **[Development Guide](docs/DEVELOPMENT.md)** - Building, testing, and extending the solver
 - **[Original Design](DESIGN.md)** - Initial design specifications
 - **[Refactoring Notes](REFACTORING_NOTES.md)** - Recent code reorganization and optimizations
@@ -88,8 +92,15 @@ Based on testing with depth-first search and invalidity tests:
 ## Key Features
 
 - **Depth-First Search**: Multiple queues organized by move depth prevent memory explosion
+- **Intelligent Move Filtering**: Eliminates wasteful moves before generation (up to 91% reduction)
+  - Perfect swap detection: Forces optimal endgame moves
+  - Last-move filtering: Prevents tiles from wasting final moves on non-productive swaps
 - **Multi-threaded Processing**: Configurable thread pool for parallel state exploration
-- **Intelligent Pruning**: Multiple invalidity tests eliminate impossible states early
+- **Smart Pruning**: 4 invalidity tests eliminate impossible states early
+  - StuckTileTest: Detects rows with unsolvable tile configurations
+  - WrongRowZeroMovesTest: Catches tiles stuck in wrong rows with no moves
+  - BlockedSwapTest: Identifies tiles blocked from reaching target positions
+  - IsolatedTileTest: Detects tiles with moves but no valid swap partners
 - **Thread-Safe Design**: PendingStates container encapsulates all state management
 - **Progress Reporting**: Configurable periodic status updates (default: 30 seconds)
 - **Efficient Color Representation**: Integer-based colors for fast comparisons and low memory usage
@@ -159,7 +170,8 @@ harmony/
         ├── InvalidityTestCoordinator.java
         ├── StuckTileTest.java
         ├── WrongRowZeroMovesTest.java
-        └── BlockedSwapTest.java
+        ├── BlockedSwapTest.java
+        └── IsolatedTileTest.java
 ```
 
 ## Technology Stack

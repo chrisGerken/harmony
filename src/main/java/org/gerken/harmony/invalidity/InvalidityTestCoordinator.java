@@ -14,6 +14,7 @@ import java.util.List;
  * 1. StuckTileTest - Detects rows with all correct colors but one tile with 1 move stuck
  * 2. WrongRowZeroMovesTest - Detects tiles with 0 moves in wrong row (cannot move to correct row)
  * 3. BlockedSwapTest - Detects tiles with 1 move blocked by 0-move tiles in target position
+ * 4. IsolatedTileTest - Detects tiles with moves remaining but no valid swap partners
  *
  * These tests provide 40-70% pruning rate (varies by puzzle) without eliminating valid solution paths.
  * Historical note: Initial tests (TooManyMovesTest, ImpossibleColorAlignmentTest, InsufficientMovesTest)
@@ -33,6 +34,7 @@ public class InvalidityTestCoordinator {
         testList.add(StuckTileTest.getInstance());
         testList.add(WrongRowZeroMovesTest.getInstance());
         testList.add(BlockedSwapTest.getInstance());
+        testList.add(IsolatedTileTest.getInstance());
 
         this.tests = Collections.unmodifiableList(testList);
     }
