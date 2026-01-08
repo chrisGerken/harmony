@@ -48,6 +48,7 @@ public class HarmonySolver {
 
     private static final int DEFAULT_THREAD_COUNT = 2;
     private static final int DEFAULT_REPORT_INTERVAL = 30; // seconds
+    private static final int DEFAULT_CACHE_THRESHOLD = 4; // moves remaining
 
     /**
      * Main entry point for the solver.
@@ -123,7 +124,7 @@ public class HarmonySolver {
 
         System.out.println("Starting " + config.threadCount + " worker threads...");
         for (int i = 0; i < config.threadCount; i++) {
-            StateProcessor processor = new StateProcessor(pendingStates);
+            StateProcessor processor = new StateProcessor(pendingStates, config.cacheThreshold);
             processors.add(processor);
             workerPool.submit(processor);
         }
@@ -225,6 +226,21 @@ public class HarmonySolver {
                     System.err.println("Error: invalid report interval: " + args[i]);
                     return null;
                 }
+            } else if (arg.equals("-c") || arg.equals("--cache")) {
+                if (i + 1 >= args.length) {
+                    System.err.println("Error: " + arg + " requires a value");
+                    return null;
+                }
+                try {
+                    config.cacheThreshold = Integer.parseInt(args[++i]);
+                    if (config.cacheThreshold < 0) {
+                        System.err.println("Error: cache threshold must be non-negative");
+                        return null;
+                    }
+                } catch (NumberFormatException e) {
+                    System.err.println("Error: invalid cache threshold: " + args[i]);
+                    return null;
+                }
             } else if (arg.equals("-h") || arg.equals("--help")) {
                 return null; // Will trigger usage message
             } else if (arg.startsWith("-")) {
@@ -260,10 +276,11 @@ public class HarmonySolver {
         System.out.println("Options:");
         System.out.println("  -t, --threads <N>     Number of worker threads (default: 2)");
         System.out.println("  -r, --report <N>      Progress report interval in seconds (default: 30)");
+        System.out.println("  -c, --cache <N>       Cache threshold for near-solution states (default: 4)");
         System.out.println("  -h, --help            Show this help message");
         System.out.println();
         System.out.println("Example:");
-        System.out.println("  java -jar harmony-solver.jar -t 8 -r 10 puzzle.txt");
+        System.out.println("  java -jar harmony-solver.jar -t 8 -r 10 -c 6 puzzle.txt");
     }
 
     /**
@@ -277,6 +294,7 @@ public class HarmonySolver {
         System.out.println("Configuration:");
         System.out.println("  Threads: " + config.threadCount);
         System.out.println("  Report interval: " + config.reportInterval + " seconds");
+        System.out.println("  Cache threshold: " + config.cacheThreshold + " moves");
         System.out.println("  Invalidity tests: " +
             InvalidityTestCoordinator.getInstance().getTestCount());
         System.out.println("=".repeat(80));
@@ -290,5 +308,6 @@ public class HarmonySolver {
         String puzzleFile;
         int threadCount = DEFAULT_THREAD_COUNT;
         int reportInterval = DEFAULT_REPORT_INTERVAL;
+        int cacheThreshold = DEFAULT_CACHE_THRESHOLD;
     }
 }

@@ -18,28 +18,42 @@ public class StateProcessor implements Runnable {
     private final PendingStates pendingStates;
     private final InvalidityTestCoordinator coordinator;
     private final long pollTimeoutMs;
+    private final ArrayList<BoardState> cache;
+    private final int cacheThreshold;
 
     /**
-     * Creates a new state processor.
+     * Creates a new state processor with default cache threshold of 4.
      *
      * @param pendingStates the shared container of pending states and statistics
      */
     public StateProcessor(PendingStates pendingStates) {
+        this(pendingStates, 4);
+    }
+
+    /**
+     * Creates a new state processor with configurable cache threshold.
+     *
+     * @param pendingStates the shared container of pending states and statistics
+     * @param cacheThreshold states with fewer than this many moves are cached locally
+     */
+    public StateProcessor(PendingStates pendingStates, int cacheThreshold) {
         this.pendingStates = pendingStates;
         this.coordinator = InvalidityTestCoordinator.getInstance();
         this.pollTimeoutMs = 100; // Short timeout to check solution flag
+        this.cache = new ArrayList<>();
+        this.cacheThreshold = cacheThreshold;
     }
 
     @Override
     public void run() {
         try {
             while (!pendingStates.isSolutionFound()) {
-                BoardState state = pendingStates.poll();
+                BoardState state = getNextBoardState();
 
                 // If queue is empty, wait a bit before checking again
                 if (state == null) {
-                    // Check if queue is truly empty and no more work will be added
-                    if (pendingStates.isEmpty()) {
+                    // Check if both cache and queue are truly empty and no more work will be added
+                    if (cache.isEmpty() && pendingStates.isEmpty()) {
                         Thread.sleep(pollTimeoutMs);
                         continue;
                     }
@@ -90,8 +104,8 @@ public class StateProcessor implements Runnable {
                 continue;
             }
 
-            // Valid state - add to queue for processing
-            pendingStates.add(nextState);
+            // Valid state - add to cache or queue for processing
+            storeBoardState(nextState);
         }
     }
 
@@ -228,5 +242,40 @@ public class StateProcessor implements Runnable {
             }
         }
         return -1; // Color not found (shouldn't happen in valid puzzles)
+    }
+
+    /**
+     * Gets the next board state to process.
+     * First checks the local cache for near-solution states (< 4 moves remaining).
+     * If cache is empty, polls from the shared pending states queue.
+     * This reduces contention on the shared ConcurrentLinkedQueue.
+     *
+     * @return the next board state to process, or null if no states available
+     */
+    private BoardState getNextBoardState() {
+        if (!cache.isEmpty()) {
+            return cache.remove(0);
+        }
+        return pendingStates.poll();
+    }
+
+    /**
+     * Stores a board state either in the local cache or the shared queue.
+     * Board states with fewer than cacheThreshold remaining moves are cached locally to reduce
+     * contention on the shared ConcurrentLinkedQueue, as these states are close
+     * to solution and benefit from being processed by the same thread.
+     *
+     * @param state the board state to store
+     */
+    private void storeBoardState(BoardState state) {
+        // Use cached remaining moves count from BoardState
+        int movesRemaining = state.getRemainingMoves();
+
+        // Cache near-solution states locally, send others to shared queue
+        if (movesRemaining < cacheThreshold) {
+            cache.add(state);
+        } else {
+            pendingStates.add(state);
+        }
     }
 }
