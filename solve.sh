@@ -1,23 +1,21 @@
 #!/bin/bash
 
 # Harmony Puzzle Solver - Convenience script
-# Runs the HarmonySolver with compiled classes from target/classes
+# Runs the HarmonySolver using harmony-solver.jar
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Set the classpath to the compiled classes
-CLASSPATH="${SCRIPT_DIR}/target/classes"
+# Set the classpath to the jar file
+JAR_FILE="${SCRIPT_DIR}/target/harmony-solver.jar"
 
-# Check if classes are compiled
-if [ ! -d "$CLASSPATH" ]; then
-    echo "Error: Compiled classes not found at $CLASSPATH"
-    echo "Please compile the project first:"
-    echo "  mvn compile"
-    echo "  OR"
-    echo "  javac -d target/classes -sourcepath src/main/java src/main/java/org/gerken/harmony/*.java src/main/java/org/gerken/harmony/model/*.java src/main/java/org/gerken/harmony/logic/*.java src/main/java/org/gerken/harmony/invalidity/*.java"
+# Check if jar exists
+if [ ! -f "$JAR_FILE" ]; then
+    echo "Error: JAR file not found at $JAR_FILE"
+    echo "Please build the project first:"
+    echo "  mvn package"
     exit 1
 fi
 
 # Run the solver with all provided arguments
-java -Xms6G -Xmx12G -cp "$CLASSPATH" org.gerken.harmony.HarmonySolver "$@"
+java -Xms6G -Xmx12G -cp "$JAR_FILE" org.gerken.harmony.HarmonySolver "$@"

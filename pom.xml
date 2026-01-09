@@ -23,6 +23,7 @@
     </dependencies>
 
     <build>
+        <finalName>harmony-solver</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

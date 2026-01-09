@@ -1,21 +1,19 @@
 #!/bin/bash
 
 # Harmony Puzzle Generator - Convenience script
-# Runs the PuzzleGenerator with compiled classes from target/classes
+# Runs the PuzzleGenerator using harmony-solver.jar
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Set the classpath to the compiled classes
-CLASSPATH="${SCRIPT_DIR}/target/classes"
+# Set the classpath to the jar file
+JAR_FILE="${SCRIPT_DIR}/target/harmony-solver.jar"
 
-# Check if classes are compiled
-if [ ! -d "$CLASSPATH" ]; then
-    echo "Error: Compiled classes not found at $CLASSPATH"
-    echo "Please compile the project first:"
-    echo "  mvn compile"
-    echo "  OR"
-    echo "  javac -d target/classes -sourcepath src/main/java src/main/java/org/gerken/harmony/*.java src/main/java/org/gerken/harmony/model/*.java src/main/java/org/gerken/harmony/logic/*.java src/main/java/org/gerken/harmony/invalidity/*.java"
+# Check if jar exists
+if [ ! -f "$JAR_FILE" ]; then
+    echo "Error: JAR file not found at $JAR_FILE"
+    echo "Please build the project first:"
+    echo "  mvn package"
     exit 1
 fi
 
@@ -44,4 +42,4 @@ if [ $# -ne 5 ]; then
 fi
 
 # Run the generator with all provided arguments
-java -cp "$CLASSPATH" org.gerken.harmony.PuzzleGenerator "$@"
+java -cp "$JAR_FILE" org.gerken.harmony.PuzzleGenerator "$@"
