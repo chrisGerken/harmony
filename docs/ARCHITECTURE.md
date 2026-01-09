@@ -31,49 +31,47 @@ The solver uses a novel multi-queue depth-first approach where states are organi
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      Main Application                        │
+│                 HarmonySolver (Instance)                     │
+│  - Central context object with getters for all components   │
 │  - Parse input file (DSL)                                   │
 │  - Initialize original board state                          │
-│  - Configure thread pool                                    │
-│  - Start worker threads                                     │
-│  - Monitor progress                                         │
+│  - Store initialRemainingMoves                              │
+│  - Configure and start worker threads                       │
+│  - Provides: getPendingStates(), getProcessors(),           │
+│              getThreadCount(), getReportInterval(),         │
+│              getCacheThreshold(), getInitialRemainingMoves()│
 └─────────────────────────────────────────────────────────────┘
                               │
-                              ▼
-        ┌─────────────────────────────────────────────────────┐
-        │             PendingStates Container                  │
-        │  - Multiple queues by move depth (DFS)              │
-        │  - Statistics counters                              │
-        │  - Solution coordination                            │
-        │                                                     │
-        │  Depth queues:                                      │
-        │    Move 0: Queue<BoardState>                       │
-        │    Move 1: Queue<BoardState>                       │
-        │    Move 2: Queue<BoardState>                       │
-        │    ...                                              │
-        │    Move N: Queue<BoardState> ← Poll from here first│
-        └─────────────────────────────────────────────────────┘
+        ┌─────────────────────┼─────────────────────┐
+        ▼                     ▼                     ▼
+┌───────────────┐   ┌─────────────────┐   ┌─────────────────┐
+│ProgressReport │   │ PendingStates   │   │List<StateProc>  │
+│ (uses solver) │   │ Container       │   │ (workers)       │
+└───────────────┘   │ - Depth queues  │   │ - Local caches  │
+                    │ - Statistics    │   │ - getCacheSize()│
+                    │ - Solution flag │   └─────────────────┘
+                    └─────────────────┘
                               │
           ┌───────────────────┼───────────────────┐
           ▼                   ▼                   ▼
     ┌──────────┐        ┌──────────┐        ┌──────────┐
     │ Worker 1 │        │ Worker 2 │   ...  │ Worker N │
-    │ Thread   │        │ Thread   │        │ Thread   │
+    │ +cache   │        │ +cache   │        │ +cache   │
     └──────────┘        └──────────┘        └──────────┘
           │                   │                   │
           └───────────────────┼───────────────────┘
                               ▼
-              ┌───────────────────────────────┐
-              │ InvalidityTestCoordinator     │
-              │  - Run all pruning tests      │
-              └───────────────────────────────┘
+              ┌───────────────────────────────────┐
+              │ InvalidityTestCoordinator         │
+              │  - Run all pruning tests          │
+              └───────────────────────────────────┘
                               │
-          ┌───────────────────┼───────────────────┐
-          ▼                   ▼                   ▼
-    ┌──────────┐      ┌──────────────┐    ┌──────────────┐
-    │StuckTile │      │WrongRowZero  │    │BlockedSwap   │
-    │Test      │      │MovesTest     │    │Test          │
-    └──────────┘      └──────────────┘    └──────────────┘
+          ┌─────────┬─────────┼─────────┬─────────┐
+          ▼         ▼         ▼         ▼         ▼
+    ┌──────────┐ ┌────────┐ ┌────────┐ ┌────────┐
+    │StuckTiles│ │WrongRow│ │Blocked │ │Isolated│
+    │Test      │ │ZeroMove│ │SwapTest│ │TileTest│
+    └──────────┘ └────────┘ └────────┘ └────────┘
 ```
 
 ## Core Algorithm
@@ -167,7 +165,12 @@ public class PendingStates {
    - Returns null only when all queues empty
    - O(depth) complexity, but depth typically small
 
-3. **Statistics**: Encapsulates all counters
+3. **getSmallestNonEmptyQueueInfo()**: Progress indicator support
+   - Returns `int[] {moveCount, queueSize}` for smallest non-empty queue
+   - Used by ProgressReporter for `Progress: a:b c` display
+   - Returns null if all queues empty
+
+4. **Statistics**: Encapsulates all counters
    - Processed/generated/pruned counts
    - Solution found flag and state
    - Thread-safe atomic operations
@@ -327,31 +330,49 @@ These tests provide ~60-70% pruning rate without eliminating valid solution path
 
 ### Requirements
 
-- Report every 30 seconds (configurable)
-- Show states processed, queue size, estimated time remaining
+- Report every 30 seconds (configurable via `-r` flag)
+- Show states processed, queue size, progress indicator
 - Non-blocking (doesn't slow down workers)
+- Include processor cache sizes in queue total
 
 ### Implementation Approach
 
-Separate progress reporter thread:
+ProgressReporter takes HarmonySolver as its single constructor parameter:
 
 ```java
 class ProgressReporter implements Runnable {
+    private final HarmonySolver solver;
+
+    ProgressReporter(HarmonySolver solver) {
+        this.solver = solver;
+    }
+
     void run() {
-        while (running) {
-            Thread.sleep(reportIntervalMs);
+        while (!solver.getPendingStates().isSolutionFound()) {
+            Thread.sleep(solver.getReportInterval() * 1000L);
             printProgress();
         }
     }
 }
 ```
 
-### Metrics to Track
+### Metrics Displayed
 
-- **States Processed**: Atomic counter incremented by workers
-- **Queue Size**: pendingQueue.size()
-- **Start Time**: Record at beginning
-- **Estimated Completion**: Based on processing rate
+- **Elapsed Time**: Time since solver started
+- **States Processed**: From `pendingStates.getStatesProcessed()`
+- **Queue Size**: `pendingStates.size()` + sum of all `processor.getCacheSize()`
+- **Progress**: Format `a:b c` where:
+  - `a` = smallest move count with non-empty queue
+  - `b` = total moves required (from `solver.getInitialRemainingMoves()`)
+  - `c` = number of states in that queue
+- **States Generated/Pruned**: With prune rate percentage
+- **Processing Rate**: States per second with K/M/B/T suffixes
+
+### Example Output
+
+```
+[5s] Processed: 5.1M | Queue: 278 | Progress: 1:26 58 | Generated: 7.4M | Pruned: 2.2M (30.3%) | Rate: 1.0M/s
+```
 
 ## Filesystem Offloading
 

@@ -50,6 +50,76 @@ public class HarmonySolver {
     private static final int DEFAULT_REPORT_INTERVAL = 30; // seconds
     private static final int DEFAULT_CACHE_THRESHOLD = 4; // moves remaining
 
+    // Instance fields for solver state
+    private final Config config;
+    private PendingStates pendingStates;
+    private List<StateProcessor> processors;
+    private int initialRemainingMoves;
+
+    /**
+     * Creates a new solver with the given configuration.
+     *
+     * @param config the solver configuration
+     */
+    public HarmonySolver(Config config) {
+        this.config = config;
+        this.processors = new ArrayList<>();
+    }
+
+    /**
+     * Gets the pending states container.
+     *
+     * @return the pending states
+     */
+    public PendingStates getPendingStates() {
+        return pendingStates;
+    }
+
+    /**
+     * Gets the list of state processors.
+     *
+     * @return unmodifiable list of processors
+     */
+    public List<StateProcessor> getProcessors() {
+        return processors;
+    }
+
+    /**
+     * Gets the configured thread count.
+     *
+     * @return the number of worker threads
+     */
+    public int getThreadCount() {
+        return config.threadCount;
+    }
+
+    /**
+     * Gets the configured report interval.
+     *
+     * @return the report interval in seconds
+     */
+    public int getReportInterval() {
+        return config.reportInterval;
+    }
+
+    /**
+     * Gets the configured cache threshold.
+     *
+     * @return the cache threshold in moves remaining
+     */
+    public int getCacheThreshold() {
+        return config.cacheThreshold;
+    }
+
+    /**
+     * Gets the initial number of moves required to solve the puzzle.
+     *
+     * @return the initial remaining moves count
+     */
+    public int getInitialRemainingMoves() {
+        return initialRemainingMoves;
+    }
+
     /**
      * Main entry point for the solver.
      *
@@ -83,8 +153,9 @@ public class HarmonySolver {
                 System.exit(0);
             }
 
-            // Solve the puzzle
-            BoardState solution = solve(initialState, config);
+            // Create solver instance and solve the puzzle
+            HarmonySolver solver = new HarmonySolver(config);
+            BoardState solution = solver.solve(initialState);
 
             // Print results
             if (solution != null) {
@@ -109,19 +180,19 @@ public class HarmonySolver {
      * Solves the puzzle using multi-threaded depth-first search with pruning.
      *
      * @param initialState the starting board state
-     * @param config solver configuration
      * @return the solution state, or null if no solution found
      */
-    private static BoardState solve(BoardState initialState, Config config) {
+    private BoardState solve(BoardState initialState) {
         // Initialize shared data structures
-        PendingStates pendingStates = new PendingStates();
+        this.pendingStates = new PendingStates();
+        this.initialRemainingMoves = initialState.getRemainingMoves();
 
         // Add initial state to queue
         pendingStates.add(initialState);
 
         // Create worker threads
         ExecutorService workerPool = Executors.newFixedThreadPool(config.threadCount);
-        List<StateProcessor> processors = new ArrayList<>();
+        this.processors = new ArrayList<>();
 
         System.out.println("Starting " + config.threadCount + " worker threads...");
         for (int i = 0; i < config.threadCount; i++) {
@@ -131,10 +202,7 @@ public class HarmonySolver {
         }
 
         // Create and start progress reporter thread
-        ProgressReporter reporter = new ProgressReporter(
-            pendingStates,
-            config.reportInterval
-        );
+        ProgressReporter reporter = new ProgressReporter(this);
         Thread reporterThread = new Thread(reporter);
         reporterThread.setDaemon(true);
         reporterThread.start();

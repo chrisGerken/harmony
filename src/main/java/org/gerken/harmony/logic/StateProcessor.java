@@ -292,4 +292,14 @@ public class StateProcessor implements Runnable {
             pendingStates.add(state);
         }
     }
+
+    /**
+     * Gets the current size of the local cache.
+     * Used by ProgressReporter to include cached states in queue size calculations.
+     *
+     * @return the number of states in the local cache
+     */
+    public int getCacheSize() {
+        return cache.size();
+    }
 }

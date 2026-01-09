@@ -1,30 +1,32 @@
 package org.gerken.harmony.logic;
 
+import org.gerken.harmony.HarmonySolver;
+
 /**
  * Periodically reports progress during the solving process.
  * Runs as a background thread and outputs statistics at configurable intervals.
  */
 public class ProgressReporter implements Runnable {
 
-    private final PendingStates pendingStates;
+    private final HarmonySolver solver;
     private final long reportIntervalMs;
     private final long startTime;
 
     /**
      * Creates a new progress reporter.
      *
-     * @param pendingStates the shared container of pending states and statistics
-     * @param reportIntervalSeconds interval between reports (in seconds)
+     * @param solver the solver instance to report progress for
      */
-    public ProgressReporter(PendingStates pendingStates, int reportIntervalSeconds) {
-        this.pendingStates = pendingStates;
-        this.reportIntervalMs = reportIntervalSeconds * 1000L;
+    public ProgressReporter(HarmonySolver solver) {
+        this.solver = solver;
+        this.reportIntervalMs = solver.getReportInterval() * 1000L;
         this.startTime = System.currentTimeMillis();
     }
 
     @Override
     public void run() {
         try {
+            PendingStates pendingStates = solver.getPendingStates();
             while (!pendingStates.isSolutionFound()) {
                 Thread.sleep(reportIntervalMs);
 
@@ -45,38 +47,47 @@ public class ProgressReporter implements Runnable {
      * Prints the current progress statistics.
      */
     private void printProgress() {
+        PendingStates pendingStates = solver.getPendingStates();
         long processed = pendingStates.getStatesProcessed();
         long generated = pendingStates.getStatesGenerated();
         long pruned = pendingStates.getStatesPruned();
         int queueSize = pendingStates.size();
-        int percentComplete = pendingStates.getPercentComplete();
         long elapsedMs = System.currentTimeMillis() - startTime;
+
+        // Add cache sizes from all processors to queue size
+        int totalCacheSize = 0;
+        for (StateProcessor processor : solver.getProcessors()) {
+            totalCacheSize += processor.getCacheSize();
+        }
+        int totalQueueSize = queueSize + totalCacheSize;
+
+        // Get progress info: smallest non-empty queue move count and size
+        int[] queueInfo = pendingStates.getSmallestNonEmptyQueueInfo();
+        int totalMoves = solver.getInitialRemainingMoves();
+        String progressStr;
+        if (queueInfo != null) {
+            progressStr = String.format("%d:%d %d", queueInfo[0], totalMoves, queueInfo[1]);
+        } else {
+            progressStr = String.format("?:%d 0", totalMoves);
+        }
 
         // Calculate statistics
         double elapsedSeconds = elapsedMs / 1000.0;
         double statesPerSecond = processed / elapsedSeconds;
         double pruneRate = generated > 0 ? (100.0 * pruned / generated) : 0.0;
 
-        // Estimate time remaining (rough estimate based on queue size)
-        String eta = "unknown";
-        if (statesPerSecond > 0 && queueSize > 0) {
-            double remainingSeconds = queueSize / statesPerSecond;
-            eta = formatDuration(remainingSeconds);
-        }
-
         // Format and print progress
         System.out.printf(
-            "[%s] Processed: %s | Queue: %s | Complete: %d%% | Generated: %s | Pruned: %s (%.1f%%) | " +
-            "Rate: %.1f states/s | ETA: %s%n",
+            "[%s] Processed: %s | Queue: %s | Progress: %s | Generated: %s | Pruned: %s (%.1f%%) | " +
+            "Rate: %s/s%n",
             formatDuration(elapsedSeconds),
             formatCount(processed),
-            formatCount(queueSize),
-            percentComplete,
+            formatCount(totalQueueSize),
+            progressStr,
             formatCount(generated),
             formatCount(pruned),
             pruneRate,
-            statesPerSecond,
-            eta
+            formatCount((long) statesPerSecond)
         );
     }
 
@@ -126,6 +137,7 @@ public class ProgressReporter implements Runnable {
      * Prints a final summary when solving is complete.
      */
     public void printFinalSummary(boolean foundSolution) {
+        PendingStates pendingStates = solver.getPendingStates();
         long processed = pendingStates.getStatesProcessed();
         long generated = pendingStates.getStatesGenerated();
         long pruned = pendingStates.getStatesPruned();
@@ -141,7 +153,7 @@ public class ProgressReporter implements Runnable {
         System.out.printf("States processed:  %s%n", formatCount(processed));
         System.out.printf("States generated:  %s%n", formatCount(generated));
         System.out.printf("States pruned:     %s (%.1f%%)%n", formatCount(pruned), pruneRate);
-        System.out.printf("Processing rate:   %.1f states/second%n", statesPerSecond);
+        System.out.printf("Processing rate:   %s/second%n", formatCount((long) statesPerSecond));
         System.out.println("=".repeat(80));
     }
 }

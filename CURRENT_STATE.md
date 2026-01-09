@@ -1,5 +1,5 @@
 # Current State of Harmony Puzzle Solver
-**Last Updated**: January 8, 2026 (Session 3)
+**Last Updated**: January 9, 2026 (Session 4)
 
 ## Quick Status
 - ✅ **Production Ready**: All code compiles and tests pass
@@ -9,18 +9,21 @@
 - ✅ **Thread-Safe**: All operations properly synchronized
 - ✅ **Enhanced Pruning**: StuckTilesTest (odd parity) replaces StuckTileTest
 - ✅ **Performance Optimized**: HashMap color lookups, compact number display
+- ✅ **Centralized Context**: HarmonySolver is now instance-based with getters for all components
 
 ## Current Architecture (High Level)
 
 ```
-Main Application
-    └─> PendingStates (depth-organized multi-queue)
-        ├─> StateProcessor threads (workers)
-        ├─> ProgressReporter thread
-        └─> InvalidityTestCoordinator
-            ├─> StuckTileTest
+HarmonySolver (instance-based, central context)
+    ├─> Config (threadCount, reportInterval, cacheThreshold)
+    ├─> PendingStates (depth-organized multi-queue)
+    ├─> List<StateProcessor> (worker threads with local caches)
+    ├─> ProgressReporter (takes HarmonySolver, accesses all via getters)
+    └─> InvalidityTestCoordinator
+            ├─> StuckTilesTest
             ├─> WrongRowZeroMovesTest
-            └─> BlockedSwapTest
+            ├─> BlockedSwapTest
+            └─> IsolatedTileTest
 ```
 
 ## Recent Changes (Session 2 - January 7, 2026)
@@ -88,7 +91,7 @@ poll() {
 ```
 harmony/
 ├── src/main/java/org/gerken/harmony/
-│   ├── HarmonySolver.java          # Main entry point
+│   ├── HarmonySolver.java          # ⭐ UPDATED Session 4 - Instance-based with getters
 │   ├── PuzzleGenerator.java        # Puzzle creation utility
 │   ├── model/                      # Data models
 │   │   ├── Tile.java
@@ -96,36 +99,61 @@ harmony/
 │   │   ├── Move.java
 │   │   └── BoardState.java
 │   ├── logic/                      # Processing logic
-│   │   ├── PendingStates.java      # ⭐ NEW - State management
-│   │   ├── StateProcessor.java     # Worker threads
-│   │   ├── ProgressReporter.java   # Status updates
+│   │   ├── PendingStates.java      # ⭐ UPDATED Session 4 - Added getSmallestNonEmptyQueueInfo()
+│   │   ├── StateProcessor.java     # ⭐ UPDATED Session 4 - Added getCacheSize()
+│   │   ├── ProgressReporter.java   # ⭐ UPDATED Session 4 - Takes HarmonySolver, new progress format
 │   │   └── BoardParser.java        # Input file parsing
 │   └── invalidity/                 # Pruning tests
 │       ├── InvalidityTest.java     # Interface
 │       ├── InvalidityTestCoordinator.java
 │       ├── StuckTileTest.java
+│       ├── StuckTilesTest.java     # Odd parity detection
 │       ├── WrongRowZeroMovesTest.java
-│       └── BlockedSwapTest.java
+│       ├── BlockedSwapTest.java
+│       └── IsolatedTileTest.java
 ├── docs/                           # Documentation
-│   ├── ARCHITECTURE.md             # ⭐ UPDATED - System design
+│   ├── ARCHITECTURE.md             # ⭐ UPDATED Session 4 - New diagrams, progress reporting
 │   ├── DATA_MODELS.md
 │   ├── INVALIDITY_TESTS.md
 │   └── DEVELOPMENT.md
 ├── puzzles/                        # Test puzzles
 │   ├── easy.txt
-│   ├── puzzle_404.txt              # ⭐ NEW - 6x6 puzzle
+│   ├── puzzle_404.txt              # 6x6 puzzle
 │   └── ...
-├── README.md                       # ⭐ UPDATED - Main docs
-├── IMPLEMENTATION_SUMMARY.md       # ⭐ UPDATED - Implementation notes
-├── SESSION_SUMMARY_2026-01-07.md   # ⭐ NEW - Session details
-├── CURRENT_STATE.md                # ⭐ NEW - This file
+├── puzzle_406.txt                  # ⭐ NEW Session 4 - 6x6 puzzle, 26 moves
+├── README.md                       # Main docs
+├── IMPLEMENTATION_SUMMARY.md       # Implementation notes
+├── SESSION_SUMMARY_2026-01-07.md   # Session 2 details
+├── CURRENT_STATE.md                # ⭐ UPDATED Session 4 - This file
 ├── solve.sh                        # Convenience script
 └── generate.sh                     # Convenience script
 ```
 
 ## Key Classes to Understand
 
-### 1. PendingStates (⭐ Most Important)
+### 1. HarmonySolver (⭐ Central Context)
+**Location**: `org.gerken.harmony.HarmonySolver`
+
+**What it does**:
+- Main entry point and central context object
+- Instance-based (not static) since Session 4
+- Holds references to all components
+- Provides getters for ProgressReporter and other components
+
+**Key methods**:
+```java
+// Getters for components
+PendingStates getPendingStates()        // Access state queues
+List<StateProcessor> getProcessors()    // Access worker threads
+int getInitialRemainingMoves()          // Total moves to solve puzzle
+
+// Getters for configuration
+int getThreadCount()
+int getReportInterval()
+int getCacheThreshold()
+```
+
+### 2. PendingStates
 **Location**: `org.gerken.harmony.logic.PendingStates`
 
 **What it does**:
@@ -140,51 +168,42 @@ void add(BoardState state)              // Add to appropriate depth queue
 BoardState poll()                       // Get from deepest queue
 boolean isSolutionFound()               // Check if solution found
 boolean markSolutionFound(BoardState)   // Atomically mark solution
+int[] getSmallestNonEmptyQueueInfo()    // Returns [moveCount, queueSize] for progress
 void incrementStatesProcessed()         // Update counter
 long getStatesProcessed()               // Get counter value
 // ... similar for generated and pruned
 ```
 
-### 2. StateProcessor
+### 3. StateProcessor
 **Location**: `org.gerken.harmony.logic.StateProcessor`
 
 **What it does**:
 - Worker thread that processes board states
-- Polls from PendingStates
+- Maintains local cache for near-solution states
+- Polls from local cache first, then PendingStates
 - Generates successor states
 - Checks validity with InvalidityTestCoordinator
-- Adds valid states back to PendingStates
 
-**Simplified now**:
-- Only takes PendingStates in constructor (was 7 parameters!)
-- All coordination through PendingStates methods
-
-### 3. HarmonySolver
-**Location**: `org.gerken.harmony.HarmonySolver`
-
-**What it does**:
-- Main entry point
-- Parses command-line arguments
-- Creates PendingStates container
-- Spawns worker threads
-- Waits for solution or exhaustion
-
-**Simplified now**:
-- Creates one PendingStates object
-- Passes it to all workers and reporter
-- All coordination through PendingStates
+**Key methods**:
+```java
+int getCacheSize()                      // Returns local cache size (for progress reporting)
+```
 
 ### 4. ProgressReporter
 **Location**: `org.gerken.harmony.logic.ProgressReporter`
 
 **What it does**:
-- Background thread
-- Periodically reports statistics
-- Gets all data from PendingStates
+- Background thread for periodic statistics
+- Takes HarmonySolver instance (central context)
+- Accesses all components via solver getters
+- Includes processor cache sizes in queue total
 
-**Simplified now**:
-- Only takes PendingStates in constructor
-- All data access through PendingStates methods
+**Constructor**: `ProgressReporter(HarmonySolver solver)`
+
+**Progress format**: `Progress: a:b c` where:
+- `a` = smallest move count with non-empty queue
+- `b` = total moves required to solve puzzle
+- `c` = number of states in that queue
 
 ## How to Continue Development
 
@@ -304,10 +323,11 @@ mvn compile
 ```
 
 ### Key Files for Next Session
-1. `SESSION_SUMMARY_2026-01-07.md` - What happened this session
-2. `PendingStates.java` - Core state management
-3. `docs/ARCHITECTURE.md` - System design
-4. `CURRENT_STATE.md` - This file
+1. `CURRENT_STATE.md` - This file (start here!)
+2. `HarmonySolver.java` - Central context object with all getters
+3. `ProgressReporter.java` - Uses HarmonySolver, new progress format
+4. `PendingStates.java` - Core state management
+5. `docs/ARCHITECTURE.md` - System design diagrams
 
 ## Session History
 
@@ -345,6 +365,32 @@ mvn compile
   - Queue remained stable at ~300 states throughout
   - 37% pruning rate with new test
 
+### Session 4 (January 9, 2026)
+- **HarmonySolver Refactored to Instance-Based**:
+  - Now acts as central context object
+  - Added instance fields: `config`, `pendingStates`, `processors`, `initialRemainingMoves`
+  - Added getters: `getPendingStates()`, `getProcessors()`, `getThreadCount()`, `getReportInterval()`, `getCacheThreshold()`, `getInitialRemainingMoves()`
+  - `solve()` changed from static to instance method
+- **ProgressReporter Simplified**:
+  - Constructor now takes only `HarmonySolver` (was `PendingStates` + interval)
+  - Accesses all data through solver getters
+  - Queue size now includes cache sizes from all StateProcessors
+- **Progress Output Changes**:
+  - Replaced percentage complete with `Progress: a:b c` format
+    - `a` = smallest move count with non-empty queue
+    - `b` = total moves required
+    - `c` = queue size at that depth
+  - Processing rate now uses K/M/B/T suffixes (was raw number)
+  - Removed ETA from progress output
+- **StateProcessor Enhancement**:
+  - Added `getCacheSize()` method for progress reporting
+- **PendingStates Changes**:
+  - Added `getSmallestNonEmptyQueueInfo()` method
+  - Removed unused `getPercentComplete()` method
+  - Removed unused `oneMoveStatesAdded` field
+- **New Puzzle Created**:
+  - `puzzle_406.txt` - 6x6 puzzle with 26 moves required
+
 ### Next Session Goals
 1. Consider state deduplication for very large puzzles
 2. Explore additional parity-based pruning strategies
@@ -355,4 +401,4 @@ mvn compile
 
 **Ready for**: Production use, further optimization, new features
 **Status**: ✅ Stable, documented, tested, optimized
-**Last Test**: January 8, 2026 - Multiple puzzles tested, 1.6B states processed successfully
+**Last Test**: January 9, 2026 - puzzle_406.txt created and verified loading

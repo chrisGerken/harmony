@@ -1,0 +1,11 @@
+The image in file snapshot.png is a screen capture of an original state of the Harmony puzzle. The target row colors are 
+dark purple,
+dark pink,
+pink,
+light green,
+green,
+dark green
+for rows 1 - 6 respectively and an example of the colors can be found in tiles
+E1, B1, C5, C3, C2, C1,
+respectively. The number of dots on a tile indicate the number of moves remaining for that tile.
+Write this puzzle out as a puzzle input file (named puzzle_406.txt) for HarmonySolver

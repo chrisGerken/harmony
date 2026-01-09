@@ -1,0 +1,1 @@
+Update all .dm files and source files with the appropriate information needed to included all of this session's decisions, designs and code changes in the next claude session context.
