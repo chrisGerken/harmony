@@ -49,6 +49,13 @@ public class HarmonySolver {
     private static final int DEFAULT_THREAD_COUNT = 2;
     private static final int DEFAULT_REPORT_INTERVAL = 30; // seconds
     private static final int DEFAULT_CACHE_THRESHOLD = 4; // moves remaining
+    private static final boolean DEFAULT_DEBUG_MODE = false;
+
+    /**
+     * Global color name mapping. Index is color ID, value is color name.
+     * Set by BoardParser when loading a puzzle.
+     */
+    public static List<String> colorNames = new ArrayList<>();
 
     // Instance fields for solver state
     private final Config config;
@@ -201,11 +208,14 @@ public class HarmonySolver {
             workerPool.submit(processor);
         }
 
-        // Create and start progress reporter thread
-        ProgressReporter reporter = new ProgressReporter(this);
-        Thread reporterThread = new Thread(reporter);
-        reporterThread.setDaemon(true);
-        reporterThread.start();
+        // Create and start progress reporter thread (unless disabled)
+        ProgressReporter reporter = null;
+        if (config.reportInterval > 0) {
+            reporter = new ProgressReporter(this);
+            Thread reporterThread = new Thread(reporter);
+            reporterThread.setDaemon(true);
+            reporterThread.start();
+        }
 
         System.out.println("Search started...\n");
 
@@ -216,7 +226,9 @@ public class HarmonySolver {
                 Thread.sleep(1000);
 
                 // Check if queue is empty and no more work will be generated
-                if (pendingStates.isEmpty() &&
+                // Skip this check in debug mode to allow pausing at breakpoints
+                if (!config.debugMode &&
+                    pendingStates.isEmpty() &&
                     pendingStates.getStatesProcessed() == pendingStates.getStatesGenerated()) {
                     // All generated states have been processed
                     // If we haven't found a solution, puzzle is unsolvable
@@ -229,8 +241,10 @@ public class HarmonySolver {
             workerPool.shutdown();
             workerPool.awaitTermination(5, TimeUnit.SECONDS);
 
-            // Print final summary
-            reporter.printFinalSummary(pendingStates.getSolution() != null);
+            // Print final summary (if reporting enabled)
+            if (reporter != null) {
+                reporter.printFinalSummary(pendingStates.getSolution() != null);
+            }
 
             return pendingStates.getSolution();
 
@@ -287,8 +301,8 @@ public class HarmonySolver {
                 }
                 try {
                     config.reportInterval = Integer.parseInt(args[++i]);
-                    if (config.reportInterval < 1) {
-                        System.err.println("Error: report interval must be positive");
+                    if (config.reportInterval < 0) {
+                        System.err.println("Error: report interval must be non-negative (0 to disable)");
                         return null;
                     }
                 } catch (NumberFormatException e) {
@@ -310,6 +324,8 @@ public class HarmonySolver {
                     System.err.println("Error: invalid cache threshold: " + args[i]);
                     return null;
                 }
+            } else if (arg.equals("-d") || arg.equals("--debug")) {
+                config.debugMode = true;
             } else if (arg.equals("-h") || arg.equals("--help")) {
                 return null; // Will trigger usage message
             } else if (arg.startsWith("-")) {
@@ -344,8 +360,9 @@ public class HarmonySolver {
         System.out.println();
         System.out.println("Options:");
         System.out.println("  -t, --threads <N>     Number of worker threads (default: 2)");
-        System.out.println("  -r, --report <N>      Progress report interval in seconds (default: 30)");
+        System.out.println("  -r, --report <N>      Progress report interval in seconds (default: 30, 0 to disable)");
         System.out.println("  -c, --cache <N>       Cache threshold for near-solution states (default: 4)");
+        System.out.println("  -d, --debug           Debug mode: disable empty queue termination (for breakpoints)");
         System.out.println("  -h, --help            Show this help message");
         System.out.println();
         System.out.println("Example:");
@@ -362,10 +379,13 @@ public class HarmonySolver {
         System.out.println("=".repeat(80));
         System.out.println("Configuration:");
         System.out.println("  Threads: " + config.threadCount);
-        System.out.println("  Report interval: " + config.reportInterval + " seconds");
+        System.out.println("  Report interval: " + (config.reportInterval > 0 ? config.reportInterval + " seconds" : "disabled"));
         System.out.println("  Cache threshold: " + config.cacheThreshold + " moves");
         System.out.println("  Invalidity tests: " +
             InvalidityTestCoordinator.getInstance().getTestCount());
+        if (config.debugMode) {
+            System.out.println("  DEBUG MODE: Empty queue termination disabled");
+        }
         System.out.println("=".repeat(80));
         System.out.println();
     }
@@ -378,5 +398,6 @@ public class HarmonySolver {
         int threadCount = DEFAULT_THREAD_COUNT;
         int reportInterval = DEFAULT_REPORT_INTERVAL;
         int cacheThreshold = DEFAULT_CACHE_THRESHOLD;
+        boolean debugMode = DEFAULT_DEBUG_MODE;
     }
 }

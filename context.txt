@@ -1,0 +1,1 @@
+read all .dm files and nested java source files to get context for this session

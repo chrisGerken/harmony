@@ -1,5 +1,5 @@
 # Current State of Harmony Puzzle Solver
-**Last Updated**: January 9, 2026 (Session 4)
+**Last Updated**: January 9, 2026 (Session 5)
 
 ## Quick Status
 - ✅ **Production Ready**: All code compiles and tests pass
@@ -10,12 +10,16 @@
 - ✅ **Enhanced Pruning**: StuckTilesTest (odd parity) replaces StuckTileTest
 - ✅ **Performance Optimized**: HashMap color lookups, compact number display
 - ✅ **Centralized Context**: HarmonySolver is now instance-based with getters for all components
+- ✅ **TestBuilder Utility**: New tool for creating test cases from solved states
+- ✅ **Debug Mode**: Breakpoint-friendly mode that disables premature termination
+- ✅ **Board.toString()**: Easy board visualization with color names
 
 ## Current Architecture (High Level)
 
 ```
 HarmonySolver (instance-based, central context)
-    ├─> Config (threadCount, reportInterval, cacheThreshold)
+    ├─> Config (threadCount, reportInterval, cacheThreshold, debugMode)
+    ├─> colorNames (public static List<String> - global color mapping)
     ├─> PendingStates (depth-organized multi-queue)
     ├─> List<StateProcessor> (worker threads with local caches)
     ├─> ProgressReporter (takes HarmonySolver, accesses all via getters)
@@ -24,6 +28,12 @@ HarmonySolver (instance-based, central context)
             ├─> WrongRowZeroMovesTest
             ├─> BlockedSwapTest
             └─> IsolatedTileTest
+
+TestBuilder (standalone utility)
+    ├─> Reads simplified test specification format
+    ├─> Builds solved state, applies moves backwards
+    ├─> Generates BoardParser-compatible puzzle files
+    └─> Includes solution with board states after each move
 ```
 
 ## Recent Changes (Session 2 - January 7, 2026)
@@ -91,18 +101,19 @@ poll() {
 ```
 harmony/
 ├── src/main/java/org/gerken/harmony/
-│   ├── HarmonySolver.java          # ⭐ UPDATED Session 4 - Instance-based with getters
+│   ├── HarmonySolver.java          # ⭐ UPDATED Session 5 - colorNames, debug mode, report 0
 │   ├── PuzzleGenerator.java        # Puzzle creation utility
+│   ├── TestBuilder.java            # ⭐ NEW Session 5 - Test case generation utility
 │   ├── model/                      # Data models
 │   │   ├── Tile.java
-│   │   ├── Board.java
+│   │   ├── Board.java              # ⭐ UPDATED Session 5 - toString() methods
 │   │   ├── Move.java
 │   │   └── BoardState.java
 │   ├── logic/                      # Processing logic
-│   │   ├── PendingStates.java      # ⭐ UPDATED Session 4 - Added getSmallestNonEmptyQueueInfo()
-│   │   ├── StateProcessor.java     # ⭐ UPDATED Session 4 - Added getCacheSize()
-│   │   ├── ProgressReporter.java   # ⭐ UPDATED Session 4 - Takes HarmonySolver, new progress format
-│   │   └── BoardParser.java        # Input file parsing
+│   │   ├── PendingStates.java      # Added getSmallestNonEmptyQueueInfo()
+│   │   ├── StateProcessor.java     # Added getCacheSize()
+│   │   ├── ProgressReporter.java   # Takes HarmonySolver, new progress format
+│   │   └── BoardParser.java        # ⭐ UPDATED Session 5 - End of Puzzle Specification, colorNames
 │   └── invalidity/                 # Pruning tests
 │       ├── InvalidityTest.java     # Interface
 │       ├── InvalidityTestCoordinator.java
@@ -112,7 +123,7 @@ harmony/
 │       ├── BlockedSwapTest.java
 │       └── IsolatedTileTest.java
 ├── docs/                           # Documentation
-│   ├── ARCHITECTURE.md             # ⭐ UPDATED Session 4 - New diagrams, progress reporting
+│   ├── ARCHITECTURE.md             # System design
 │   ├── DATA_MODELS.md
 │   ├── INVALIDITY_TESTS.md
 │   └── DEVELOPMENT.md
@@ -120,11 +131,14 @@ harmony/
 │   ├── easy.txt
 │   ├── puzzle_404.txt              # 6x6 puzzle
 │   └── ...
-├── puzzle_406.txt                  # ⭐ NEW Session 4 - 6x6 puzzle, 26 moves
+├── puzzle_406.txt                  # 6x6 puzzle, 26 moves
 ├── README.md                       # Main docs
 ├── IMPLEMENTATION_SUMMARY.md       # Implementation notes
 ├── SESSION_SUMMARY_2026-01-07.md   # Session 2 details
-├── CURRENT_STATE.md                # ⭐ UPDATED Session 4 - This file
+├── SESSION_2026-01-08.md           # Session 3 details
+├── SESSION_2026-01-08_improvements.md  # Session 4 details
+├── SESSION_2026-01-09.md           # ⭐ NEW Session 5 details
+├── CURRENT_STATE.md                # ⭐ UPDATED Session 5 - This file
 ├── solve.sh                        # Convenience script
 └── generate.sh                     # Convenience script
 ```
@@ -324,10 +338,11 @@ mvn compile
 
 ### Key Files for Next Session
 1. `CURRENT_STATE.md` - This file (start here!)
-2. `HarmonySolver.java` - Central context object with all getters
-3. `ProgressReporter.java` - Uses HarmonySolver, new progress format
-4. `PendingStates.java` - Core state management
-5. `docs/ARCHITECTURE.md` - System design diagrams
+2. `SESSION_2026-01-09.md` - Session 5 details (TestBuilder, debug mode, etc.)
+3. `TestBuilder.java` - New test case generation utility
+4. `HarmonySolver.java` - Central context, colorNames, debug mode
+5. `Board.java` - toString() methods for debugging
+6. `BoardParser.java` - End of Puzzle Specification support
 
 ## Session History
 
@@ -391,14 +406,45 @@ mvn compile
 - **New Puzzle Created**:
   - `puzzle_406.txt` - 6x6 puzzle with 26 moves required
 
+### Session 5 (January 9, 2026)
+- **TestBuilder Utility Created**:
+  - New class for generating test cases from solved states
+  - Simplified input format: ROWS, COLS, COLORS (in target row order), MOVES, OUTPUT
+  - Starts from solved state, applies moves backwards (incrementing move counts)
+  - Moves applied in reverse order so input matches solution order
+  - Generates BoardParser-compatible puzzle files with solution comments
+  - Solution shows each move and resulting board state with aligned columns
+  - Creates template file if specified file doesn't exist
+- **Board.toString() Methods Added**:
+  - `toString(List<String> colorNames)` - Uses color names with aligned columns
+  - `toString()` - Uses HarmonySolver.colorNames if available, falls back to IDs
+  - Format: `A | RED 1   | BLUE 0  | GREEN 2 |`
+- **Global Color Names Storage**:
+  - Added `HarmonySolver.colorNames` (public static List<String>)
+  - BoardParser populates this when parsing puzzles
+  - Enables Board.toString() to work without passing color names
+- **BoardParser Enhancement**:
+  - Added "End of Puzzle Specification" marker support
+  - Stops reading file when marker encountered
+  - Allows additional content (like solutions) after puzzle definition
+- **Report Interval 0 Disables Reporting**:
+  - `-r 0` now completely disables progress reporting
+  - No reporter thread created, no periodic output, no final summary
+  - Header shows "Report interval: disabled"
+- **Debug Mode Added**:
+  - New `-d` / `--debug` flag
+  - Disables empty queue termination check
+  - Allows pausing at breakpoints without premature "no solution" termination
+  - Header shows "DEBUG MODE: Empty queue termination disabled"
+
 ### Next Session Goals
-1. Consider state deduplication for very large puzzles
-2. Explore additional parity-based pruning strategies
-3. Profile memory usage under extreme load
-4. Consider adaptive cache thresholds based on board size
+1. Use TestBuilder to create specific test cases for invalidity tests
+2. Consider state deduplication for very large puzzles
+3. Explore additional parity-based pruning strategies
+4. Profile memory usage under extreme load
 
 ---
 
-**Ready for**: Production use, further optimization, new features
+**Ready for**: Production use, further optimization, new features, test case creation with TestBuilder
 **Status**: ✅ Stable, documented, tested, optimized
-**Last Test**: January 9, 2026 - puzzle_406.txt created and verified loading
+**Last Test**: January 9, 2026 (Session 5) - TestBuilder, debug mode, Board.toString() implemented

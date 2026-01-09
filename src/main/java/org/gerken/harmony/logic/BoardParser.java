@@ -1,5 +1,6 @@
 package org.gerken.harmony.logic;
 
+import org.gerken.harmony.HarmonySolver;
 import org.gerken.harmony.model.Board;
 import org.gerken.harmony.model.BoardState;
 import org.gerken.harmony.model.Tile;
@@ -64,6 +65,11 @@ public class BoardParser {
             boolean inTilesSection = false;
 
             while ((line = reader.readLine()) != null) {
+                // Stop reading if we hit the end of puzzle specification marker
+                if (line.contains("End of Puzzle Specification")) {
+                    break;
+                }
+
                 line = line.trim();
 
                 // Skip empty lines and comments
@@ -127,6 +133,15 @@ public class BoardParser {
                     throw new IllegalArgumentException("Unknown color in targets: " + colorName);
                 }
                 targets[i] = colorMap.get(colorName);
+            }
+
+            // Populate global color names list (indexed by color ID)
+            HarmonySolver.colorNames = new ArrayList<>(colorMap.size());
+            for (int i = 0; i < colorMap.size(); i++) {
+                HarmonySolver.colorNames.add(null); // Pre-fill
+            }
+            for (Map.Entry<String, Integer> entry : colorMap.entrySet()) {
+                HarmonySolver.colorNames.set(entry.getValue(), entry.getKey());
             }
 
             // Build the board

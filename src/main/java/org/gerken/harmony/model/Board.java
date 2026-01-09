@@ -1,5 +1,9 @@
 package org.gerken.harmony.model;
 
+import org.gerken.harmony.HarmonySolver;
+
+import java.util.List;
+
 /**
  * Represents the puzzle board - a grid of tiles with target colors for each row.
  * Rows are labeled A, B, C, etc. and columns are labeled 1, 2, 3, etc.
@@ -133,5 +137,83 @@ public class Board {
         newBoard.setTile(row2, col2, tile1);
 
         return newBoard;
+    }
+
+    /**
+     * Returns a string representation of the board using color names.
+     * Format: A | RED 1   | RED 0   | BLUE 2  |
+     *
+     * @param colorNames list of color names where index matches color ID
+     * @return formatted string representation of the board
+     */
+    public String toString(List<String> colorNames) {
+        // Calculate column width based on longest color name
+        int maxColorLen = 0;
+        for (String name : colorNames) {
+            maxColorLen = Math.max(maxColorLen, name.length());
+        }
+        int cellWidth = maxColorLen + 4; // color + space + up to 2 digit moves + padding
+
+        StringBuilder result = new StringBuilder();
+
+        for (int row = 0; row < getRowCount(); row++) {
+            char rowLabel = (char) ('A' + row);
+            result.append(rowLabel).append(" ");
+
+            for (int col = 0; col < getColumnCount(); col++) {
+                Tile tile = grid[row][col];
+                String colorName = colorNames.get(tile.getColor());
+                String cell = colorName + " " + tile.getRemainingMoves();
+                result.append("| ");
+                result.append(cell);
+                // Pad to align columns
+                int padding = cellWidth - cell.length() - 1;
+                for (int p = 0; p < padding; p++) {
+                    result.append(" ");
+                }
+            }
+            result.append("|");
+            if (row < getRowCount() - 1) {
+                result.append("\n");
+            }
+        }
+
+        return result.toString();
+    }
+
+    /**
+     * Returns a string representation of the board.
+     * Uses color names from HarmonySolver.colorNames if available,
+     * otherwise falls back to color IDs.
+     *
+     * @return formatted string representation of the board
+     */
+    @Override
+    public String toString() {
+        // Use color names if available
+        if (HarmonySolver.colorNames != null && !HarmonySolver.colorNames.isEmpty()) {
+            return toString(HarmonySolver.colorNames);
+        }
+
+        // Fall back to color IDs
+        StringBuilder result = new StringBuilder();
+
+        for (int row = 0; row < getRowCount(); row++) {
+            char rowLabel = (char) ('A' + row);
+            result.append(rowLabel).append(" ");
+
+            for (int col = 0; col < getColumnCount(); col++) {
+                Tile tile = grid[row][col];
+                result.append("| ");
+                result.append(String.format("%d:%-2d", tile.getColor(), tile.getRemainingMoves()));
+                result.append(" ");
+            }
+            result.append("|");
+            if (row < getRowCount() - 1) {
+                result.append("\n");
+            }
+        }
+
+        return result.toString();
     }
 }

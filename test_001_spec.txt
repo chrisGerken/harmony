@@ -1,0 +1,57 @@
+# Test Builder Specification File
+#
+# Starts from a SOLVED state and applies moves backwards.
+# Each move swaps two tiles and increments their remaining moves.
+# Lines starting with # are comments.
+
+# =============================================================================
+# PUZZLE DEFINITION
+# =============================================================================
+
+# Board dimensions
+ROWS 4
+COLS 4
+
+# Color names in target row order
+# First color = row A target (ID 0)
+# Second color = row B target (ID 1), etc.
+COLORS
+R
+B
+G
+W
+
+# =============================================================================
+# MOVES TO APPLY (backwards from solved state)
+# =============================================================================
+#
+# Move notation: Position1-Position2
+# Positions use row letter (A,B,C,...) and column number (1,2,3,...)
+# Examples:
+#   A1-A3  : Swap tiles at A1 and A3 (same row)
+#   B2-D2  : Swap tiles at B2 and D2 (same column)
+#
+# Each move swaps tiles and increments their remaining move counts.
+
+MOVES
+C1-D1
+C2-D2
+C3-D3
+A1-A2
+A1-A2
+A1-B1
+A1-A2
+
+
+# Add your moves here, one per line
+# Example:
+# A1-B1
+# A2-A3
+
+End of Moves
+
+# =============================================================================
+# OUTPUT FILE
+# =============================================================================
+
+OUTPUT test_001.txt
