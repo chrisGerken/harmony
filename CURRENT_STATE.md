@@ -1,5 +1,5 @@
 # Current State of Harmony Puzzle Solver
-**Last Updated**: January 9, 2026 (Session 5)
+**Last Updated**: January 10, 2026 (Session 6)
 
 ## Quick Status
 - ✅ **Production Ready**: All code compiles and tests pass
@@ -13,6 +13,7 @@
 - ✅ **TestBuilder Utility**: New tool for creating test cases from solved states
 - ✅ **Debug Mode**: Breakpoint-friendly mode that disables premature termination
 - ✅ **Board.toString()**: Easy board visualization with color names
+- ✅ **Horizontal Perfect Swap**: New move optimization for aligned rows with cross-row skip
 
 ## Current Architecture (High Level)
 
@@ -111,7 +112,7 @@ harmony/
 │   │   └── BoardState.java
 │   ├── logic/                      # Processing logic
 │   │   ├── PendingStates.java      # Added getSmallestNonEmptyQueueInfo()
-│   │   ├── StateProcessor.java     # Added getCacheSize()
+│   │   ├── StateProcessor.java     # ⭐ UPDATED Session 6 - Horizontal perfect swap with cross-row skip
 │   │   ├── ProgressReporter.java   # Takes HarmonySolver, new progress format
 │   │   └── BoardParser.java        # ⭐ UPDATED Session 5 - End of Puzzle Specification, colorNames
 │   └── invalidity/                 # Pruning tests
@@ -137,8 +138,9 @@ harmony/
 ├── SESSION_SUMMARY_2026-01-07.md   # Session 2 details
 ├── SESSION_2026-01-08.md           # Session 3 details
 ├── SESSION_2026-01-08_improvements.md  # Session 4 details
-├── SESSION_2026-01-09.md           # ⭐ NEW Session 5 details
-├── CURRENT_STATE.md                # ⭐ UPDATED Session 5 - This file
+├── SESSION_2026-01-09.md           # Session 5 details
+├── SESSION_2026-01-10.md           # ⭐ NEW Session 6 details
+├── CURRENT_STATE.md                # ⭐ UPDATED Session 6 - This file
 ├── solve.sh                        # Convenience script
 └── generate.sh                     # Convenience script
 ```
@@ -338,11 +340,11 @@ mvn compile
 
 ### Key Files for Next Session
 1. `CURRENT_STATE.md` - This file (start here!)
-2. `SESSION_2026-01-09.md` - Session 5 details (TestBuilder, debug mode, etc.)
-3. `TestBuilder.java` - New test case generation utility
-4. `HarmonySolver.java` - Central context, colorNames, debug mode
-5. `Board.java` - toString() methods for debugging
-6. `BoardParser.java` - End of Puzzle Specification support
+2. `SESSION_2026-01-10.md` - Session 6 details (horizontal perfect swap optimization)
+3. `StateProcessor.java` - Horizontal perfect swap with cross-row skip optimization
+4. `TestBuilder.java` - Test case generation utility
+5. `HarmonySolver.java` - Central context, colorNames, debug mode
+6. `Board.java` - toString() methods for debugging
 
 ## Session History
 
@@ -437,14 +439,32 @@ mvn compile
   - Allows pausing at breakpoints without premature "no solution" termination
   - Header shows "DEBUG MODE: Empty queue termination disabled"
 
+### Session 6 (January 10, 2026)
+- **Horizontal Perfect Swap Detection**:
+  - New optimization in `StateProcessor.generateAllMoves()`
+  - Detects rows where all tiles have correct color, all have 0-1 moves, even count of 1-moves
+  - Returns single move instead of generating all possible moves for that row
+  - Added `checkHorizontalPerfectSwap()` helper method
+- **Cross-Row Skip Optimization**:
+  - When wrong-colored tile found in row A, marks tile's target row B as skip
+  - Avoids redundant checking of rows known to be ineligible
+  - Uses `boolean[] skipRow` array and `colorToTargetRow` map
+- **Updated Javadoc**:
+  - Documented all move generation optimizations in order:
+    1. Only generates moves where both tiles have moves remaining
+    2. Horizontal perfect swap detection (NEW)
+    3. Vertical perfect swap detection
+    4. Last-move filtering
+
 ### Next Session Goals
 1. Use TestBuilder to create specific test cases for invalidity tests
 2. Consider state deduplication for very large puzzles
 3. Explore additional parity-based pruning strategies
 4. Profile memory usage under extreme load
+5. Consider similar cross-row inference for vertical perfect swap detection
 
 ---
 
 **Ready for**: Production use, further optimization, new features, test case creation with TestBuilder
 **Status**: ✅ Stable, documented, tested, optimized
-**Last Test**: January 9, 2026 (Session 5) - TestBuilder, debug mode, Board.toString() implemented
+**Last Test**: January 10, 2026 (Session 6) - Horizontal perfect swap with cross-row skip optimization

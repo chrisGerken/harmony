@@ -117,9 +117,12 @@ public class StateProcessor implements Runnable {
      *
      * Optimizations applied (in order):
      * 1. Only generates moves where both tiles have moves remaining
-     * 2. Perfect swap detection: If two tiles in same column with 1 move each can swap
-     *    into their target rows, returns ONLY that move (forces optimal endgame)
-     * 3. Last-move filtering: Eliminates moves where a tile with 1 remaining move
+     * 2. Horizontal perfect swap detection: If a row has all correct colors, all tiles
+     *    with 0 or 1 moves, and an even number (>=2) of tiles with 1 move, returns
+     *    ONLY one move from that row (any pair of 1-move tiles works)
+     * 3. Vertical perfect swap detection: If two tiles in same column with 1 move each
+     *    can swap into their target rows, returns ONLY that move (forces optimal endgame)
+     * 4. Last-move filtering: Eliminates moves where a tile with 1 remaining move
      *    would swap with a tile not in its target row (prevents wasted moves)
      *
      * These optimizations reduce generated states by up to 91% on complex puzzles
@@ -135,6 +138,26 @@ public class StateProcessor implements Runnable {
 
         // Build color-to-row mapping once for O(1) lookup performance
         Map<Integer, Integer> colorToTargetRow = buildColorToRowMap(board);
+
+        // Check each row for horizontal perfect swap (check once per row, not per move)
+        // A horizontal perfect swap occurs when:
+        // 1. All tiles in the row have the target color
+        // 2. All tiles have 0 or 1 remaining moves
+        // 3. Even number of tiles with 1 remaining move (>= 2)
+        // Optimization: When a tile with wrong color is found, the target row for that
+        // tile's color is also marked as skip (since it's missing at least one tile).
+        boolean[] skipRow = new boolean[rows];  // Java initializes to all false
+        for (int row = 0; row < rows; row++) {
+            if (skipRow[row]) {
+                continue;
+            }
+            Move perfectMove = checkHorizontalPerfectSwap(board, row, cols, colorToTargetRow, skipRow);
+            if (perfectMove != null) {
+                List<Move> result = new ArrayList<>();
+                result.add(perfectMove);
+                return result;
+            }
+        }
 
         // Generate all row swaps
         for (int row = 0; row < rows; row++) {
@@ -255,6 +278,74 @@ public class StateProcessor implements Runnable {
             colorToRow.put(targetColor, row);
         }
         return colorToRow;
+    }
+
+    /**
+     * Checks if a row qualifies for a horizontal perfect swap.
+     * A horizontal perfect swap occurs when:
+     * 1. All tiles in the row have the target color for that row
+     * 2. All tiles have 0 or 1 remaining moves
+     * 3. There is an even number of tiles with 1 remaining move (at least 2)
+     *
+     * When these conditions are met, any pair of tiles with 1 remaining move
+     * can be swapped to make progress toward the solution.
+     *
+     * Optimization: When a tile with the wrong color is found, the target row
+     * for that tile's color is marked in skipRow, since that row is also missing
+     * at least one of its tiles.
+     *
+     * @param board the board to check
+     * @param row the row index to check
+     * @param cols the number of columns
+     * @param colorToTargetRow mapping from color ID to target row index
+     * @param skipRow array to mark rows that can be skipped (modified by this method)
+     * @return a Move if the row qualifies, null otherwise
+     */
+    private Move checkHorizontalPerfectSwap(Board board, int row, int cols,
+                                            Map<Integer, Integer> colorToTargetRow,
+                                            boolean[] skipRow) {
+        int targetColor = board.getRowTargetColor(row);
+        int firstColWithOneMove = -1;
+        int secondColWithOneMove = -1;
+        int countWithOneMove = 0;
+
+        for (int col = 0; col < cols; col++) {
+            Tile tile = board.getTile(row, col);
+
+            // Condition 1: All tiles must have target color
+            if (tile.getColor() != targetColor) {
+                // This tile belongs to a different row - mark that row as skip too
+                Integer tileTargetRow = colorToTargetRow.get(tile.getColor());
+                if (tileTargetRow != null) {
+                    skipRow[tileTargetRow] = true;
+                }
+                return null;
+            }
+
+            int remaining = tile.getRemainingMoves();
+
+            // Condition 2: All tiles must have 0 or 1 remaining moves
+            if (remaining > 1) {
+                return null;
+            }
+
+            // Track tiles with 1 remaining move
+            if (remaining == 1) {
+                countWithOneMove++;
+                if (firstColWithOneMove == -1) {
+                    firstColWithOneMove = col;
+                } else if (secondColWithOneMove == -1) {
+                    secondColWithOneMove = col;
+                }
+            }
+        }
+
+        // Condition 3: Even number of tiles with 1 move (and at least 2)
+        if (countWithOneMove >= 2 && countWithOneMove % 2 == 0) {
+            return new Move(row, firstColWithOneMove, row, secondColWithOneMove);
+        }
+
+        return null;
     }
 
     /**

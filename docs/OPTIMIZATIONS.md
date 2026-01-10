@@ -4,14 +4,15 @@ This document details the optimization strategies implemented in the Harmony Puz
 
 ## Overview
 
-The solver employs six complementary optimization strategies that work together to dramatically reduce the search space and improve performance:
+The solver employs seven complementary optimization strategies that work together to dramatically reduce the search space and improve performance:
 
 1. **Invalidity Tests** - Prune impossible states after generation
-2. **Perfect Swap Detection** - Force optimal endgame moves
-3. **Move Filtering** - Eliminate wasteful moves before generation
-4. **Thread-Local Caching** - Reduce contention on shared queues *(Added: 2026-01-08)*
-5. **Cached State Metrics** - Avoid recalculating remaining moves *(Added: 2026-01-08)*
-6. **HashMap Color Lookups** - O(1) color-to-row mapping *(Added: 2026-01-08)*
+2. **Horizontal Perfect Swap Detection** - Force optimal endgame moves for aligned rows *(Added: 2026-01-10)*
+3. **Vertical Perfect Swap Detection** - Force optimal endgame moves for column swaps
+4. **Move Filtering** - Eliminate wasteful moves before generation
+5. **Thread-Local Caching** - Reduce contention on shared queues *(Added: 2026-01-08)*
+6. **Cached State Metrics** - Avoid recalculating remaining moves *(Added: 2026-01-08)*
+7. **HashMap Color Lookups** - O(1) color-to-row mapping *(Added: 2026-01-08)*
 
 ## 1. Invalidity Tests
 
@@ -55,9 +56,42 @@ Four invalidity tests identify board states that cannot lead to solutions. These
 
 **Impact:** Contributes to 30-40% overall pruning rate alongside other tests.
 
-## 2. Perfect Swap Detection *(Added: 2026-01-08)*
+## 2. Horizontal Perfect Swap Detection *(Added: 2026-01-10)*
 
-**Location:** `StateProcessor.generateAllMoves()` - lines 144-172
+**Location:** `StateProcessor.generateAllMoves()` - lines 142-160, 283-349
+
+**Detects:** Rows where:
+- All tiles have the target color for that row
+- All tiles have 0 or 1 remaining moves
+- There is an even number of tiles with 1 remaining move (at least 2)
+
+**Action:** Returns ONLY one move from that row (any pair of tiles with 1 move), ignoring all other possible moves.
+
+**Rationale:** When a row has all correct colors and all tiles have 0-1 moves, the only remaining work is pairing off the 1-move tiles within the row. Any pair of 1-move tiles can be swapped to make progress.
+
+**Cross-Row Skip Optimization:**
+When checking a row and finding a tile with the wrong color, the method also marks the target row for that tile's color as "skip" in a boolean array. This avoids redundant checking of rows known to be ineligible (they're missing at least one tile).
+
+```java
+if (tile.getColor() != targetColor) {
+    // Mark the tile's target row as skip
+    Integer tileTargetRow = colorToTargetRow.get(tile.getColor());
+    if (tileTargetRow != null) {
+        skipRow[tileTargetRow] = true;
+    }
+    return null;
+}
+```
+
+**Implementation Notes:**
+- Uses `checkHorizontalPerfectSwap()` helper method
+- Each row checked only once (O(cols) per row)
+- Runs BEFORE move generation for early return
+- Tracks first two columns with 1-move tiles to avoid needing a list
+
+## 3. Vertical Perfect Swap Detection *(Added: 2026-01-08)*
+
+**Location:** `StateProcessor.generateAllMoves()` - lines 190-217
 
 **Detects:** Two tiles in the same column where:
 - Both have exactly 1 remaining move
@@ -73,7 +107,7 @@ Four invalidity tests identify board states that cannot lead to solutions. These
 
 **Impact:** On puzzles with endgame scenarios, dramatically reduces branching factor from dozens/hundreds to 1.
 
-## 3. Move Filtering *(Added: 2026-01-08)*
+## 4. Move Filtering *(Added: 2026-01-08)*
 
 **Location:** `StateProcessor.generateAllMoves()` - lines 174-207
 
@@ -141,13 +175,14 @@ These optimizations maintain solution completeness:
 - Invalidity tests: Only prune states that cannot lead to solutions
 
 ### Order of Operations
-1. Generate all possible moves (row/column swaps with moves remaining)
-2. Check for perfect swap → return immediately if found
-3. Filter wasteful last-move swaps
-4. Return filtered move list
-5. For each move: create successor, check invalidity, add to queue if valid
+1. Check for horizontal perfect swap → return immediately if found
+2. Generate all possible moves (row/column swaps with moves remaining)
+3. Check for vertical perfect swap → return immediately if found
+4. Filter wasteful last-move swaps
+5. Return filtered move list
+6. For each move: create successor, check invalidity, add to queue if valid
 
-## 4. Thread-Local Caching *(Added: 2026-01-08)*
+## 5. Thread-Local Caching *(Added: 2026-01-08)*
 
 ### Problem
 
@@ -210,7 +245,7 @@ private BoardState getNextBoardState() {
 ./solve.sh -t 2 -c 0 puzzles/simple.txt
 ```
 
-## 5. Cached State Metrics *(Added: 2026-01-08)*
+## 6. Cached State Metrics *(Added: 2026-01-08)*
 
 ### Problem
 
@@ -265,7 +300,7 @@ public BoardState applyMove(Move move) {
 
 On a 4x4 board generating millions of states, this optimization eliminates billions of tile iterations.
 
-## 6. HashMap Color Lookups *(Added: 2026-01-08)*
+## 7. HashMap Color Lookups *(Added: 2026-01-08)*
 
 ### Problem
 
@@ -367,9 +402,10 @@ Monitor:
 
 ## References
 
-- `StateProcessor.java` - Move generation, filtering, and thread-local caching
+- `StateProcessor.java` - Move generation, filtering, perfect swap detection, and thread-local caching
 - `BoardState.java` - Cached remainingMoves field
 - `InvalidityTestCoordinator.java` - Test registration
 - `IsolatedTileTest.java` - Isolation detection test
 - `HarmonySolver.java` - Command-line option parsing (-c flag)
 - Session notes: 2026-01-08 - Optimization implementation and thread-local caching
+- Session notes: 2026-01-10 - Horizontal perfect swap with cross-row skip optimization
