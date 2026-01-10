@@ -1,5 +1,5 @@
 # Current State of Harmony Puzzle Solver
-**Last Updated**: January 10, 2026 (Session 6)
+**Last Updated**: January 10, 2026 (Session 6b)
 
 ## Quick Status
 - ✅ **Production Ready**: All code compiles and tests pass
@@ -7,7 +7,7 @@
 - ✅ **State Management**: Encapsulated in PendingStates class
 - ✅ **Fully Documented**: All changes documented for future sessions
 - ✅ **Thread-Safe**: All operations properly synchronized
-- ✅ **Enhanced Pruning**: StuckTilesTest (odd parity) replaces StuckTileTest
+- ✅ **Enhanced Pruning**: StuckTilesTest now handles one-tile-out-of-row cases
 - ✅ **Performance Optimized**: HashMap color lookups, compact number display
 - ✅ **Centralized Context**: HarmonySolver is now instance-based with getters for all components
 - ✅ **TestBuilder Utility**: New tool for creating test cases from solved states
@@ -111,15 +111,15 @@ harmony/
 │   │   ├── Move.java
 │   │   └── BoardState.java
 │   ├── logic/                      # Processing logic
-│   │   ├── PendingStates.java      # Added getSmallestNonEmptyQueueInfo()
-│   │   ├── StateProcessor.java     # ⭐ UPDATED Session 6 - Horizontal perfect swap with cross-row skip
-│   │   ├── ProgressReporter.java   # Takes HarmonySolver, new progress format
-│   │   └── BoardParser.java        # ⭐ UPDATED Session 5 - End of Puzzle Specification, colorNames
+│   │   ├── PendingStates.java      # ⭐ UPDATED Session 6b - Added getQueueRangeInfo()
+│   │   ├── StateProcessor.java     # ⭐ UPDATED Session 6b - Cache threshold now uses moves taken
+│   │   ├── ProgressReporter.java   # ⭐ UPDATED Session 6b - Redesigned status line format
+│   │   └── BoardParser.java        # End of Puzzle Specification, colorNames
 │   └── invalidity/                 # Pruning tests
 │       ├── InvalidityTest.java     # Interface
 │       ├── InvalidityTestCoordinator.java
 │       ├── StuckTileTest.java
-│       ├── StuckTilesTest.java     # Odd parity detection
+│       ├── StuckTilesTest.java     # ⭐ UPDATED Session 6 - One-tile-out-of-row detection
 │       ├── WrongRowZeroMovesTest.java
 │       ├── BlockedSwapTest.java
 │       └── IsolatedTileTest.java
@@ -184,7 +184,8 @@ void add(BoardState state)              // Add to appropriate depth queue
 BoardState poll()                       // Get from deepest queue
 boolean isSolutionFound()               // Check if solution found
 boolean markSolutionFound(BoardState)   // Atomically mark solution
-int[] getSmallestNonEmptyQueueInfo()    // Returns [moveCount, queueSize] for progress
+int[] getSmallestNonEmptyQueueInfo()    // Returns [moveCount, queueSize] for smallest queue
+int[][] getQueueRangeInfo()             // Returns all queues from first to last non-empty
 void incrementStatesProcessed()         // Update counter
 long getStatesProcessed()               // Get counter value
 // ... similar for generated and pruned
@@ -216,10 +217,12 @@ int getCacheSize()                      // Returns local cache size (for progres
 
 **Constructor**: `ProgressReporter(HarmonySolver solver)`
 
-**Progress format**: `Progress: a:b c` where:
-- `a` = smallest move count with non-empty queue
-- `b` = total moves required to solve puzzle
-- `c` = number of states in that queue
+**Status line format** (Session 6b):
+```
+[time] Processed: X | Pruned: X% | Queues: 3:5 4:12 5:8 6:0 7:3 | Rate: X/s
+```
+
+Where Queues shows `moveCount:queueSize` for all queues from first non-empty to last non-empty, inclusive.
 
 ## How to Continue Development
 
@@ -340,11 +343,11 @@ mvn compile
 
 ### Key Files for Next Session
 1. `CURRENT_STATE.md` - This file (start here!)
-2. `SESSION_2026-01-10.md` - Session 6 details (horizontal perfect swap optimization)
-3. `StateProcessor.java` - Horizontal perfect swap with cross-row skip optimization
-4. `TestBuilder.java` - Test case generation utility
-5. `HarmonySolver.java` - Central context, colorNames, debug mode
-6. `Board.java` - toString() methods for debugging
+2. `SESSION_2026-01-10.md` - Session 6/6b details (includes ProgressReporter redesign, cache threshold change)
+3. `ProgressReporter.java` - Redesigned status line format
+4. `PendingStates.java` - Added `getQueueRangeInfo()` method
+5. `StateProcessor.java` - Cache threshold now uses moves taken, horizontal perfect swap
+6. `HarmonySolver.java` - Updated help text for `-c` option
 
 ## Session History
 
@@ -449,22 +452,43 @@ mvn compile
   - When wrong-colored tile found in row A, marks tile's target row B as skip
   - Avoids redundant checking of rows known to be ineligible
   - Uses `boolean[] skipRow` array and `colorToTargetRow` map
-- **Updated Javadoc**:
-  - Documented all move generation optimizations in order:
-    1. Only generates moves where both tiles have moves remaining
-    2. Horizontal perfect swap detection (NEW)
-    3. Vertical perfect swap detection
-    4. Last-move filtering
+- **StuckTilesTest Enhanced**:
+  - Now handles case where exactly one tile with target color is out of its target row
+  - T1/T2 logic: checks tile in target row at T1's column
+  - If T2 has target color: T1 must have exactly 2 remaining moves
+  - If T2 has different color ("correct column"): T1 must have exactly 1 move, counted as 0
+  - Scans entire board to find tiles with target color
+  - Expands pruning coverage for near-solution states
+
+### Session 6b (January 10, 2026 - Later)
+- **ProgressReporter Status Line Redesigned**:
+  - Removed "Generated" count from status line
+  - Removed pruned count, kept only percentage (without parentheses)
+  - Moved Pruned stat after Processed
+  - Removed Queue stat entirely
+  - Changed "Progress:" label to "Queues:"
+  - New format: `[time] Processed: X | Pruned: X% | Queues: 3:5 4:12 5:8 | Rate: X/s`
+- **PendingStates New Method**:
+  - Added `getQueueRangeInfo()` method
+  - Returns all queues from first non-empty to last non-empty, inclusive
+  - Each entry is `[moveCount, queueSize]`
+- **Cache Threshold Meaning Changed**:
+  - `-c` option now measures from first move instead of remaining moves
+  - States with N+ moves taken → local cache (was: states with fewer than N remaining)
+  - Example: `-c 4` caches states with 4+ moves taken
+  - Updated `StateProcessor.storeBoardState()` to use `getMoveCount()`
+  - Updated help text and header output
 
 ### Next Session Goals
 1. Use TestBuilder to create specific test cases for invalidity tests
 2. Consider state deduplication for very large puzzles
-3. Explore additional parity-based pruning strategies
-4. Profile memory usage under extreme load
-5. Consider similar cross-row inference for vertical perfect swap detection
+3. Profile memory usage under extreme load
+4. Consider similar cross-row inference for vertical perfect swap detection
+5. Test edge cases for enhanced StuckTilesTest
 
 ---
 
 **Ready for**: Production use, further optimization, new features, test case creation with TestBuilder
 **Status**: ✅ Stable, documented, tested, optimized
-**Last Test**: January 10, 2026 (Session 6) - Horizontal perfect swap with cross-row skip optimization
+**Last Test**: January 10, 2026 (Session 6b) - ProgressReporter redesign and cache threshold change
+**Note**: Requires rebuild with Maven to test new changes

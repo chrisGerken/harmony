@@ -61,14 +61,20 @@ public class ProgressReporter implements Runnable {
         }
         int totalQueueSize = queueSize + totalCacheSize;
 
-        // Get progress info: smallest non-empty queue move count and size
-        int[] queueInfo = pendingStates.getSmallestNonEmptyQueueInfo();
-        int totalMoves = solver.getInitialRemainingMoves();
+        // Get progress info: all queues from first non-empty to last non-empty
+        int[][] queueRangeInfo = pendingStates.getQueueRangeInfo();
         String progressStr;
-        if (queueInfo != null) {
-            progressStr = String.format("%d:%d %d", queueInfo[0], totalMoves, queueInfo[1]);
+        if (queueRangeInfo != null) {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < queueRangeInfo.length; i++) {
+                if (i > 0) {
+                    sb.append(" ");
+                }
+                sb.append(queueRangeInfo[i][0]).append(":").append(queueRangeInfo[i][1]);
+            }
+            progressStr = sb.toString();
         } else {
-            progressStr = String.format("?:%d 0", totalMoves);
+            progressStr = "empty";
         }
 
         // Calculate statistics
@@ -78,15 +84,12 @@ public class ProgressReporter implements Runnable {
 
         // Format and print progress
         System.out.printf(
-            "[%s] Processed: %s | Queue: %s | Progress: %s | Generated: %s | Pruned: %s (%.1f%%) | " +
+            "[%s] Processed: %s | Pruned: %.1f%% | Queues: %s | " +
             "Rate: %s/s%n",
             formatDuration(elapsedSeconds),
             formatCount(processed),
-            formatCount(totalQueueSize),
-            progressStr,
-            formatCount(generated),
-            formatCount(pruned),
             pruneRate,
+            progressStr,
             formatCount((long) statesPerSecond)
         );
     }

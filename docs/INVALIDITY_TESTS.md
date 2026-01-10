@@ -197,46 +197,80 @@ if (InvalidityTestCoordinator.getInstance().isInvalid(state)) {
 **File**: `src/main/java/org/gerken/harmony/invalidity/StuckTilesTest.java`
 **Status**: Currently active in InvalidityTestCoordinator
 **Added**: 2026-01-08
+**Enhanced**: 2026-01-10 - Added one-tile-out-of-row detection
 
 #### Purpose
 
-Detects a stuck tiles scenario with **odd parity**: where a row has all tiles with the correct target color, all tiles have either 0 or 1 remaining moves, and there's an **odd number** of tiles with 1 remaining move. This is an impossible state to solve.
+Detects stuck tiles scenarios with **odd parity** that cannot be solved. This test now handles two cases:
 
-This is a more comprehensive version of `StuckTileTest` that catches any odd number of stuck tiles (1, 3, 5, etc.), not just the single-tile case.
+1. **All tiles in row**: When all tiles with target color are in their target row
+2. **One tile out of row**: When exactly one tile with target color is not in its target row
 
-#### Logic
+#### Conditions for Invalid State
+
+For a row with target color C:
+1. All tiles with color C, or all but one, must be in this row
+2. Each tile with color C must have 0, 1, or 2 remaining moves
+3. If exactly one tile (T1) is out of row:
+   - Let T2 = tile in target row at T1's column
+   - If T2's color == C (not "correct column"): T1 must have exactly 2 moves
+   - If T2's color != C ("correct column"): T1 must have exactly 1 move
+4. Calculate total remaining moves:
+   - Sum moves of tiles with color C in the row
+   - If T1 in "correct column": add 0 for T1
+   - If T1 NOT in "correct column": add T1's actual moves
+5. If total is odd → board is invalid
+
+#### Logic (Enhanced)
 
 ```java
 for (each row) {
     int targetColor = board.getRowTargetColor(row);
 
-    boolean allColorsCorrect = true;
-    int tilesWithOneMoveCount = 0;
-    int tilesWithZeroMovesCount = 0;
-    int tilesWithOtherMovesCount = 0;
+    // Scan entire board to find tiles with targetColor
+    int tilesWithColorOutOfRow = 0;
+    int t1Row = -1, t1Col = -1;
 
-    for (each tile in row) {
-        if (tile.getColor() != targetColor) {
-            allColorsCorrect = false;
-            break;
+    for (each tile on board) {
+        if (tile.getColor() == targetColor) {
+            if (tile.getRemainingMoves() > 2) return false;  // Skip row
+            if (tile not in this row) {
+                tilesWithColorOutOfRow++;
+                t1Row = tile.row; t1Col = tile.col;
+                if (tilesWithColorOutOfRow > 1) return false;  // Skip row
+            }
         }
-
-        if (tile.getRemainingMoves() == 0) tilesWithZeroMovesCount++;
-        else if (tile.getRemainingMoves() == 1) tilesWithOneMoveCount++;
-        else tilesWithOtherMovesCount++;
     }
 
-    // Check for odd parity
-    if (allColorsCorrect &&
-        tilesWithOtherMovesCount == 0 &&
-        tilesWithOneMoveCount > 0 &&
-        tilesWithOneMoveCount % 2 == 1) {
-        return true;  // Invalid - odd number of tiles with 1 move!
+    // Calculate total remaining moves for tiles with targetColor in the row
+    int totalRemainingMoves = 0;
+    for (each tile in row with targetColor) {
+        totalRemainingMoves += tile.getRemainingMoves();
+    }
+
+    // Handle T1 if exactly one tile is out of the row
+    if (tilesWithColorOutOfRow == 1) {
+        Tile t1 = board.getTile(t1Row, t1Col);
+        Tile t2 = board.getTile(row, t1Col);
+
+        if (t2.getColor() == targetColor) {
+            // T1 NOT in "correct column" - must have exactly 2 moves
+            if (t1.getRemainingMoves() != 2) return false;
+            totalRemainingMoves += t1.getRemainingMoves();
+        } else {
+            // T1 IS in "correct column" - must have exactly 1 move
+            if (t1.getRemainingMoves() != 1) return false;
+            // T1's contribution is 0 (don't add anything)
+        }
+    }
+
+    if (totalRemainingMoves % 2 == 1) {
+        return true;  // Invalid - odd total!
     }
 }
 ```
 
-#### Example 1: Three tiles with 1 move (odd)
+#### Example 1: All tiles in row, odd parity
 
 Row A needs RED tiles, has 4 columns:
 - A1: RED with 1 move
@@ -246,31 +280,46 @@ Row A needs RED tiles, has 4 columns:
 
 This is **Invalid** because:
 - All tiles are the correct color
-- Three tiles have 1 move remaining (odd number)
-- Tiles can only swap within the row (swapping outside would break color constraint)
-- Each swap reduces two tiles from 1 move to 0 moves
-- 3 tiles cannot be paired off (3 ÷ 2 = 1 remainder)
+- Three tiles have 1 move remaining (total = 3, odd)
+- 3 tiles cannot be paired off
 
-#### Example 2: Two tiles with 1 move (even) - Valid!
+#### Example 2: One tile out of row, "correct column"
 
-Row A needs RED tiles, has 4 columns:
+Row A needs RED tiles, has 3 columns:
 - A1: RED with 1 move
-- A2: RED with 1 move
-- A3: RED with 0 moves
-- A4: RED with 0 moves
+- A2: RED with 0 moves
+- A3: BLUE with 1 move (T2)
+- B3: RED with 1 move (T1, out of row)
 
-This is **Valid** because:
-- Two tiles with 1 move can swap with each other
-- After the swap, both tiles will have 0 moves
-- Even number allows perfect pairing
+T1 (RED at B3) is in "correct column" because T2 (at A3) is BLUE, not RED.
+T1 must have exactly 1 move (it does).
+T1's contribution = 0.
+Total = 1 + 0 + 0 = 1 (odd) → **Invalid**
 
-#### Why It Works
+#### Example 3: One tile out of row, NOT "correct column"
 
-When all tiles in a row have the correct color, they can only swap within the row (swapping outside would introduce the wrong color). Each swap reduces exactly two tiles' move counts by 1. Therefore:
-- **Even count** of tiles with 1 move → Can pair them all off → Solvable
-- **Odd count** of tiles with 1 move → Cannot pair them all off → Unsolvable
+Row A needs RED tiles, has 3 columns:
+- A1: RED with 1 move
+- A2: RED with 0 moves
+- A3: RED with 1 move (T2)
+- B3: RED with 2 moves (T1, out of row)
 
-This is a **parity problem**: an odd number minus pairs always leaves one unpaired.
+T1 (RED at B3) is NOT in "correct column" because T2 (at A3) is RED.
+T1 must have exactly 2 moves (it does).
+T1's contribution = 2.
+Total = 1 + 0 + 1 + 2 = 4 (even) → **Valid**
+
+#### Why "Correct Column" Matters
+
+When T1 is in the "correct column" (T2 has a different color):
+- T1 can swap directly into position, displacing T2
+- This swap is "free" for parity purposes - T1's moves don't add to the row's parity problem
+- Hence T1's contribution = 0
+
+When T1 is NOT in "correct column" (T2 has the target color):
+- Swapping T1 with T2 would displace a correctly-colored tile
+- T1 needs 2 moves to handle this more complex scenario
+- T1's full move count contributes to parity
 
 #### Optimization
 
@@ -278,18 +327,17 @@ Only checks rows affected by the last move (not all rows), as only those rows co
 
 #### Performance
 
-⚡ **Very Fast**: O(N×M) - single pass over affected rows
+⚡ **Fast**: O(R×N×M) - scans entire board for each affected row
+- More expensive than original due to full board scan
+- Still fast in practice (typically 2-4 affected rows per move)
 
-#### Comparison with StuckTileTest
+#### Evolution
 
-| Aspect | StuckTileTest (Old) | StuckTilesTest (New) |
-|--------|---------------------|----------------------|
-| Catches 1 tile with 1 move | ✅ Yes | ✅ Yes |
-| Catches 3 tiles with 1 move | ❌ No | ✅ Yes |
-| Catches 5 tiles with 1 move | ❌ No | ✅ Yes |
-| Allows 2 tiles with 1 move | ✅ Yes (valid) | ✅ Yes (valid) |
-| Allows 4 tiles with 1 move | ✅ Yes (valid) | ✅ Yes (valid) |
-| Status | Kept in codebase | **Active** |
+| Version | Detection | Status |
+|---------|-----------|--------|
+| StuckTileTest | Only exactly 1 tile with 1 move, all in row | Legacy |
+| StuckTilesTest v1 | Any odd count with 1 move, all in row | Replaced |
+| StuckTilesTest v2 | Odd parity with 0-2 moves, handles one-out-of-row | **Active** |
 
 ### 2. StuckTileTest (Legacy)
 
@@ -536,6 +584,8 @@ Initial test implementations (TooManyMovesTest, ImpossibleColorAlignmentTest, In
 The current active tests (StuckTilesTest, WrongRowZeroMovesTest, BlockedSwapTest, IsolatedTileTest) are more conservative and only prune genuinely impossible states. They collectively provide 35-37% pruning on typical puzzles without eliminating valid solution paths.
 
 **2026-01-08 Update**: StuckTilesTest (odd parity version) replaced StuckTileTest as the active test, providing more comprehensive detection of stuck tile scenarios.
+
+**2026-01-10 Update**: StuckTilesTest enhanced to handle the case where exactly one tile with the target color is outside its target row. This includes T1/T2 logic for "correct column" detection and appropriate parity adjustments.
 
 ## Adding New Tests
 

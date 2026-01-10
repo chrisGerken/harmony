@@ -244,4 +244,52 @@ public class PendingStates {
 
         return null;
     }
+
+    /**
+     * Returns queue sizes for all queues from first non-empty to last non-empty, inclusive.
+     * Returns a 2D array where each element is [moveCount, queueSize].
+     * Returns null if all queues are empty.
+     *
+     * @return array of [moveCount, queueSize] pairs, or null if all queues empty
+     */
+    public int[][] getQueueRangeInfo() {
+        int currentMax = maxMoveCount.get();
+
+        // Find first non-empty queue
+        int firstNonEmpty = -1;
+        for (int moveCount = 0; moveCount <= currentMax; moveCount++) {
+            ConcurrentLinkedQueue<BoardState> queue = queuesByMoveCount.get(moveCount);
+            if (queue != null && queue.size() > 0) {
+                firstNonEmpty = moveCount;
+                break;
+            }
+        }
+
+        if (firstNonEmpty == -1) {
+            return null;
+        }
+
+        // Find last non-empty queue
+        int lastNonEmpty = firstNonEmpty;
+        for (int moveCount = currentMax; moveCount > firstNonEmpty; moveCount--) {
+            ConcurrentLinkedQueue<BoardState> queue = queuesByMoveCount.get(moveCount);
+            if (queue != null && queue.size() > 0) {
+                lastNonEmpty = moveCount;
+                break;
+            }
+        }
+
+        // Build result array for range [firstNonEmpty, lastNonEmpty]
+        int rangeSize = lastNonEmpty - firstNonEmpty + 1;
+        int[][] result = new int[rangeSize][2];
+
+        for (int i = 0; i < rangeSize; i++) {
+            int moveCount = firstNonEmpty + i;
+            result[i][0] = moveCount;
+            ConcurrentLinkedQueue<BoardState> queue = queuesByMoveCount.get(moveCount);
+            result[i][1] = (queue != null) ? queue.size() : 0;
+        }
+
+        return result;
+    }
 }

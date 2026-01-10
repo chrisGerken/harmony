@@ -361,7 +361,7 @@ public class HarmonySolver {
         System.out.println("Options:");
         System.out.println("  -t, --threads <N>     Number of worker threads (default: 2)");
         System.out.println("  -r, --report <N>      Progress report interval in seconds (default: 30, 0 to disable)");
-        System.out.println("  -c, --cache <N>       Cache threshold for near-solution states (default: 4)");
+        System.out.println("  -c, --cache <N>       Cache threshold: states with N+ moves taken are cached locally (default: 4)");
         System.out.println("  -d, --debug           Debug mode: disable empty queue termination (for breakpoints)");
         System.out.println("  -h, --help            Show this help message");
         System.out.println();
@@ -380,7 +380,7 @@ public class HarmonySolver {
         System.out.println("Configuration:");
         System.out.println("  Threads: " + config.threadCount);
         System.out.println("  Report interval: " + (config.reportInterval > 0 ? config.reportInterval + " seconds" : "disabled"));
-        System.out.println("  Cache threshold: " + config.cacheThreshold + " moves");
+        System.out.println("  Cache threshold: " + config.cacheThreshold + " moves taken");
         System.out.println("  Invalidity tests: " +
             InvalidityTestCoordinator.getInstance().getTestCount());
         if (config.debugMode) {

@@ -36,7 +36,7 @@ public class StateProcessor implements Runnable {
      * Creates a new state processor with configurable cache threshold.
      *
      * @param pendingStates the shared container of pending states and statistics
-     * @param cacheThreshold states with fewer than this many moves are cached locally
+     * @param cacheThreshold states with this many or more moves taken are cached locally
      */
     public StateProcessor(PendingStates pendingStates, int cacheThreshold) {
         this.pendingStates = pendingStates;
@@ -366,18 +366,17 @@ public class StateProcessor implements Runnable {
 
     /**
      * Stores a board state either in the local cache or the shared queue.
-     * Board states with fewer than cacheThreshold remaining moves are cached locally to reduce
-     * contention on the shared ConcurrentLinkedQueue, as these states are close
-     * to solution and benefit from being processed by the same thread.
+     * Board states with cacheThreshold or more moves already taken are cached locally to reduce
+     * contention on the shared ConcurrentLinkedQueue, as these deeper states benefit from
+     * being processed by the same thread.
      *
      * @param state the board state to store
      */
     private void storeBoardState(BoardState state) {
-        // Use cached remaining moves count from BoardState
-        int movesRemaining = state.getRemainingMoves();
+        int movesTaken = state.getMoveCount();
 
-        // Cache near-solution states locally, send others to shared queue
-        if (movesRemaining < cacheThreshold) {
+        // Cache deeper states locally, send early states to shared queue
+        if (movesTaken >= cacheThreshold) {
             cache.add(state);
         } else {
             pendingStates.add(state);
