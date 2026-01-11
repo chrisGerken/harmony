@@ -5,8 +5,6 @@ import org.gerken.harmony.model.BoardState;
 import org.gerken.harmony.model.Move;
 import org.gerken.harmony.model.Tile;
 
-import java.util.List;
-
 /**
  * Invalidity test that detects tiles stuck in the wrong row.
  * If any tile has zero remaining moves and its color doesn't match the target color
@@ -35,15 +33,14 @@ public class WrongRowZeroMovesTest implements InvalidityTest {
     @Override
     public boolean isInvalid(BoardState boardState) {
         Board board = boardState.getBoard();
-        List<Move> moves = boardState.getMoves();
+        Move lastMove = boardState.getLastMove();
 
         // If no moves have been made, check all tiles (initial state)
-        if (moves.isEmpty()) {
+        if (lastMove == null) {
             return checkAllTiles(board);
         }
 
         // Only check the two tiles involved in the last move
-        Move lastMove = moves.get(moves.size() - 1);
 
         // Check first tile
         int row1 = lastMove.getRow1();

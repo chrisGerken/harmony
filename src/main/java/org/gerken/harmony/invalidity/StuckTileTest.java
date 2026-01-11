@@ -5,8 +5,6 @@ import org.gerken.harmony.model.BoardState;
 import org.gerken.harmony.model.Move;
 import org.gerken.harmony.model.Tile;
 
-import java.util.List;
-
 /**
  * Invalidity test that detects a stuck tile scenario:
  * If a row has all tiles with the correct target color, and all tiles have 0 remaining
@@ -36,15 +34,14 @@ public class StuckTileTest implements InvalidityTest {
     @Override
     public boolean isInvalid(BoardState boardState) {
         Board board = boardState.getBoard();
-        List<Move> moves = boardState.getMoves();
+        Move lastMove = boardState.getLastMove();
 
         // If no moves have been made, check all rows (initial state)
-        if (moves.isEmpty()) {
+        if (lastMove == null) {
             return checkAllRows(board);
         }
 
         // Only check the row(s) containing the tiles from the last move
-        Move lastMove = moves.get(moves.size() - 1);
         int row1 = lastMove.getRow1();
         int row2 = lastMove.getRow2();
 

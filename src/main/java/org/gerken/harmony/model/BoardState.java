@@ -1,18 +1,18 @@
 package org.gerken.harmony.model;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
  * Represents a board state in the search space.
- * Includes the current board configuration and the sequence of moves taken to reach it.
+ * Includes the current board configuration and links to the previous state.
  */
 public class BoardState {
 
     private final Board board;
-    private final List<Move> moves;
+    private final Move lastMove;
     private final int remainingMoves;
+    private BoardState previousBoardState = null;
 
     /**
      * Creates a new board state with the given board and no moves.
@@ -21,19 +21,19 @@ public class BoardState {
      * @param board the board
      */
     public BoardState(Board board) {
-        this(board, new ArrayList<>());
+        this(board, (Move) null);
     }
 
     /**
-     * Creates a new board state with the given board and move history.
+     * Creates a new board state with the given board and last move.
      * Calculates remaining moves by summing all tiles' remaining moves divided by 2.
      *
      * @param board the board
-     * @param moves the list of moves taken to reach this state
+     * @param lastMove the last move taken to reach this state
      */
-    public BoardState(Board board, List<Move> moves) {
+    public BoardState(Board board, Move lastMove) {
         this.board = board;
-        this.moves = new ArrayList<>(moves);
+        this.lastMove = lastMove;
         this.remainingMoves = calculateRemainingMoves(board);
     }
 
@@ -42,12 +42,12 @@ public class BoardState {
      * Used by applyMove() to avoid recalculating on every state transition.
      *
      * @param board the board
-     * @param moves the list of moves taken to reach this state
+     * @param lastMove the last move taken to reach this state
      * @param remainingMoves the pre-calculated remaining moves count
      */
-    private BoardState(Board board, List<Move> moves, int remainingMoves) {
+    private BoardState(Board board, Move lastMove, int remainingMoves) {
         this.board = board;
-        this.moves = new ArrayList<>(moves);
+        this.lastMove = lastMove;
         this.remainingMoves = remainingMoves;
     }
 
@@ -61,12 +61,30 @@ public class BoardState {
     }
 
     /**
-     * Gets the list of moves taken to reach this state.
+     * Gets the last move taken to reach this state.
      *
-     * @return the move history
+     * @return the last move, or null if this is the initial state
      */
-    public List<Move> getMoves() {
-        return moves;
+    public Move getLastMove() {
+        return lastMove;
+    }
+
+    /**
+     * Gets the previous board state.
+     *
+     * @return the previous board state, or null if this is the initial state
+     */
+    public BoardState getPreviousBoardState() {
+        return previousBoardState;
+    }
+
+    /**
+     * Sets the previous board state.
+     *
+     * @param previousBoardState the previous board state
+     */
+    public void setPreviousBoardState(BoardState previousBoardState) {
+        this.previousBoardState = previousBoardState;
     }
 
     /**
@@ -75,7 +93,13 @@ public class BoardState {
      * @return the move count
      */
     public int getMoveCount() {
-        return moves.size();
+        int count = 0;
+        BoardState current = this;
+        while (current != null && current.lastMove != null) {
+            count++;
+            current = current.previousBoardState;
+        }
+        return count;
     }
 
     /**
@@ -98,10 +122,10 @@ public class BoardState {
     public BoardState applyMove(Move move) {
         Board newBoard = board.swap(move.getRow1(), move.getCol1(),
                                      move.getRow2(), move.getCol2());
-        List<Move> newMoves = new ArrayList<>(moves);
-        newMoves.add(move);
         // Each move decrements two tiles by 1 each, so remaining moves decreases by 1
-        return new BoardState(newBoard, newMoves, remainingMoves - 1);
+        BoardState newState = new BoardState(newBoard, move, remainingMoves - 1);
+        newState.setPreviousBoardState(this);
+        return newState;
     }
 
     /**
@@ -111,6 +135,22 @@ public class BoardState {
      */
     public boolean isSolved() {
         return board.isSolved();
+    }
+
+    /**
+     * Gets the complete move history from the initial state to this state.
+     * Traverses the previousBoardState chain to build the list in order.
+     *
+     * @return list of moves in order from first to last
+     */
+    public List<Move> getMoveHistory() {
+        List<Move> history = new ArrayList<>();
+        BoardState current = this;
+        while (current != null && current.lastMove != null) {
+            history.add(0, current.lastMove);
+            current = current.previousBoardState;
+        }
+        return history;
     }
 
     /**

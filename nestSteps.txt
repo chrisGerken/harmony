@@ -1,0 +1,17 @@
+1) Add a property of type BoardState to BoardState. Name the property previousBoardState. Initialize the value to null and add a getter and setter method to the class.
+
+2) Add a property of type Move to BoardState. Name the property lastMove. Initialize the value to null and add a getter method to the class
+
+3) Remove the moves property and getMoves() method from BoardState
+
+4) change constructor public BoardState(Board board, List<Move> moves) to accept a scalar Move instead of a List<Move>
+
+5) change constructor public BoardState(Board board) to call BoardState(Board board, null) instead
+
+6) change constructor  private BoardState(Board board, List<Move> moves, int remainingMoves) to accept a scalar Move instead of a List<Move>
+
+7) Change the invalidity test classes to call getLastMove instead of calling getMoves() and getting the last element
+
+8) Change BoardState applyMove to call the new constructor
+
+9) Create a new method on BoardState called getMoveHistory() that returns all of the moves made to the original state in order to reach the current board state. Build this list by traversing the board state history using the previousState property.

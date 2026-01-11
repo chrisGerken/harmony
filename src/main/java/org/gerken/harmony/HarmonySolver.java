@@ -259,7 +259,7 @@ public class HarmonySolver {
      * Prints the solution (sequence of moves).
      */
     private static void printSolution(BoardState solution) {
-        List<Move> moves = solution.getMoves();
+        List<Move> moves = solution.getMoveHistory();
 
         System.out.println("\nSOLUTION FOUND!");
         System.out.println("Number of moves: " + moves.size());
