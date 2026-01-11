@@ -212,18 +212,13 @@ public class TestBuilder {
 
     /**
      * Builds a solved board where each row has tiles of the correct color with 0 moves.
+     * Target color for each row equals the row index.
      */
     private static Board buildSolvedBoard(int rows, int cols) {
-        int[] targets = new int[rows];
-        for (int i = 0; i < rows; i++) {
-            targets[i] = i;
-        }
-
-        Board board = new Board(rows, cols, targets);
+        Board board = new Board(rows, cols);
         for (int row = 0; row < rows; row++) {
-            int color = row; // Color ID matches row index
             for (int col = 0; col < cols; col++) {
-                board.setTile(row, col, new Tile(color, 0));
+                board.setTile(row, col, new Tile(row, 0));
             }
         }
         return board;
@@ -247,25 +242,20 @@ public class TestBuilder {
         Tile newTile2 = new Tile(tile1.getColor(), tile1.getRemainingMoves() + 1);
 
         // Create new board with swapped tiles
-        int[] targets = new int[board.getRowCount()];
-        for (int i = 0; i < board.getRowCount(); i++) {
-            targets[i] = board.getRowTargetColor(i);
-        }
-
-        Board newBoard = new Board(board.getRowCount(), board.getColumnCount(), targets);
+        Tile[][] newGrid = new Tile[board.getRowCount()][board.getColumnCount()];
         for (int r = 0; r < board.getRowCount(); r++) {
             for (int c = 0; c < board.getColumnCount(); c++) {
                 if (r == row1 && c == col1) {
-                    newBoard.setTile(r, c, newTile1);
+                    newGrid[r][c] = newTile1;
                 } else if (r == row2 && c == col2) {
-                    newBoard.setTile(r, c, newTile2);
+                    newGrid[r][c] = newTile2;
                 } else {
-                    newBoard.setTile(r, c, board.getTile(r, c));
+                    newGrid[r][c] = board.getTile(r, c);
                 }
             }
         }
 
-        return newBoard;
+        return new Board(newGrid);
     }
 
     /**
@@ -531,25 +521,20 @@ public class TestBuilder {
         Tile newTile2 = new Tile(tile1.getColor(), tile1.getRemainingMoves() - 1);
 
         // Create new board with swapped tiles
-        int[] targets = new int[board.getRowCount()];
-        for (int i = 0; i < board.getRowCount(); i++) {
-            targets[i] = board.getRowTargetColor(i);
-        }
-
-        Board newBoard = new Board(board.getRowCount(), board.getColumnCount(), targets);
+        Tile[][] newGrid = new Tile[board.getRowCount()][board.getColumnCount()];
         for (int r = 0; r < board.getRowCount(); r++) {
             for (int c = 0; c < board.getColumnCount(); c++) {
                 if (r == row1 && c == col1) {
-                    newBoard.setTile(r, c, newTile1);
+                    newGrid[r][c] = newTile1;
                 } else if (r == row2 && c == col2) {
-                    newBoard.setTile(r, c, newTile2);
+                    newGrid[r][c] = newTile2;
                 } else {
-                    newBoard.setTile(r, c, board.getTile(r, c));
+                    newGrid[r][c] = board.getTile(r, c);
                 }
             }
         }
 
-        return newBoard;
+        return new Board(newGrid);
     }
 
     /**

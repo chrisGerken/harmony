@@ -1,5 +1,6 @@
 package org.gerken.harmony.logic;
 
+import org.gerken.harmony.invalidity.InvalidityTest;
 import org.gerken.harmony.invalidity.InvalidityTestCoordinator;
 import org.gerken.harmony.model.Board;
 import org.gerken.harmony.model.BoardState;
@@ -109,8 +110,10 @@ public class StateProcessor implements Runnable {
             }
 
             // Prune invalid states
-            if (coordinator.isInvalid(nextState)) {
+            InvalidityTest invalidatingTest = coordinator.getInvalidatingTest(nextState);
+            if (invalidatingTest != null) {
                 pendingStates.incrementStatesPruned();
+                pendingStates.incrementInvalidityCounter(nextState.getMoveCount(), invalidatingTest.getName());
                 continue;
             }
 

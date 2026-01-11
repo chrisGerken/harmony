@@ -36,6 +36,9 @@ public class PendingStates {
     private final AtomicLong statesGenerated;
     private final AtomicLong statesPruned;
 
+    // Invalidity counters: key is "moveCount:testName", value is count
+    private final ConcurrentHashMap<String, AtomicLong> invalidityCounters;
+
     /**
      * Creates a new pending states container with all counters initialized to zero.
      * Initializes the depth-first queue structure.
@@ -48,6 +51,7 @@ public class PendingStates {
         this.statesProcessed = new AtomicLong(0);
         this.statesGenerated = new AtomicLong(0);
         this.statesPruned = new AtomicLong(0);
+        this.invalidityCounters = new ConcurrentHashMap<>();
     }
 
     // ========== Queue Operations (Depth-First Strategy) ==========
@@ -220,6 +224,48 @@ public class PendingStates {
      */
     public long getStatesPruned() {
         return statesPruned.get();
+    }
+
+    // ========== Invalidity Counters ==========
+
+    /**
+     * Increments the invalidity counter for a specific test at a specific move count.
+     *
+     * @param moveCount the number of moves made when the state was found invalid
+     * @param testName the name of the invalidity test that found the state invalid
+     */
+    public void incrementInvalidityCounter(int moveCount, String testName) {
+        String key = moveCount + ":" + testName;
+        invalidityCounters.computeIfAbsent(key, k -> new AtomicLong(0)).incrementAndGet();
+    }
+
+    /**
+     * Gets the invalidity count for a specific test at a specific move count.
+     *
+     * @param moveCount the number of moves made
+     * @param testName the name of the invalidity test
+     * @return the count of states found invalid by that test at that move count
+     */
+    public long getInvalidityCount(int moveCount, String testName) {
+        String key = moveCount + ":" + testName;
+        AtomicLong counter = invalidityCounters.get(key);
+        return counter != null ? counter.get() : 0;
+    }
+
+    /**
+     * Gets the maximum move count that has any invalidity data.
+     *
+     * @return the maximum move count with invalidity data, or -1 if none
+     */
+    public int getMaxInvalidityMoveCount() {
+        int max = -1;
+        for (String key : invalidityCounters.keySet()) {
+            int moveCount = Integer.parseInt(key.split(":")[0]);
+            if (moveCount > max) {
+                max = moveCount;
+            }
+        }
+        return max;
     }
 
     /**

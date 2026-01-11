@@ -533,17 +533,110 @@ For a tile to reduce its move count, it must swap with another tile. The other t
 - Best case: O(N×M) when partners found quickly
 - Worst case: O(N×M×(N+M)) when checking all positions
 
+### 6. StalemateTest
+
+**File**: `src/main/java/org/gerken/harmony/invalidity/StalemateTest.java`
+**Added**: 2026-01-11 (Session 7 Afternoon)
+
+#### Purpose
+
+Detects stalemate conditions where no valid moves can be made. A board is in stalemate if no row or column has at least two tiles with remaining moves. Since a swap requires two tiles in the same row or column, if no such pair exists, the puzzle cannot progress.
+
+#### Logic
+
+```java
+@Override
+public boolean isInvalid(BoardState boardState) {
+    Board board = boardState.getBoard();
+    int rows = board.getRowCount();
+    int cols = board.getColumnCount();
+
+    // Track count of tiles with moves remaining per row and column
+    int[] rowCounts = new int[rows];
+    int[] colCounts = new int[cols];
+
+    // Iterate over all tiles
+    for (int row = 0; row < rows; row++) {
+        for (int col = 0; col < cols; col++) {
+            Tile tile = board.getTile(row, col);
+
+            if (tile.getRemainingMoves() >= 1) {
+                rowCounts[row]++;
+                colCounts[col]++;
+
+                // Early exit: if any row or column has 2+ tiles with moves, not a stalemate
+                if (rowCounts[row] >= 2 || colCounts[col] >= 2) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    // No row or column has 2+ tiles with moves remaining - stalemate
+    return true;
+}
+```
+
+#### Example
+
+3x3 board state:
+- A1: RED with 1 move
+- A2: RED with 0 moves
+- A3: RED with 0 moves
+- B1: BLUE with 0 moves
+- B2: BLUE with 1 move
+- B3: BLUE with 0 moves
+- C1: GREEN with 0 moves
+- C2: GREEN with 0 moves
+- C3: GREEN with 1 move
+
+This is **Invalid** because:
+- Row A: only A1 has moves (count = 1)
+- Row B: only B2 has moves (count = 1)
+- Row C: only C3 has moves (count = 1)
+- Column 1: only A1 has moves (count = 1)
+- Column 2: only B2 has moves (count = 1)
+- Column 3: only C3 has moves (count = 1)
+- No row or column has 2+ tiles with moves, so no swap is possible
+
+#### Why It Works
+
+A swap requires two tiles to participate. Both tiles must be in the same row or column, and both must have at least 1 remaining move. If no row and no column has two or more tiles with moves, no swaps can occur, and any tiles with remaining moves are stuck.
+
+#### Performance
+
+⚡ **Very Fast**: O(N×M) with early exit
+- Single pass over board
+- Returns immediately when any row/column has 2+ moveable tiles
+- Most valid boards will exit early
+
+## Test Execution Order
+
+Tests are ordered by likelihood of finding invalid states (most effective first):
+
+1. **BlockedSwapTest** - Most effective, catches millions of states at deeper move counts
+2. **StuckTilesTest** - Catches odd parity situations
+3. **IsolatedTileTest** - Catches tiles with no swap partners
+4. **StalemateTest** - Catches global no-moves situations
+5. **WrongRowZeroMovesTest** - Catches tiles stuck in wrong row
+
 ## Historical Note
 
 Initial test implementations (TooManyMovesTest, ImpossibleColorAlignmentTest, InsufficientMovesTest) were developed but removed because they were too aggressive and pruned valid solution paths.
 
-The current active tests (StuckTilesTest, WrongRowZeroMovesTest, BlockedSwapTest, IsolatedTileTest) are more conservative and only prune genuinely impossible states. They collectively provide 35-37% pruning on typical puzzles without eliminating valid solution paths.
+The current active tests (BlockedSwapTest, StuckTilesTest, IsolatedTileTest, StalemateTest, WrongRowZeroMovesTest) are conservative and only prune genuinely impossible states. They collectively provide 30-40% pruning on typical puzzles without eliminating valid solution paths.
 
 **2026-01-08 Update**: StuckTilesTest (odd parity version) replaced StuckTileTest as the active test, providing more comprehensive detection of stuck tile scenarios.
 
 **2026-01-10 Update**: StuckTilesTest enhanced to handle the case where exactly one tile with the target color is outside its target row.
 
-**2026-01-11 Update**: StuckTilesTest simplified to cleaner parity-based detection. All invalidity tests updated to use `getLastMove()` instead of `getMoves()` following the BoardState refactoring to linked list structure.
+**2026-01-11 Morning Update**: StuckTilesTest simplified to cleaner parity-based detection. All invalidity tests updated to use `getLastMove()` instead of `getMoves()` following the BoardState refactoring to linked list structure.
+
+**2026-01-11 Afternoon Update**:
+- Added StalemateTest for detecting no-valid-moves conditions
+- Reordered tests by effectiveness (BlockedSwap first)
+- Added `-i` flag for invalidity statistics tracking
+- Board simplified: target color = row index
 
 ## Adding New Tests
 

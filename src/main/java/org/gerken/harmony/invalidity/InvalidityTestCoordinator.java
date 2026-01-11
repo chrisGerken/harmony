@@ -15,6 +15,7 @@ import java.util.List;
  * 2. WrongRowZeroMovesTest - Detects tiles with 0 moves in wrong row (cannot move to correct row)
  * 3. BlockedSwapTest - Detects tiles with 1 move blocked by 0-move tiles in target position
  * 4. IsolatedTileTest - Detects tiles with moves remaining but no valid swap partners
+ * 5. StalemateTest - Detects boards where no row or column has 2+ tiles with moves remaining
  *
  * These tests provide 40-70% pruning rate (varies by puzzle) without eliminating valid solution paths.
  * Historical note: Initial tests (TooManyMovesTest, ImpossibleColorAlignmentTest, InsufficientMovesTest)
@@ -30,11 +31,12 @@ public class InvalidityTestCoordinator {
         List<InvalidityTest> testList = new ArrayList<>();
 
         // Register invalidity test implementations here
-        // Order: fastest tests first for early exit optimization
-        testList.add(StuckTilesTest.getInstance());
-        testList.add(WrongRowZeroMovesTest.getInstance());
+        // Order: most likely to invalidate first for early exit optimization
         testList.add(BlockedSwapTest.getInstance());
+        testList.add(StuckTilesTest.getInstance());
         testList.add(IsolatedTileTest.getInstance());
+        testList.add(StalemateTest.getInstance());
+        testList.add(WrongRowZeroMovesTest.getInstance());
 
         this.tests = Collections.unmodifiableList(testList);
     }
@@ -57,6 +59,22 @@ public class InvalidityTestCoordinator {
             }
         }
         return false;
+    }
+
+    /**
+     * Returns the first invalidity test that finds the board state invalid.
+     * Returns null if no test finds the state invalid.
+     *
+     * @param boardState the board state to evaluate
+     * @return the InvalidityTest that found the state invalid, or null if valid
+     */
+    public InvalidityTest getInvalidatingTest(BoardState boardState) {
+        for (InvalidityTest test : tests) {
+            if (test.isInvalid(boardState)) {
+                return test;
+            }
+        }
+        return null;
     }
 
     /**

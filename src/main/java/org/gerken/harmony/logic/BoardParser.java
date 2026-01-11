@@ -145,7 +145,7 @@ public class BoardParser {
             }
 
             // Build the board
-            Board board = new Board(rows, cols, targets);
+            Board board = new Board(rows, cols);
             for (TileData td : tiles) {
                 int[] pos = parsePosition(td.position);
                 board.setTile(pos[0], pos[1], new Tile(td.colorId, td.moves));

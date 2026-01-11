@@ -47,6 +47,17 @@ public class ProgressReporter implements Runnable {
      * Prints the current progress statistics.
      */
     private void printProgress() {
+        if (solver.isInvalidityStats()) {
+            printInvalidityStats();
+        } else {
+            printQueueStats();
+        }
+    }
+
+    /**
+     * Prints the standard progress statistics with queue sizes.
+     */
+    private void printQueueStats() {
         PendingStates pendingStates = solver.getPendingStates();
         long processed = pendingStates.getStatesProcessed();
         long generated = pendingStates.getStatesGenerated();
@@ -101,6 +112,54 @@ public class ProgressReporter implements Runnable {
             formatCount((long) statesPerSecond),
             overallAvgTimeMs
         );
+    }
+
+    /**
+     * Prints invalidity test statistics as a table.
+     * Rows are invalidity tests, columns are move counts.
+     */
+    private void printInvalidityStats() {
+        PendingStates pendingStates = solver.getPendingStates();
+        long elapsedMs = System.currentTimeMillis() - startTime;
+        double elapsedSeconds = elapsedMs / 1000.0;
+
+        int maxMoves = pendingStates.getMaxInvalidityMoveCount();
+        if (maxMoves < 0) {
+            System.out.printf("[%s] No invalidity data yet%n", formatDuration(elapsedSeconds));
+            return;
+        }
+
+        // Test names in display order (matches coordinator order)
+        String[] testNames = {"BlockedSwapTest", "StuckTilesTest", "IsolatedTileTest",
+                              "StalemateTest", "WrongRowZeroMovesTest"};
+        String[] shortNames = {"BlockedSwap", "StuckTiles", "IsolatedTile",
+                               "Stalemate", "WrongRowZero"};
+
+        // Print header with blank line before for readability
+        System.out.printf("%n%n[%s] Invalidity Statistics:%n", formatDuration(elapsedSeconds));
+        System.out.printf("%-14s", "Test");
+        for (int m = 1; m <= maxMoves; m++) {
+            System.out.printf("%8d", m);
+        }
+        System.out.println();
+
+        // Print separator
+        System.out.print("-".repeat(14));
+        for (int m = 1; m <= maxMoves; m++) {
+            System.out.print("-".repeat(8));
+        }
+        System.out.println();
+
+        // Print each test row
+        for (int t = 0; t < testNames.length; t++) {
+            System.out.printf("%-14s", shortNames[t]);
+            for (int m = 1; m <= maxMoves; m++) {
+                long count = pendingStates.getInvalidityCount(m, testNames[t]);
+                System.out.printf("%8s", formatCount(count));
+            }
+            System.out.println();
+        }
+        System.out.println();
     }
 
     /**

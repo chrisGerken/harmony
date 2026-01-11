@@ -119,6 +119,15 @@ public class HarmonySolver {
     }
 
     /**
+     * Gets whether to display invalidity statistics instead of queue sizes.
+     *
+     * @return true if invalidity stats should be displayed
+     */
+    public boolean isInvalidityStats() {
+        return config.invalidityStats;
+    }
+
+    /**
      * Gets the initial number of moves required to solve the puzzle.
      *
      * @return the initial remaining moves count
@@ -326,6 +335,8 @@ public class HarmonySolver {
                 }
             } else if (arg.equals("-d") || arg.equals("--debug")) {
                 config.debugMode = true;
+            } else if (arg.equals("-i") || arg.equals("--invalidity")) {
+                config.invalidityStats = true;
             } else if (arg.equals("-h") || arg.equals("--help")) {
                 return null; // Will trigger usage message
             } else if (arg.startsWith("-")) {
@@ -363,6 +374,7 @@ public class HarmonySolver {
         System.out.println("  -r, --report <N>      Progress report interval in seconds (default: 30, 0 to disable)");
         System.out.println("  -c, --cache <N>       Cache threshold: states with N+ moves taken are cached locally (default: 4)");
         System.out.println("  -d, --debug           Debug mode: disable empty queue termination (for breakpoints)");
+        System.out.println("  -i, --invalidity      Show invalidity test statistics instead of queue sizes");
         System.out.println("  -h, --help            Show this help message");
         System.out.println();
         System.out.println("Example:");
@@ -383,6 +395,9 @@ public class HarmonySolver {
         System.out.println("  Cache threshold: " + config.cacheThreshold + " moves taken");
         System.out.println("  Invalidity tests: " +
             InvalidityTestCoordinator.getInstance().getTestCount());
+        if (config.invalidityStats) {
+            System.out.println("  Invalidity stats: enabled");
+        }
         if (config.debugMode) {
             System.out.println("  DEBUG MODE: Empty queue termination disabled");
         }
@@ -399,5 +414,6 @@ public class HarmonySolver {
         int reportInterval = DEFAULT_REPORT_INTERVAL;
         int cacheThreshold = DEFAULT_CACHE_THRESHOLD;
         boolean debugMode = DEFAULT_DEBUG_MODE;
+        boolean invalidityStats = false;
     }
 }

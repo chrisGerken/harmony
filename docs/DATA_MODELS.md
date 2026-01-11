@@ -73,7 +73,7 @@ Represents the puzzle board - a 2D grid of tiles with target colors for each row
 ```java
 public class Board {
     private final Tile[][] grid;           // 2D array of tiles
-    private final int[] rowTargetColors;   // Target color IDs for each row
+    // Target color for each row = row index (row 0 → color 0, row 1 → color 1, etc.)
 }
 ```
 
@@ -396,13 +396,17 @@ System.out.println(redTile);    // "0:5"
 ### Building a Board
 
 ```java
-// Target colors as integer IDs
-int[] targets = {0, 1, 2};  // RED=0, BLUE=1, GREEN=2
-Board board = new Board(3, 3, targets);
+// Target color for each row equals the row index (row 0 → color 0, row 1 → color 1, etc.)
+Board board = new Board(3, 3);  // 3x3 board
 
-board.setTile(0, 0, new Tile(0, 2));  // RED tile with 2 moves
+board.setTile(0, 0, new Tile(0, 2));  // RED tile with 2 moves (row 0 needs color 0)
 board.setTile(0, 1, new Tile(1, 3));  // BLUE tile with 3 moves
 // ... set remaining tiles
+
+// Target colors are implicit:
+// Row 0 (A) needs color 0 (RED)
+// Row 1 (B) needs color 1 (BLUE)
+// Row 2 (C) needs color 2 (GREEN)
 ```
 
 ### Color Mapping (Input File)

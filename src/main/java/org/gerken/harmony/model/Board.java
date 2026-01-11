@@ -8,33 +8,31 @@ import java.util.List;
  * Represents the puzzle board - a grid of tiles with target colors for each row.
  * Rows are labeled A, B, C, etc. and columns are labeled 1, 2, 3, etc.
  * Colors are represented as integers for efficiency.
+ *
+ * Simplifying assumption: The target color ID for each row equals the row index
+ * (row 0 has target color 0, row 1 has target color 1, etc.).
  */
 public class Board {
 
     private final Tile[][] grid;
-    private final int[] rowTargetColors;
 
     /**
-     * Creates a new board with the specified dimensions and target colors.
+     * Creates a new board with the specified dimensions.
      *
      * @param rowCount the number of rows
      * @param columnCount the number of columns
-     * @param rowTargetColors array of target color IDs for each row
      */
-    public Board(int rowCount, int columnCount, int[] rowTargetColors) {
+    public Board(int rowCount, int columnCount) {
         this.grid = new Tile[rowCount][columnCount];
-        this.rowTargetColors = rowTargetColors.clone();
     }
 
     /**
-     * Creates a new board from an existing grid and target colors.
+     * Creates a new board from an existing grid.
      *
      * @param grid the tile grid
-     * @param rowTargetColors the target color IDs for each row
      */
-    public Board(Tile[][] grid, int[] rowTargetColors) {
+    public Board(Tile[][] grid) {
         this.grid = deepCopyGrid(grid);
-        this.rowTargetColors = rowTargetColors.clone();
     }
 
     /**
@@ -79,27 +77,27 @@ public class Board {
 
     /**
      * Gets the target color ID for the specified row.
+     * By convention, the target color ID equals the row index.
      *
      * @param row the row index (0-based)
-     * @return the target color ID for that row
+     * @return the target color ID for that row (equals row index)
      */
     public int getRowTargetColor(int row) {
-        return rowTargetColors[row];
+        return row;
     }
 
     /**
      * Checks if this board is in a solved state.
      * A board is solved when all tiles match their row's target color
-     * and all tiles have zero remaining moves.
+     * (which equals the row index) and all tiles have zero remaining moves.
      *
      * @return true if the board is solved
      */
     public boolean isSolved() {
         for (int row = 0; row < getRowCount(); row++) {
-            int targetColor = rowTargetColors[row];
             for (int col = 0; col < getColumnCount(); col++) {
                 Tile tile = grid[row][col];
-                if (tile.getRemainingMoves() != 0 || tile.getColor() != targetColor) {
+                if (tile.getRemainingMoves() != 0 || tile.getColor() != row) {
                     return false;
                 }
             }
@@ -128,7 +126,7 @@ public class Board {
      * @return a new board with the tiles swapped and moves decremented
      */
     public Board swap(int row1, int col1, int row2, int col2) {
-        Board newBoard = new Board(grid, rowTargetColors);
+        Board newBoard = new Board(grid);
 
         Tile tile1 = grid[row1][col1].decrementMoves();
         Tile tile2 = grid[row2][col2].decrementMoves();
