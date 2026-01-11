@@ -1,5 +1,5 @@
 # Current State of Harmony Puzzle Solver
-**Last Updated**: January 10, 2026 (Session 6b)
+**Last Updated**: January 11, 2026 (Session 7)
 
 ## Quick Status
 - ✅ **Production Ready**: All code compiles and tests pass
@@ -7,13 +7,9 @@
 - ✅ **State Management**: Encapsulated in PendingStates class
 - ✅ **Fully Documented**: All changes documented for future sessions
 - ✅ **Thread-Safe**: All operations properly synchronized
-- ✅ **Enhanced Pruning**: StuckTilesTest now handles one-tile-out-of-row cases
-- ✅ **Performance Optimized**: HashMap color lookups, compact number display
+- ✅ **BoardState Linked List**: Memory-efficient state chain structure
+- ✅ **Performance Instrumented**: Average processing time displayed
 - ✅ **Centralized Context**: HarmonySolver is now instance-based with getters for all components
-- ✅ **TestBuilder Utility**: New tool for creating test cases from solved states
-- ✅ **Debug Mode**: Breakpoint-friendly mode that disables premature termination
-- ✅ **Board.toString()**: Easy board visualization with color names
-- ✅ **Horizontal Perfect Swap**: New move optimization for aligned rows with cross-row skip
 
 ## Current Architecture (High Level)
 
@@ -22,7 +18,7 @@ HarmonySolver (instance-based, central context)
     ├─> Config (threadCount, reportInterval, cacheThreshold, debugMode)
     ├─> colorNames (public static List<String> - global color mapping)
     ├─> PendingStates (depth-organized multi-queue)
-    ├─> List<StateProcessor> (worker threads with local caches)
+    ├─> List<StateProcessor> (worker threads with local caches + timing)
     ├─> ProgressReporter (takes HarmonySolver, accesses all via getters)
     └─> InvalidityTestCoordinator
             ├─> StuckTilesTest
@@ -30,465 +26,215 @@ HarmonySolver (instance-based, central context)
             ├─> BlockedSwapTest
             └─> IsolatedTileTest
 
-TestBuilder (standalone utility)
-    ├─> Reads simplified test specification format
-    ├─> Builds solved state, applies moves backwards
-    ├─> Generates BoardParser-compatible puzzle files
-    └─> Includes solution with board states after each move
+BoardState (linked list structure)
+    ├─> board: Board
+    ├─> lastMove: Move (null for initial state)
+    ├─> previousBoardState: BoardState (null for initial state)
+    └─> remainingMoves: int (cached)
 ```
 
-## Recent Changes (Session 2 - January 7, 2026)
+## Recent Changes (Session 7 - January 11, 2026)
 
-### 1. PendingStates Class Created
-**Location**: `src/main/java/org/gerken/harmony/logic/PendingStates.java`
+### 1. BoardState Refactored to Linked List Structure
+**Problem**: Previous implementation stored complete move list in each `BoardState`, requiring ArrayList copying on every state transition.
 
-**Purpose**: Encapsulate all state management in one place
+**Solution**: Changed to linked list structure using `previousBoardState` reference.
 
-**What it contains**:
-- Multiple queues organized by move depth
-- Statistics counters (processed, generated, pruned)
-- Solution coordination (found flag, solution state)
+**Changes**:
+- Removed `List<Move> moves` property and `getMoves()` method
+- Added `Move lastMove` property with `getLastMove()` getter
+- Added `BoardState previousBoardState` with getter/setter
+- Added `getMoveHistory()` method - traverses chain to build complete move list
+- Changed `getMoveCount()` - now traverses chain to count moves
+- Changed constructors to accept scalar `Move` instead of `List<Move>`
+- Changed `applyMove()` to set `previousBoardState` on new state
 
-**Benefits**:
-- Simplified constructors for StateProcessor and ProgressReporter
-- Single source of truth for all shared state
-- Clean API with descriptive method names
+### 2. StateProcessor Timing Instrumentation
+- Added timing around `processState()` calls
+- New `getAverageProcessingTimeMs()` method returns average time per state
 
-### 2. Depth-First Search Implemented
-**Problem Solved**: BFS was causing queue explosion
+### 3. ProgressReporter Enhanced
+- Status line now includes `Avg: X.XXXms` showing average processing time
+- Format: `[time] Processed: X | Pruned: X% | Queues: ... | Rate: X/s | Avg: X.XXXms`
 
-**Solution**: Multiple queues, one per move depth, always process deepest first
+### 4. All Invalidity Tests Updated
+All tests now use `getLastMove()` instead of `getMoves().get(size-1)`:
+- StuckTilesTest, StuckTileTest, WrongRowZeroMovesTest, BlockedSwapTest, IsolatedTileTest
 
-**How it works**:
-```java
-// Adding a state
-add(BoardState state) {
-    int depth = state.getMoveCount();
-    // Route to appropriate depth queue
-    queuesByMoveCount.get(depth).add(state);
-}
-
-// Polling a state
-poll() {
-    // Start from deepest queue
-    for (int depth = maxDepth; depth >= 0; depth--) {
-        BoardState state = queuesByMoveCount.get(depth).poll();
-        if (state != null) return state;
-    }
-    return null; // All queues empty
-}
-```
-
-**Performance Impact**:
-- 25-29% fewer states processed
-- Memory usage stays manageable
-- Queue size remains small
-
-### 3. All Documentation Updated
-- `README.md` - Updated to reflect depth-first strategy
-- `IMPLEMENTATION_SUMMARY.md` - Added Session 2 notes
-- `docs/ARCHITECTURE.md` - Comprehensive architecture updates
-- `SESSION_SUMMARY_2026-01-07.md` - Detailed session summary
-- `CURRENT_STATE.md` - This file (state snapshot)
-
-### 4. Puzzle 404 Created
-**File**: `puzzle_404.txt`
-- 6x6 grid with 6 colors
-- Created from screenshot analysis
-- Ready for testing
+### 5. StuckTilesTest Simplified
+`isRowStuck()` now checks:
+1. All tiles have row's target color
+2. Each tile has < 3 moves remaining
+3. Sum of remaining moves is odd
 
 ## File Structure
 
 ```
 harmony/
 ├── src/main/java/org/gerken/harmony/
-│   ├── HarmonySolver.java          # ⭐ UPDATED Session 5 - colorNames, debug mode, report 0
+│   ├── HarmonySolver.java          # Central context, uses getMoveHistory()
 │   ├── PuzzleGenerator.java        # Puzzle creation utility
-│   ├── TestBuilder.java            # ⭐ NEW Session 5 - Test case generation utility
+│   ├── TestBuilder.java            # Test case generation utility
 │   ├── model/                      # Data models
 │   │   ├── Tile.java
-│   │   ├── Board.java              # ⭐ UPDATED Session 5 - toString() methods
+│   │   ├── Board.java
 │   │   ├── Move.java
-│   │   └── BoardState.java
+│   │   └── BoardState.java         # ⭐ REFACTORED Session 7 - Linked list structure
 │   ├── logic/                      # Processing logic
-│   │   ├── PendingStates.java      # ⭐ UPDATED Session 6b - Added getQueueRangeInfo()
-│   │   ├── StateProcessor.java     # ⭐ UPDATED Session 6b - Cache threshold now uses moves taken
-│   │   ├── ProgressReporter.java   # ⭐ UPDATED Session 6b - Redesigned status line format
-│   │   └── BoardParser.java        # End of Puzzle Specification, colorNames
+│   │   ├── PendingStates.java
+│   │   ├── StateProcessor.java     # ⭐ UPDATED Session 7 - Timing instrumentation
+│   │   ├── ProgressReporter.java   # ⭐ UPDATED Session 7 - Avg time display
+│   │   └── BoardParser.java
 │   └── invalidity/                 # Pruning tests
 │       ├── InvalidityTest.java     # Interface
 │       ├── InvalidityTestCoordinator.java
-│       ├── StuckTileTest.java
-│       ├── StuckTilesTest.java     # ⭐ UPDATED Session 6 - One-tile-out-of-row detection
-│       ├── WrongRowZeroMovesTest.java
-│       ├── BlockedSwapTest.java
-│       └── IsolatedTileTest.java
+│       ├── StuckTileTest.java      # ⭐ UPDATED Session 7 - Uses getLastMove()
+│       ├── StuckTilesTest.java     # ⭐ UPDATED Session 7 - Simplified + getLastMove()
+│       ├── WrongRowZeroMovesTest.java  # ⭐ UPDATED Session 7 - Uses getLastMove()
+│       ├── BlockedSwapTest.java    # ⭐ UPDATED Session 7 - Uses getLastMove()
+│       └── IsolatedTileTest.java   # ⭐ UPDATED Session 7 - Uses getLastMove()
 ├── docs/                           # Documentation
-│   ├── ARCHITECTURE.md             # System design
-│   ├── DATA_MODELS.md
+│   ├── ARCHITECTURE.md
+│   ├── DATA_MODELS.md              # ⭐ NEEDS UPDATE for BoardState changes
 │   ├── INVALIDITY_TESTS.md
 │   └── DEVELOPMENT.md
 ├── puzzles/                        # Test puzzles
-│   ├── easy.txt
-│   ├── puzzle_404.txt              # 6x6 puzzle
-│   └── ...
-├── puzzle_406.txt                  # 6x6 puzzle, 26 moves
-├── README.md                       # Main docs
-├── IMPLEMENTATION_SUMMARY.md       # Implementation notes
-├── SESSION_SUMMARY_2026-01-07.md   # Session 2 details
-├── SESSION_2026-01-08.md           # Session 3 details
-├── SESSION_2026-01-08_improvements.md  # Session 4 details
-├── SESSION_2026-01-09.md           # Session 5 details
-├── SESSION_2026-01-10.md           # ⭐ NEW Session 6 details
-├── CURRENT_STATE.md                # ⭐ UPDATED Session 6 - This file
-├── solve.sh                        # Convenience script
-└── generate.sh                     # Convenience script
+├── SESSION_2026-01-11.md           # ⭐ NEW Session 7 details
+├── CURRENT_STATE.md                # ⭐ UPDATED Session 7 - This file
+├── solve.sh
+└── generate.sh
 ```
 
 ## Key Classes to Understand
 
-### 1. HarmonySolver (⭐ Central Context)
-**Location**: `org.gerken.harmony.HarmonySolver`
+### 1. BoardState (⭐ Major Changes Session 7)
+**Location**: `org.gerken.harmony.model.BoardState`
 
-**What it does**:
-- Main entry point and central context object
-- Instance-based (not static) since Session 4
-- Holds references to all components
-- Provides getters for ProgressReporter and other components
+**New Structure**:
+```java
+public class BoardState {
+    private final Board board;
+    private final Move lastMove;           // NEW - null for initial state
+    private final int remainingMoves;
+    private BoardState previousBoardState; // NEW - null for initial state
+}
+```
 
 **Key methods**:
 ```java
-// Getters for components
-PendingStates getPendingStates()        // Access state queues
-List<StateProcessor> getProcessors()    // Access worker threads
-int getInitialRemainingMoves()          // Total moves to solve puzzle
-
-// Getters for configuration
-int getThreadCount()
-int getReportInterval()
-int getCacheThreshold()
+Move getLastMove()                     // NEW - returns last move (null if initial)
+BoardState getPreviousBoardState()     // NEW - returns previous state
+void setPreviousBoardState(BoardState) // NEW - sets previous state
+List<Move> getMoveHistory()            // NEW - builds complete move list by traversal
+int getMoveCount()                     // CHANGED - traverses chain to count
+BoardState applyMove(Move)             // CHANGED - sets previousBoardState
 ```
 
-### 2. PendingStates
-**Location**: `org.gerken.harmony.logic.PendingStates`
-
-**What it does**:
-- Manages multiple queues organized by move depth
-- Provides add() and poll() operations
-- Tracks statistics (processed, generated, pruned)
-- Coordinates solution discovery
-
-**Key methods**:
-```java
-void add(BoardState state)              // Add to appropriate depth queue
-BoardState poll()                       // Get from deepest queue
-boolean isSolutionFound()               // Check if solution found
-boolean markSolutionFound(BoardState)   // Atomically mark solution
-int[] getSmallestNonEmptyQueueInfo()    // Returns [moveCount, queueSize] for smallest queue
-int[][] getQueueRangeInfo()             // Returns all queues from first to last non-empty
-void incrementStatesProcessed()         // Update counter
-long getStatesProcessed()               // Get counter value
-// ... similar for generated and pruned
-```
-
-### 3. StateProcessor
+### 2. StateProcessor
 **Location**: `org.gerken.harmony.logic.StateProcessor`
 
-**What it does**:
-- Worker thread that processes board states
-- Maintains local cache for near-solution states
-- Polls from local cache first, then PendingStates
-- Generates successor states
-- Checks validity with InvalidityTestCoordinator
-
-**Key methods**:
+**New methods** (Session 7):
 ```java
-int getCacheSize()                      // Returns local cache size (for progress reporting)
+double getAverageProcessingTimeMs()    // Returns avg processing time per state
 ```
 
-### 4. ProgressReporter
+### 3. ProgressReporter
 **Location**: `org.gerken.harmony.logic.ProgressReporter`
 
-**What it does**:
-- Background thread for periodic statistics
-- Takes HarmonySolver instance (central context)
-- Accesses all components via solver getters
-- Includes processor cache sizes in queue total
-
-**Constructor**: `ProgressReporter(HarmonySolver solver)`
-
-**Status line format** (Session 6b):
+**Status line format** (Session 7):
 ```
-[time] Processed: X | Pruned: X% | Queues: 3:5 4:12 5:8 6:0 7:3 | Rate: X/s
+[time] Processed: X | Pruned: X% | Queues: 3:5 4:12 5:8 | Rate: X/s | Avg: 0.001ms
 ```
-
-Where Queues shows `moveCount:queueSize` for all queues from first non-empty to last non-empty, inclusive.
 
 ## How to Continue Development
 
-### Understanding the Code
-1. **Start here**: `README.md`
-2. **Architecture**: `docs/ARCHITECTURE.md`
-3. **Latest changes**: `SESSION_SUMMARY_2026-01-07.md`
-4. **Deep dive**: Read `PendingStates.java` class
+### Understanding the New BoardState
 
-### Making Changes
+```java
+// Creating initial state
+BoardState initial = new BoardState(board);
+// initial.getLastMove() == null
+// initial.getPreviousBoardState() == null
 
-#### To modify state management:
-- Edit `PendingStates.java` only
-- Everything else uses its public API
-- Add new methods as needed
+// Applying moves
+BoardState state1 = initial.applyMove(move1);
+// state1.getLastMove() == move1
+// state1.getPreviousBoardState() == initial
 
-#### To add new statistics:
-- Add counter to `PendingStates`
-- Add increment method
-- Add getter method
-- Update `ProgressReporter` to display it
+BoardState state2 = state1.applyMove(move2);
+// state2.getLastMove() == move2
+// state2.getPreviousBoardState() == state1
 
-#### To modify search strategy:
-- Change `poll()` method in `PendingStates`
-- Could implement iterative deepening
-- Could add priority-based selection
-- Everything else stays the same
-
-#### To add new pruning tests:
-- Implement `InvalidityTest` interface
-- Add to `InvalidityTestCoordinator`
-- Document in `docs/INVALIDITY_TESTS.md`
-
-### Testing
-
-#### Quick test:
-```bash
-java -cp target/classes org.gerken.harmony.HarmonySolver puzzles/easy.txt
+// Getting full history
+List<Move> history = state2.getMoveHistory(); // [move1, move2]
 ```
 
-#### Compile:
-```bash
-javac -d target/classes -sourcepath src/main/java \
-  src/main/java/org/gerken/harmony/*.java \
-  src/main/java/org/gerken/harmony/model/*.java \
-  src/main/java/org/gerken/harmony/logic/*.java \
-  src/main/java/org/gerken/harmony/invalidity/*.java
+### Invalidity Test Pattern
+
+```java
+@Override
+public boolean isInvalid(BoardState boardState) {
+    Board board = boardState.getBoard();
+    Move lastMove = boardState.getLastMove();
+
+    // If no moves made, check everything
+    if (lastMove == null) {
+        return checkAllTiles(board);
+    }
+
+    // Otherwise, only check affected tiles
+    int row1 = lastMove.getRow1();
+    int col1 = lastMove.getCol1();
+    // ... check specific positions
+}
 ```
-
-#### Test puzzle_404:
-```bash
-java -cp target/classes org.gerken.harmony.HarmonySolver puzzle_404.txt
-```
-(Note: May take a while, it's a 6x6 puzzle!)
-
-## Known Issues / Limitations
-
-### Current Implementation
-1. **No state deduplication**: Same board configuration can be processed multiple times
-2. **maxMoveCount never decreases**: Even when deep queues empty (minor inefficiency)
-3. **No depth limit**: Could theoretically go infinitely deep
-
-### Not Issues
-- ✅ Thread safety: Fully thread-safe
-- ✅ Correctness: Finds solutions correctly
-- ✅ Memory: Much better than BFS
-- ✅ Performance: Better than before
-
-## Future Enhancement Ideas
-
-### High Priority
-1. **State deduplication**: Track visited board configurations (hash table)
-2. **Iterative deepening**: Gradually increase max depth limit
-3. **Depth statistics**: Track queue sizes per depth level
-
-### Medium Priority
-1. **Periodic maxMoveCount recomputation**: Clean up when deep queues empty
-2. **Queue cleanup**: Remove empty queues from map
-3. **Better progress reporting**: Show depth distribution
-
-### Low Priority
-1. **Adaptive thread count**: Adjust based on queue size
-2. **Work stealing**: Balance load across threads
-3. **GUI**: Visual puzzle solver (would need new module)
 
 ## Testing Status
 
 ### Verified Working ✅
-- Compilation successful
-- Easy puzzle (2x2) solves correctly
-- Depth-first ordering confirmed
-- Statistics accurate
-- Thread coordination correct
-- Solution detection works
+- easy.txt (2x2, 3 moves) - Solved
+- simple.txt (3x3, 9 moves) - Solved, 23K states/s
+- medium.txt (4x4, 25 moves) - Running at 2.2M states/s
 
-### Not Yet Tested
-- puzzle_404.txt (6x6) - created but not tested
-- Large puzzles (5x5+)
-- High thread counts (8+)
-- Very deep searches (20+ moves)
+### Known Behaviors
+- tiny.txt (2x2, 2 moves) - Correctly identified as unsolvable
+
+## Session History
+
+### Session 7 (January 11, 2026)
+- **BoardState Refactored**: Linked list structure with previousBoardState
+- **Timing Instrumentation**: StateProcessor tracks processing time
+- **ProgressReporter Enhanced**: Shows average processing time
+- **Invalidity Tests Updated**: All use getLastMove() instead of getMoves()
+- **StuckTilesTest Simplified**: Cleaner isRowStuck() logic
+
+### Previous Sessions
+- Session 6b: ProgressReporter redesign, cache threshold change
+- Session 6: Horizontal perfect swap, cross-row skip optimization
+- Session 5: TestBuilder utility, Board.toString(), debug mode
+- Session 4: HarmonySolver instance-based refactor
+- Session 3: StuckTilesTest, HashMap color lookups
+- Session 2: PendingStates class, depth-first search
+- Session 1: Package reorganization, documentation
 
 ## Quick Reference
 
 ### Build and Run
 ```bash
-# Compile
-mvn compile
-
-# Solve a puzzle
-./solve.sh puzzles/easy.txt
-
-# With options
-./solve.sh -t 4 -r 10 puzzle_404.txt
-
-# Generate a puzzle
-./generate.sh 3 3 RED,BLUE,GREEN 10 puzzle.txt
+mvn package              # Build
+./solve.sh puzzle.txt    # Solve
+./solve.sh -t 4 puzzle.txt  # 4 threads
 ```
 
 ### Key Files for Next Session
 1. `CURRENT_STATE.md` - This file (start here!)
-2. `SESSION_2026-01-10.md` - Session 6/6b details (includes ProgressReporter redesign, cache threshold change)
-3. `ProgressReporter.java` - Redesigned status line format
-4. `PendingStates.java` - Added `getQueueRangeInfo()` method
-5. `StateProcessor.java` - Cache threshold now uses moves taken, horizontal perfect swap
-6. `HarmonySolver.java` - Updated help text for `-c` option
-
-## Session History
-
-### Session 1 (January 2026)
-- Package reorganization
-- Optimized invalidity tests
-- Changed default threads to 2
-- Comprehensive documentation
-
-### Session 2 (January 7, 2026)
-- Created PendingStates class
-- Implemented depth-first search
-- Improved memory efficiency
-- Updated all documentation
-- Created puzzle_404.txt
-
-### Session 3 (January 8, 2026)
-- **New Invalidity Test**: Created StuckTilesTest (odd parity detection)
-  - Replaces StuckTileTest in active use (old test kept in codebase)
-  - Catches any odd number of stuck tiles (1, 3, 5, etc.)
-  - More comprehensive than single-tile detection
-- **Performance Optimization**: HashMap color-to-row lookups
-  - Replaced O(n) linear search with O(1) HashMap lookup
-  - Significant improvement for larger boards (4x4+)
-- **Display Improvements**:
-  - Compact number formatting (123.5M, 2.4B) for progress reports
-  - Added "Moves required" to initial puzzle summary
-- **Documentation**:
-  - Updated docs/INVALIDITY_TESTS.md with StuckTilesTest and IsolatedTileTest
-  - Updated docs/OPTIMIZATIONS.md with HashMap optimization
-  - Created SESSION_2026-01-08_improvements.md for session notes
-- **Stress Testing**:
-  - Tested medium puzzle (4x4, 25 moves) for 12+ minutes
-  - Processed 1.6 billion states at 2.2M states/second
-  - Queue remained stable at ~300 states throughout
-  - 37% pruning rate with new test
-
-### Session 4 (January 9, 2026)
-- **HarmonySolver Refactored to Instance-Based**:
-  - Now acts as central context object
-  - Added instance fields: `config`, `pendingStates`, `processors`, `initialRemainingMoves`
-  - Added getters: `getPendingStates()`, `getProcessors()`, `getThreadCount()`, `getReportInterval()`, `getCacheThreshold()`, `getInitialRemainingMoves()`
-  - `solve()` changed from static to instance method
-- **ProgressReporter Simplified**:
-  - Constructor now takes only `HarmonySolver` (was `PendingStates` + interval)
-  - Accesses all data through solver getters
-  - Queue size now includes cache sizes from all StateProcessors
-- **Progress Output Changes**:
-  - Replaced percentage complete with `Progress: a:b c` format
-    - `a` = smallest move count with non-empty queue
-    - `b` = total moves required
-    - `c` = queue size at that depth
-  - Processing rate now uses K/M/B/T suffixes (was raw number)
-  - Removed ETA from progress output
-- **StateProcessor Enhancement**:
-  - Added `getCacheSize()` method for progress reporting
-- **PendingStates Changes**:
-  - Added `getSmallestNonEmptyQueueInfo()` method
-  - Removed unused `getPercentComplete()` method
-  - Removed unused `oneMoveStatesAdded` field
-- **New Puzzle Created**:
-  - `puzzle_406.txt` - 6x6 puzzle with 26 moves required
-
-### Session 5 (January 9, 2026)
-- **TestBuilder Utility Created**:
-  - New class for generating test cases from solved states
-  - Simplified input format: ROWS, COLS, COLORS (in target row order), MOVES, OUTPUT
-  - Starts from solved state, applies moves backwards (incrementing move counts)
-  - Moves applied in reverse order so input matches solution order
-  - Generates BoardParser-compatible puzzle files with solution comments
-  - Solution shows each move and resulting board state with aligned columns
-  - Creates template file if specified file doesn't exist
-- **Board.toString() Methods Added**:
-  - `toString(List<String> colorNames)` - Uses color names with aligned columns
-  - `toString()` - Uses HarmonySolver.colorNames if available, falls back to IDs
-  - Format: `A | RED 1   | BLUE 0  | GREEN 2 |`
-- **Global Color Names Storage**:
-  - Added `HarmonySolver.colorNames` (public static List<String>)
-  - BoardParser populates this when parsing puzzles
-  - Enables Board.toString() to work without passing color names
-- **BoardParser Enhancement**:
-  - Added "End of Puzzle Specification" marker support
-  - Stops reading file when marker encountered
-  - Allows additional content (like solutions) after puzzle definition
-- **Report Interval 0 Disables Reporting**:
-  - `-r 0` now completely disables progress reporting
-  - No reporter thread created, no periodic output, no final summary
-  - Header shows "Report interval: disabled"
-- **Debug Mode Added**:
-  - New `-d` / `--debug` flag
-  - Disables empty queue termination check
-  - Allows pausing at breakpoints without premature "no solution" termination
-  - Header shows "DEBUG MODE: Empty queue termination disabled"
-
-### Session 6 (January 10, 2026)
-- **Horizontal Perfect Swap Detection**:
-  - New optimization in `StateProcessor.generateAllMoves()`
-  - Detects rows where all tiles have correct color, all have 0-1 moves, even count of 1-moves
-  - Returns single move instead of generating all possible moves for that row
-  - Added `checkHorizontalPerfectSwap()` helper method
-- **Cross-Row Skip Optimization**:
-  - When wrong-colored tile found in row A, marks tile's target row B as skip
-  - Avoids redundant checking of rows known to be ineligible
-  - Uses `boolean[] skipRow` array and `colorToTargetRow` map
-- **StuckTilesTest Enhanced**:
-  - Now handles case where exactly one tile with target color is out of its target row
-  - T1/T2 logic: checks tile in target row at T1's column
-  - If T2 has target color: T1 must have exactly 2 remaining moves
-  - If T2 has different color ("correct column"): T1 must have exactly 1 move, counted as 0
-  - Scans entire board to find tiles with target color
-  - Expands pruning coverage for near-solution states
-
-### Session 6b (January 10, 2026 - Later)
-- **ProgressReporter Status Line Redesigned**:
-  - Removed "Generated" count from status line
-  - Removed pruned count, kept only percentage (without parentheses)
-  - Moved Pruned stat after Processed
-  - Removed Queue stat entirely
-  - Changed "Progress:" label to "Queues:"
-  - New format: `[time] Processed: X | Pruned: X% | Queues: 3:5 4:12 5:8 | Rate: X/s`
-- **PendingStates New Method**:
-  - Added `getQueueRangeInfo()` method
-  - Returns all queues from first non-empty to last non-empty, inclusive
-  - Each entry is `[moveCount, queueSize]`
-- **Cache Threshold Meaning Changed**:
-  - `-c` option now measures from first move instead of remaining moves
-  - States with N+ moves taken → local cache (was: states with fewer than N remaining)
-  - Example: `-c 4` caches states with 4+ moves taken
-  - Updated `StateProcessor.storeBoardState()` to use `getMoveCount()`
-  - Updated help text and header output
-
-### Next Session Goals
-1. Use TestBuilder to create specific test cases for invalidity tests
-2. Consider state deduplication for very large puzzles
-3. Profile memory usage under extreme load
-4. Consider similar cross-row inference for vertical perfect swap detection
-5. Test edge cases for enhanced StuckTilesTest
+2. `SESSION_2026-01-11.md` - Today's session details
+3. `BoardState.java` - New linked list structure
+4. `StateProcessor.java` - Timing instrumentation
+5. `ProgressReporter.java` - Avg time display
 
 ---
 
-**Ready for**: Production use, further optimization, new features, test case creation with TestBuilder
-**Status**: ✅ Stable, documented, tested, optimized
-**Last Test**: January 10, 2026 (Session 6b) - ProgressReporter redesign and cache threshold change
-**Note**: Requires rebuild with Maven to test new changes
+**Ready for**: Production use, further optimization
+**Status**: ✅ Stable, documented, tested
+**Last Test**: January 11, 2026

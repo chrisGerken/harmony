@@ -197,80 +197,49 @@ if (InvalidityTestCoordinator.getInstance().isInvalid(state)) {
 **File**: `src/main/java/org/gerken/harmony/invalidity/StuckTilesTest.java`
 **Status**: Currently active in InvalidityTestCoordinator
 **Added**: 2026-01-08
-**Enhanced**: 2026-01-10 - Added one-tile-out-of-row detection
+**Simplified**: 2026-01-11 - Cleaner parity-based detection
 
 #### Purpose
 
-Detects stuck tiles scenarios with **odd parity** that cannot be solved. This test now handles two cases:
-
-1. **All tiles in row**: When all tiles with target color are in their target row
-2. **One tile out of row**: When exactly one tile with target color is not in its target row
+Detects stuck tiles scenarios with **odd parity** that cannot be solved. A row is stuck when all tiles have the correct color but the remaining moves can't be zeroed out through valid swaps.
 
 #### Conditions for Invalid State
 
-For a row with target color C:
-1. All tiles with color C, or all but one, must be in this row
-2. Each tile with color C must have 0, 1, or 2 remaining moves
-3. If exactly one tile (T1) is out of row:
-   - Let T2 = tile in target row at T1's column
-   - If T2's color == C (not "correct column"): T1 must have exactly 2 moves
-   - If T2's color != C ("correct column"): T1 must have exactly 1 move
-4. Calculate total remaining moves:
-   - Sum moves of tiles with color C in the row
-   - If T1 in "correct column": add 0 for T1
-   - If T1 NOT in "correct column": add T1's actual moves
-5. If total is odd → board is invalid
+A row is **stuck** (invalid) if ALL of the following are true:
+1. All tiles in the row have the row's target color
+2. Each tile has less than 3 remaining moves (0, 1, or 2)
+3. The sum of remaining moves across all tiles in the row is **odd**
 
-#### Logic (Enhanced)
+#### Logic (Simplified 2026-01-11)
 
 ```java
-for (each row) {
+private boolean isRowStuck(Board board, int row) {
     int targetColor = board.getRowTargetColor(row);
+    int sumRemainingMoves = 0;
 
-    // Scan entire board to find tiles with targetColor
-    int tilesWithColorOutOfRow = 0;
-    int t1Row = -1, t1Col = -1;
+    for (int col = 0; col < board.getColumnCount(); col++) {
+        Tile tile = board.getTile(row, col);
 
-    for (each tile on board) {
-        if (tile.getColor() == targetColor) {
-            if (tile.getRemainingMoves() > 2) return false;  // Skip row
-            if (tile not in this row) {
-                tilesWithColorOutOfRow++;
-                t1Row = tile.row; t1Col = tile.col;
-                if (tilesWithColorOutOfRow > 1) return false;  // Skip row
-            }
+        // Condition 1: All tiles must have the target color
+        if (tile.getColor() != targetColor) {
+            return false;
         }
-    }
 
-    // Calculate total remaining moves for tiles with targetColor in the row
-    int totalRemainingMoves = 0;
-    for (each tile in row with targetColor) {
-        totalRemainingMoves += tile.getRemainingMoves();
-    }
-
-    // Handle T1 if exactly one tile is out of the row
-    if (tilesWithColorOutOfRow == 1) {
-        Tile t1 = board.getTile(t1Row, t1Col);
-        Tile t2 = board.getTile(row, t1Col);
-
-        if (t2.getColor() == targetColor) {
-            // T1 NOT in "correct column" - must have exactly 2 moves
-            if (t1.getRemainingMoves() != 2) return false;
-            totalRemainingMoves += t1.getRemainingMoves();
-        } else {
-            // T1 IS in "correct column" - must have exactly 1 move
-            if (t1.getRemainingMoves() != 1) return false;
-            // T1's contribution is 0 (don't add anything)
+        // Condition 2: Each tile must have < 3 moves remaining
+        int moves = tile.getRemainingMoves();
+        if (moves >= 3) {
+            return false;
         }
+
+        sumRemainingMoves += moves;
     }
 
-    if (totalRemainingMoves % 2 == 1) {
-        return true;  // Invalid - odd total!
-    }
+    // Condition 3: Sum of remaining moves must be odd
+    return sumRemainingMoves % 2 == 1;
 }
 ```
 
-#### Example 1: All tiles in row, odd parity
+#### Example 1: Odd parity - Invalid
 
 Row A needs RED tiles, has 4 columns:
 - A1: RED with 1 move
@@ -279,57 +248,43 @@ Row A needs RED tiles, has 4 columns:
 - A4: RED with 0 moves
 
 This is **Invalid** because:
-- All tiles are the correct color
-- Three tiles have 1 move remaining (total = 3, odd)
-- 3 tiles cannot be paired off
+- All tiles have the correct color (RED)
+- All have < 3 moves (0, 1, 1, 1)
+- Sum = 3 (odd) → cannot be reduced to 0 through paired swaps
 
-#### Example 2: One tile out of row, "correct column"
+#### Example 2: Even parity - Valid
 
-Row A needs RED tiles, has 3 columns:
-- A1: RED with 1 move
+Row A needs RED tiles, has 4 columns:
+- A1: RED with 2 moves
 - A2: RED with 0 moves
-- A3: BLUE with 1 move (T2)
-- B3: RED with 1 move (T1, out of row)
+- A3: RED with 0 moves
+- A4: RED with 0 moves
 
-T1 (RED at B3) is in "correct column" because T2 (at A3) is BLUE, not RED.
-T1 must have exactly 1 move (it does).
-T1's contribution = 0.
-Total = 1 + 0 + 0 = 1 (odd) → **Invalid**
+This is **Valid** because:
+- All tiles have correct color
+- All have < 3 moves
+- Sum = 2 (even) → can be reduced to 0
 
-#### Example 3: One tile out of row, NOT "correct column"
+#### Why Odd Parity is Invalid
 
-Row A needs RED tiles, has 3 columns:
-- A1: RED with 1 move
-- A2: RED with 0 moves
-- A3: RED with 1 move (T2)
-- B3: RED with 2 moves (T1, out of row)
-
-T1 (RED at B3) is NOT in "correct column" because T2 (at A3) is RED.
-T1 must have exactly 2 moves (it does).
-T1's contribution = 2.
-Total = 1 + 0 + 1 + 2 = 4 (even) → **Valid**
-
-#### Why "Correct Column" Matters
-
-When T1 is in the "correct column" (T2 has a different color):
-- T1 can swap directly into position, displacing T2
-- This swap is "free" for parity purposes - T1's moves don't add to the row's parity problem
-- Hence T1's contribution = 0
-
-When T1 is NOT in "correct column" (T2 has the target color):
-- Swapping T1 with T2 would displace a correctly-colored tile
-- T1 needs 2 moves to handle this more complex scenario
-- T1's full move count contributes to parity
+Each swap within the row decreases two tiles' move counts by 1 each. The net effect on the sum is always -2 (even). Starting with an odd sum, you can never reach 0 (even) through any sequence of swaps.
 
 #### Optimization
 
 Only checks rows affected by the last move (not all rows), as only those rows could have transitioned to the stuck state.
 
+Uses `getLastMove()` for efficient detection:
+```java
+Move lastMove = boardState.getLastMove();
+if (lastMove == null) {
+    return checkAllRows(board);  // Initial state
+}
+// Only check row(s) containing tiles from the last move
+```
+
 #### Performance
 
-⚡ **Fast**: O(R×N×M) - scans entire board for each affected row
-- More expensive than original due to full board scan
-- Still fast in practice (typically 2-4 affected rows per move)
+⚡ **Very Fast**: O(M) per row - single pass over row tiles
 
 #### Evolution
 
@@ -337,7 +292,8 @@ Only checks rows affected by the last move (not all rows), as only those rows co
 |---------|-----------|--------|
 | StuckTileTest | Only exactly 1 tile with 1 move, all in row | Legacy |
 | StuckTilesTest v1 | Any odd count with 1 move, all in row | Replaced |
-| StuckTilesTest v2 | Odd parity with 0-2 moves, handles one-out-of-row | **Active** |
+| StuckTilesTest v2 | Odd parity with 0-2 moves, handles one-out-of-row | Replaced |
+| StuckTilesTest v3 | Simple odd parity check, all tiles < 3 moves | **Active** |
 
 ### 2. StuckTileTest (Legacy)
 
@@ -585,7 +541,9 @@ The current active tests (StuckTilesTest, WrongRowZeroMovesTest, BlockedSwapTest
 
 **2026-01-08 Update**: StuckTilesTest (odd parity version) replaced StuckTileTest as the active test, providing more comprehensive detection of stuck tile scenarios.
 
-**2026-01-10 Update**: StuckTilesTest enhanced to handle the case where exactly one tile with the target color is outside its target row. This includes T1/T2 logic for "correct column" detection and appropriate parity adjustments.
+**2026-01-10 Update**: StuckTilesTest enhanced to handle the case where exactly one tile with the target color is outside its target row.
+
+**2026-01-11 Update**: StuckTilesTest simplified to cleaner parity-based detection. All invalidity tests updated to use `getLastMove()` instead of `getMoves()` following the BoardState refactoring to linked list structure.
 
 ## Adding New Tests
 

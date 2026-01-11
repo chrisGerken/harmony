@@ -186,17 +186,21 @@ diagonal.isValid();    // false
 
 ### Purpose
 
-Represents a node in the search space - a board configuration plus the sequence of moves taken to reach it.
+Represents a node in the search space - a board configuration plus a link to the previous state.
 
-### Properties
+### Properties (Updated 2026-01-11)
 
 ```java
 public class BoardState {
-    private final Board board;           // Current board configuration
-    private final List<Move> moves;      // Sequence of moves from original state
-    private final int remainingMoves;    // Cached count (sum of tile moves / 2)
+    private final Board board;                    // Current board configuration
+    private final Move lastMove;                  // Last move taken (null for initial state)
+    private final int remainingMoves;             // Cached count (sum of tile moves / 2)
+    private BoardState previousBoardState;        // Link to previous state (null for initial)
 }
 ```
+
+**Architecture Note** (Updated 2026-01-11):
+BoardState now uses a **linked list structure** instead of copying move lists. Each state stores only the last move taken and a reference to the previous state. This eliminates ArrayList copying on every state transition, significantly reducing memory allocation overhead.
 
 **Optimization Note** (Added 2026-01-08):
 The `remainingMoves` field is cached to avoid recalculating on every state. For the original board state, it's computed by summing all tiles' remaining moves and dividing by 2. For successor states, it's simply decremented by 1 (since each move decrements two tiles by 1 each, net effect is -1 remaining move).
@@ -208,8 +212,10 @@ The `remainingMoves` field is cached to avoid recalculating on every state. For 
 | Method | Returns | Description |
 |--------|---------|-------------|
 | `getBoard()` | `Board` | Current board configuration |
-| `getMoves()` | `List<Move>` | Unmodifiable list of moves taken |
-| `getMoveCount()` | `int` | Number of moves taken |
+| `getLastMove()` | `Move` | Last move taken (null for initial state) |
+| `getPreviousBoardState()` | `BoardState` | Previous state in chain (null for initial) |
+| `getMoveCount()` | `int` | Number of moves taken (traverses chain) |
+| `getMoveHistory()` | `List<Move>` | Complete move sequence (builds by traversal) |
 | `getRemainingMoves()` | `int` | Cached count of remaining moves |
 | `isSolved()` | `boolean` | Delegates to `board.isSolved()` |
 
@@ -218,39 +224,66 @@ The `remainingMoves` field is cached to avoid recalculating on every state. For 
 | Method | Returns | Description |
 |--------|---------|-------------|
 | `applyMove(move)` | `BoardState` | Returns new state with move applied |
+| `setPreviousBoardState(state)` | `void` | Sets previous state reference |
 
 ### State Transitions
 
-Each state transition creates a new `BoardState`:
+Each state transition creates a new `BoardState` linked to its predecessor:
 
 ```java
-BoardState current = /* ... */;
-Move move = new Move(0, 0, 0, 1);
+BoardState initial = new BoardState(board);
+// initial.getLastMove() == null
+// initial.getPreviousBoardState() == null
 
-BoardState next = current.applyMove(move);
-// current is unchanged
-// next has updated board, move history, and remainingMoves - 1
+BoardState state1 = initial.applyMove(move1);
+// state1.getLastMove() == move1
+// state1.getPreviousBoardState() == initial
+
+BoardState state2 = state1.applyMove(move2);
+// state2.getLastMove() == move2
+// state2.getPreviousBoardState() == state1
+
+// Getting complete history
+List<Move> history = state2.getMoveHistory(); // [move1, move2]
 ```
 
-**Performance**: The `applyMove()` method uses a private constructor that accepts a pre-calculated `remainingMoves` value, avoiding the need to iterate through all tiles on every state transition. This provides significant performance gains on large puzzles.
+**Performance**: The `applyMove()` method uses a private constructor that accepts a pre-calculated `remainingMoves` value and sets the `previousBoardState` reference. No list copying occurs during state transitions.
 
 ### Search Space
 
-`BoardState` objects form a tree structure:
+`BoardState` objects form a linked chain structure:
 
 ```
-         Original State
-         (empty move list)
-        /       |        \
-    State A  State B  State C
-    [Move1]  [Move2]  [Move3]
-    /  |  \
-  ...  ...  ...
+Initial State (lastMove=null, prev=null)
+         │
+         ▼
+    State A (lastMove=Move1, prev=Initial)
+         │
+         ▼
+    State B (lastMove=Move2, prev=StateA)
+         │
+         ▼
+    State C (lastMove=Move3, prev=StateB)
+```
+
+### Invalidity Test Pattern
+
+Invalidity tests should use `getLastMove()` for efficient checking:
+
+```java
+Move lastMove = boardState.getLastMove();
+if (lastMove == null) {
+    // Initial state - check all tiles/rows
+    return checkAllTiles(board);
+}
+// Only check tiles affected by lastMove
+int row1 = lastMove.getRow1();
+// ...
 ```
 
 ### Thread Safety
 
-✅ **Thread-safe**: Immutable, safe for concurrent processing by worker threads.
+✅ **Thread-safe**: Core properties are immutable. The `previousBoardState` reference is set once during `applyMove()` before the state is shared.
 
 ## Design Principles
 
@@ -308,14 +341,16 @@ Each class has a single, well-defined responsibility.
 ### UML Diagram
 
 ```
-┌─────────────────┐
-│   BoardState    │
-│─────────────────│
-│ - board: Board  │
-│ - moves: List   │
-└────────┬────────┘
-         │ contains
-         ▼
+┌───────────────────────────┐
+│       BoardState          │
+│───────────────────────────│
+│ - board: Board            │
+│ - lastMove: Move          │◄──────┐
+│ - previousBoardState      │───────┘ (self-reference)
+│ - remainingMoves: int     │
+└───────────┬───────────────┘
+            │ contains
+            ▼
 ┌─────────────────┐         ┌──────────────┐
 │      Board      │ contains│     Tile     │
 │─────────────────│◆────────│──────────────│
@@ -407,7 +442,7 @@ System.out.println(next.getMoveCount());  // 1
 
 ```java
 if (state.isSolved()) {
-    List<Move> solution = state.getMoves();
+    List<Move> solution = state.getMoveHistory();
     for (Move move : solution) {
         System.out.println(move.getNotation());
     }
