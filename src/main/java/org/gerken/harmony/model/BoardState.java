@@ -61,12 +61,12 @@ public class BoardState {
     }
 
     /**
-     * Gets an unmodifiable list of moves taken to reach this state.
+     * Gets the list of moves taken to reach this state.
      *
      * @return the move history
      */
     public List<Move> getMoves() {
-        return Collections.unmodifiableList(moves);
+        return moves;
     }
 
     /**

@@ -23,6 +23,10 @@ public class StateProcessor implements Runnable {
     private final ArrayList<BoardState> cache;
     private final int cacheThreshold;
 
+    // Timing instrumentation
+    private long totalProcessingTimeNanos = 0;
+    private long statesProcessedByThisThread = 0;
+
     /**
      * Creates a new state processor with default cache threshold of 4.
      *
@@ -70,7 +74,11 @@ public class StateProcessor implements Runnable {
                 }
 
                 // Process this state: generate and queue valid successors
+                long startTime = System.nanoTime();
                 processState(state);
+                long endTime = System.nanoTime();
+                totalProcessingTimeNanos += (endTime - startTime);
+                statesProcessedByThisThread++;
                 pendingStates.incrementStatesProcessed();
             }
         } catch (InterruptedException e) {
@@ -391,5 +399,17 @@ public class StateProcessor implements Runnable {
      */
     public int getCacheSize() {
         return cache.size();
+    }
+
+    /**
+     * Gets the average processing time per state in milliseconds for this processor.
+     *
+     * @return the average processing time in milliseconds, or 0 if no states processed
+     */
+    public double getAverageProcessingTimeMs() {
+        if (statesProcessedByThisThread == 0) {
+            return 0.0;
+        }
+        return (totalProcessingTimeNanos / (double) statesProcessedByThisThread) / 1_000_000.0;
     }
 }

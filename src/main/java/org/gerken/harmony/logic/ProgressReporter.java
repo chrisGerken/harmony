@@ -54,12 +54,20 @@ public class ProgressReporter implements Runnable {
         int queueSize = pendingStates.size();
         long elapsedMs = System.currentTimeMillis() - startTime;
 
-        // Add cache sizes from all processors to queue size
+        // Add cache sizes from all processors to queue size and calculate average processing time
         int totalCacheSize = 0;
+        double totalAvgTimeMs = 0.0;
+        int processorCount = 0;
         for (StateProcessor processor : solver.getProcessors()) {
             totalCacheSize += processor.getCacheSize();
+            double avgTime = processor.getAverageProcessingTimeMs();
+            if (avgTime > 0) {
+                totalAvgTimeMs += avgTime;
+                processorCount++;
+            }
         }
         int totalQueueSize = queueSize + totalCacheSize;
+        double overallAvgTimeMs = processorCount > 0 ? totalAvgTimeMs / processorCount : 0.0;
 
         // Get progress info: all queues from first non-empty to last non-empty
         int[][] queueRangeInfo = pendingStates.getQueueRangeInfo();
@@ -85,12 +93,13 @@ public class ProgressReporter implements Runnable {
         // Format and print progress
         System.out.printf(
             "[%s] Processed: %s | Pruned: %.1f%% | Queues: %s | " +
-            "Rate: %s/s%n",
+            "Rate: %s/s | Avg: %.3fms%n",
             formatDuration(elapsedSeconds),
             formatCount(processed),
             pruneRate,
             progressStr,
-            formatCount((long) statesPerSecond)
+            formatCount((long) statesPerSecond),
+            overallAvgTimeMs
         );
     }
 
