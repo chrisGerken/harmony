@@ -130,10 +130,14 @@ public class BoardState {
 
     /**
      * Checks if the board in this state is solved.
+     * First checks if remaining moves is zero (quick check), then verifies board state.
      *
      * @return true if the board is solved
      */
     public boolean isSolved() {
+        if (remainingMoves != 0) {
+            return false;
+        }
         return board.isSolved();
     }
 

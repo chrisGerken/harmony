@@ -4,7 +4,7 @@ This document details the optimization strategies implemented in the Harmony Puz
 
 ## Overview
 
-The solver employs seven complementary optimization strategies that work together to dramatically reduce the search space and improve performance:
+The solver employs fourteen complementary optimization strategies that work together to dramatically reduce the search space and improve performance:
 
 1. **Invalidity Tests** - Prune impossible states after generation
 2. **Horizontal Perfect Swap Detection** - Force optimal endgame moves for aligned rows *(Added: 2026-01-10)*
@@ -13,6 +13,13 @@ The solver employs seven complementary optimization strategies that work togethe
 5. **Thread-Local Caching** - Reduce contention on shared queues *(Added: 2026-01-08)*
 6. **Cached State Metrics** - Avoid recalculating remaining moves *(Added: 2026-01-08)*
 7. **HashMap Color Lookups** - O(1) color-to-row mapping *(Added: 2026-01-08)*
+8. **Array-Based Queue Storage** - Pre-allocated queues with direct indexing *(Added: 2026-01-12)*
+9. **Batch Counter Updates** - Reduce atomic operation overhead *(Added: 2026-01-12)*
+10. **Pre-Sized Cache** - Avoid ArrayList resize operations *(Added: 2026-01-12)*
+11. **Simplified Solution Flag** - Volatile boolean instead of AtomicBoolean *(Added: 2026-01-12)*
+12. **Direct Color-to-Row Mapping** - Eliminate search in BlockedSwapTest *(Added: 2026-01-12)*
+13. **Move Sorting Options** - Configurable move ordering strategies *(Added: 2026-01-12)*
+14. **BoardState.isSolved() Early Exit** - O(1) check before tile iteration *(Added: 2026-01-12)*
 
 ## 1. Invalidity Tests
 
@@ -369,6 +376,248 @@ private List<Move> generateAllMoves(Board board) {
 - **File**: `StateProcessor.java`
 - **Method**: `buildColorToRowMap()` (new), `generateAllMoves()` (updated)
 
+## 8. Array-Based Queue Storage *(Added: 2026-01-12)*
+
+### Problem
+
+The original `PendingStates` class used `ConcurrentHashMap<Integer, ConcurrentLinkedQueue<BoardState>>` to organize queues by move depth. This incurred overhead from:
+- HashMap lookups for every add/poll operation
+- Dynamic queue creation with `computeIfAbsent()`
+- AtomicInteger updates for maxMoveCount
+
+### Solution
+
+Since the maximum move count is known from the initial board state, pre-allocate all queues at construction:
+
+```java
+// Before
+private final ConcurrentHashMap<Integer, ConcurrentLinkedQueue<BoardState>> queuesByMoveCount;
+private final AtomicInteger maxMoveCount;
+
+// After
+private final ConcurrentLinkedQueue<BoardState>[] queuesByMoveCount;
+private final int maxMoveCount;
+```
+
+**Constructor:**
+```java
+public PendingStates(int maxMoveCount) {
+    this.maxMoveCount = maxMoveCount;
+    this.queuesByMoveCount = (ConcurrentLinkedQueue<BoardState>[])
+        new ConcurrentLinkedQueue[maxMoveCount + 1];
+    for (int i = 0; i <= maxMoveCount; i++) {
+        this.queuesByMoveCount[i] = new ConcurrentLinkedQueue<>();
+    }
+}
+```
+
+**Benefits:**
+- Direct array indexing O(1) instead of HashMap lookup
+- No dynamic queue creation during execution
+- No atomic updates to maxMoveCount
+- Predictable memory allocation
+
+## 9. Batch Counter Updates *(Added: 2026-01-12)*
+
+### Problem
+
+In `processState()`, every generated state called `incrementStatesGenerated()` and every pruned state called `incrementStatesPruned()`. Each call performed an atomic `incrementAndGet()` operation, creating contention.
+
+### Solution
+
+Count locally in the loop, then batch update atomics once:
+
+```java
+int generatedCount = 0;
+int prunedCount = 0;
+
+for (Move move : possibleMoves) {
+    BoardState nextState = state.applyMove(move);
+    generatedCount++;
+
+    if (isInvalid(nextState)) {
+        prunedCount++;
+        continue;
+    }
+    storeBoardState(nextState);
+}
+
+// Single atomic update after loop
+pendingStates.addStatesGenerated(generatedCount);
+pendingStates.addStatesPruned(prunedCount);
+```
+
+**New methods in PendingStates:**
+```java
+public void addStatesGenerated(int count) {
+    statesGenerated.addAndGet(count);
+}
+
+public void addStatesPruned(int count) {
+    statesPruned.addAndGet(count);
+}
+```
+
+**Benefits:**
+- One atomic operation per state processed, not per state generated
+- Reduces contention on shared counters
+- More efficient for states with many successors
+
+## 10. Pre-Sized Cache *(Added: 2026-01-12)*
+
+### Problem
+
+The thread-local cache ArrayList started empty and resized dynamically as states were added. For deep searches, this caused multiple resize operations.
+
+### Solution
+
+Initialize with capacity of 100,000:
+
+```java
+this.cache = new ArrayList<>(100_000);
+```
+
+**Benefits:**
+- Eliminates resize operations
+- Predictable memory allocation
+- One-time cost at thread startup
+
+## 11. Simplified Solution Flag *(Added: 2026-01-12)*
+
+### Problem
+
+The `solutionFound` flag used `AtomicBoolean` with `compareAndSet()`, but this was overkill since:
+- The flag only transitions false → true (never back)
+- Multiple threads setting it to true is harmless
+- The exact timing of the transition doesn't affect correctness
+
+### Solution
+
+Use `volatile boolean` instead:
+
+```java
+// Before
+private final AtomicBoolean solutionFound;
+public boolean markSolutionFound(BoardState state) {
+    if (solutionFound.compareAndSet(false, true)) {
+        solution.set(state);
+        return true;
+    }
+    return false;
+}
+
+// After
+private volatile boolean solutionFound;
+public void markSolutionFound(BoardState state) {
+    solution.set(state);
+    solutionFound = true;
+}
+```
+
+**Benefits:**
+- Simpler code
+- No CAS overhead
+- Volatile ensures visibility across threads
+
+## 12. Direct Color-to-Row Mapping *(Added: 2026-01-12)*
+
+### Problem
+
+`BlockedSwapTest.findTargetRowForColor()` iterated through rows to find which row had a given color as its target.
+
+### Solution
+
+Since target color ID equals row index by convention, eliminate the search:
+
+```java
+// Before
+int targetRow = findTargetRowForColor(board, tile.getColor());
+
+// After
+int targetRow = tile.getColor();  // Target row = color ID
+```
+
+**Benefits:**
+- Eliminates O(rows) search per tile checked
+- Direct O(1) mapping
+
+## 13. Move Sorting Options *(Added: 2026-01-12)*
+
+### Purpose
+
+Allow experimentation with move ordering strategies to potentially find solutions faster.
+
+### Implementation
+
+**New enum:**
+```java
+public enum SortMode { NONE, SMALLEST_FIRST, LARGEST_FIRST }
+```
+
+**Command-line flags:**
+- `--smallestFirst`: Sort moves by ascending sum of tile remaining moves
+- `--largestFirst`: Sort moves by descending sum of tile remaining moves
+
+**Comparator:**
+```java
+private Comparator<Move> createMoveComparator(Board board) {
+    return (m1, m2) -> {
+        int sum1 = board.getTile(m1.getRow1(), m1.getCol1()).getRemainingMoves()
+                 + board.getTile(m1.getRow2(), m1.getCol2()).getRemainingMoves();
+        int sum2 = board.getTile(m2.getRow1(), m2.getCol1()).getRemainingMoves()
+                 + board.getTile(m2.getRow2(), m2.getCol2()).getRemainingMoves();
+        return Integer.compare(sum1, sum2);
+    };
+}
+```
+
+**Usage:**
+```bash
+./solve.sh --smallestFirst puzzles/medium.txt
+./solve.sh --largestFirst puzzles/medium.txt
+```
+
+## 14. BoardState.isSolved() Early Exit *(Added: 2026-01-12)*
+
+### Problem
+
+The `isSolved()` method delegated directly to `board.isSolved()`, which iterates through all tiles to verify each matches its row's target color. This O(rows × cols) operation was performed even when the board clearly couldn't be solved (remaining moves > 0).
+
+### Solution
+
+Add an early exit check for remaining moves before tile iteration:
+
+```java
+public boolean isSolved() {
+    if (remainingMoves != 0) {
+        return false;
+    }
+    return board.isSolved();
+}
+```
+
+### Rationale
+
+A board cannot be solved if there are remaining moves, because:
+- Each tile must end with 0 remaining moves
+- The `remainingMoves` field tracks total moves remaining across all tiles
+- If `remainingMoves > 0`, at least one tile still needs to move
+
+### Performance Impact
+
+- **Before**: O(rows × cols) for every `isSolved()` call
+- **After**: O(1) when moves remain, O(rows × cols) only at endgame
+- Most calls return early since solution check happens at every state
+
+### Benchmark Note
+
+A temporary benchmark (`BoardCopyBenchmark.java`) was also created to compare grid copy strategies:
+- `clone()` for each row: 34.7ms for 1M ops (3x3)
+- Manual element copy: 145.2ms for 1M ops (3x3)
+- **Result**: `clone()` is 4-5x faster due to native bulk memory copy
+- Confirms current Board constructor implementation is optimal
+- Benchmark deleted after testing
+
 ## Future Optimization Opportunities
 
 Potential areas for further improvement:
@@ -402,10 +651,13 @@ Monitor:
 
 ## References
 
-- `StateProcessor.java` - Move generation, filtering, perfect swap detection, and thread-local caching
-- `BoardState.java` - Cached remainingMoves field
+- `StateProcessor.java` - Move generation, filtering, perfect swap detection, sorting, and thread-local caching
+- `PendingStates.java` - Array-based queues, batch counter methods
+- `BoardState.java` - Cached remainingMoves field, isSolved() early exit
 - `InvalidityTestCoordinator.java` - Test registration
 - `IsolatedTileTest.java` - Isolation detection test
-- `HarmonySolver.java` - Command-line option parsing (-c flag)
+- `BlockedSwapTest.java` - Direct color-to-row mapping
+- `HarmonySolver.java` - Command-line option parsing (-c, --smallestFirst, --largestFirst)
 - Session notes: 2026-01-08 - Optimization implementation and thread-local caching
 - Session notes: 2026-01-10 - Horizontal perfect swap with cross-row skip optimization
+- Session notes: 2026-01-12 - Array queues, batch updates, simplified atomics, move sorting, isSolved() early exit
