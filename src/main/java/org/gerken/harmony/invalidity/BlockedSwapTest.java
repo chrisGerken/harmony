@@ -69,10 +69,8 @@ public class BlockedSwapTest implements InvalidityTest {
             return false;
         }
 
-        int tileColor = tile.getColor();
-
-        // Find the target row for this tile's color
-        int targetRow = findTargetRowForColor(board, tileColor);
+        // Target row equals the tile's color (by convention)
+        int targetRow = tile.getColor();
 
         // If tile is already in its target row, it's not blocked
         if (row == targetRow) {
@@ -100,19 +98,6 @@ public class BlockedSwapTest implements InvalidityTest {
         }
 
         return false;
-    }
-
-    /**
-     * Finds which row has the given color as its target.
-     * Returns -1 if no row has this color as target.
-     */
-    private int findTargetRowForColor(Board board, int color) {
-        for (int row = 0; row < board.getRowCount(); row++) {
-            if (board.getRowTargetColor(row) == color) {
-                return row;
-            }
-        }
-        return -1; // Color not found (shouldn't happen in valid puzzles)
     }
 
     @Override

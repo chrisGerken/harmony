@@ -51,7 +51,7 @@ public class StateProcessor implements Runnable {
         this.pendingStates = pendingStates;
         this.coordinator = InvalidityTestCoordinator.getInstance();
         this.pollTimeoutMs = 1; // Short timeout to check solution flag
-        this.cache = new ArrayList<>();
+        this.cache = new ArrayList<>(100_000);
         this.cacheThreshold = cacheThreshold;
         this.sortMode = sortMode;
     }
