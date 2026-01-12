@@ -5,7 +5,6 @@ import org.gerken.harmony.model.BoardState;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -28,8 +27,8 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class PendingStates {
 
-    private final ConcurrentHashMap<Integer, ConcurrentLinkedQueue<BoardState>> queuesByMoveCount;
-    private final AtomicInteger maxMoveCount;
+    private final ConcurrentLinkedQueue<BoardState>[] queuesByMoveCount;
+    private final int maxMoveCount;
     private final AtomicBoolean solutionFound;
     private final AtomicReference<BoardState> solution;
     private final AtomicLong statesProcessed;
@@ -41,11 +40,18 @@ public class PendingStates {
 
     /**
      * Creates a new pending states container with all counters initialized to zero.
-     * Initializes the depth-first queue structure.
+     * Pre-creates all queues for the depth-first queue structure based on the
+     * known maximum number of moves.
+     *
+     * @param maxMoveCount the maximum number of moves (from initial state's remaining moves)
      */
-    public PendingStates() {
-        this.queuesByMoveCount = new ConcurrentHashMap<>();
-        this.maxMoveCount = new AtomicInteger(0);
+    @SuppressWarnings("unchecked")
+    public PendingStates(int maxMoveCount) {
+        this.maxMoveCount = maxMoveCount;
+        this.queuesByMoveCount = (ConcurrentLinkedQueue<BoardState>[]) new ConcurrentLinkedQueue[maxMoveCount + 1];
+        for (int i = 0; i <= maxMoveCount; i++) {
+            this.queuesByMoveCount[i] = new ConcurrentLinkedQueue<>();
+        }
         this.solutionFound = new AtomicBoolean(false);
         this.solution = new AtomicReference<>(null);
         this.statesProcessed = new AtomicLong(0);
@@ -65,17 +71,7 @@ public class PendingStates {
      */
     public void add(BoardState state) {
         int moveCount = state.getMoveCount();
-
-        // Update max move count if this is deeper than we've seen before
-        maxMoveCount.updateAndGet(current -> Math.max(current, moveCount));
-
-        // Get or create queue for this move depth
-        ConcurrentLinkedQueue<BoardState> queue = queuesByMoveCount.computeIfAbsent(
-            moveCount,
-            k -> new ConcurrentLinkedQueue<>()
-        );
-
-        queue.add(state);
+        queuesByMoveCount[moveCount].add(state);
     }
 
     /**
@@ -87,16 +83,11 @@ public class PendingStates {
      * @return the next board state from the deepest available queue, or null if all queues are empty
      */
     public BoardState poll() {
-        int currentMax = maxMoveCount.get();
-
         // Try polling from deepest to shallowest
-        for (int moveCount = currentMax; moveCount >= 0; moveCount--) {
-            ConcurrentLinkedQueue<BoardState> queue = queuesByMoveCount.get(moveCount);
-            if (queue != null) {
-                BoardState state = queue.poll();
-                if (state != null) {
-                    return state;
-                }
+        for (int moveCount = maxMoveCount; moveCount >= 0; moveCount--) {
+            BoardState state = queuesByMoveCount[moveCount].poll();
+            if (state != null) {
+                return state;
             }
         }
 
@@ -110,8 +101,8 @@ public class PendingStates {
      * @return true if all queues contain no states
      */
     public boolean isEmpty() {
-        for (ConcurrentLinkedQueue<BoardState> queue : queuesByMoveCount.values()) {
-            if (!queue.isEmpty()) {
+        for (int i = 0; i <= maxMoveCount; i++) {
+            if (!queuesByMoveCount[i].isEmpty()) {
                 return false;
             }
         }
@@ -127,8 +118,8 @@ public class PendingStates {
      */
     public int size() {
         int total = 0;
-        for (ConcurrentLinkedQueue<BoardState> queue : queuesByMoveCount.values()) {
-            total += queue.size();
+        for (int i = 0; i <= maxMoveCount; i++) {
+            total += queuesByMoveCount[i].size();
         }
         return total;
     }
@@ -275,16 +266,11 @@ public class PendingStates {
      * @return int array with [smallestMoveCount, queueSize], or null if all queues empty
      */
     public int[] getSmallestNonEmptyQueueInfo() {
-        int currentMax = maxMoveCount.get();
-
         // Search from smallest to largest move count
-        for (int moveCount = 0; moveCount <= currentMax; moveCount++) {
-            ConcurrentLinkedQueue<BoardState> queue = queuesByMoveCount.get(moveCount);
-            if (queue != null) {
-                int size = queue.size();
-                if (size > 0) {
-                    return new int[] { moveCount, size };
-                }
+        for (int moveCount = 0; moveCount <= maxMoveCount; moveCount++) {
+            int size = queuesByMoveCount[moveCount].size();
+            if (size > 0) {
+                return new int[] { moveCount, size };
             }
         }
 
@@ -299,13 +285,10 @@ public class PendingStates {
      * @return array of [moveCount, queueSize] pairs, or null if all queues empty
      */
     public int[][] getQueueRangeInfo() {
-        int currentMax = maxMoveCount.get();
-
         // Find first non-empty queue
         int firstNonEmpty = -1;
-        for (int moveCount = 0; moveCount <= currentMax; moveCount++) {
-            ConcurrentLinkedQueue<BoardState> queue = queuesByMoveCount.get(moveCount);
-            if (queue != null && queue.size() > 0) {
+        for (int moveCount = 0; moveCount <= maxMoveCount; moveCount++) {
+            if (queuesByMoveCount[moveCount].size() > 0) {
                 firstNonEmpty = moveCount;
                 break;
             }
@@ -317,9 +300,8 @@ public class PendingStates {
 
         // Find last non-empty queue
         int lastNonEmpty = firstNonEmpty;
-        for (int moveCount = currentMax; moveCount > firstNonEmpty; moveCount--) {
-            ConcurrentLinkedQueue<BoardState> queue = queuesByMoveCount.get(moveCount);
-            if (queue != null && queue.size() > 0) {
+        for (int moveCount = maxMoveCount; moveCount > firstNonEmpty; moveCount--) {
+            if (queuesByMoveCount[moveCount].size() > 0) {
                 lastNonEmpty = moveCount;
                 break;
             }
@@ -332,8 +314,7 @@ public class PendingStates {
         for (int i = 0; i < rangeSize; i++) {
             int moveCount = firstNonEmpty + i;
             result[i][0] = moveCount;
-            ConcurrentLinkedQueue<BoardState> queue = queuesByMoveCount.get(moveCount);
-            result[i][1] = (queue != null) ? queue.size() : 0;
+            result[i][1] = queuesByMoveCount[moveCount].size();
         }
 
         return result;

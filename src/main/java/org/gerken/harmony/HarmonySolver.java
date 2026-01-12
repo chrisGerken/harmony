@@ -51,6 +51,9 @@ public class HarmonySolver {
     private static final int DEFAULT_CACHE_THRESHOLD = 4; // moves remaining
     private static final boolean DEFAULT_DEBUG_MODE = false;
 
+    /** Sort mode for move ordering in state processing. */
+    public enum SortMode { NONE, SMALLEST_FIRST, LARGEST_FIRST }
+
     /**
      * Global color name mapping. Index is color ID, value is color name.
      * Set by BoardParser when loading a puzzle.
@@ -128,6 +131,15 @@ public class HarmonySolver {
     }
 
     /**
+     * Gets the sort mode for move ordering.
+     *
+     * @return the sort mode
+     */
+    public SortMode getSortMode() {
+        return config.sortMode;
+    }
+
+    /**
      * Gets the initial number of moves required to solve the puzzle.
      *
      * @return the initial remaining moves count
@@ -200,8 +212,8 @@ public class HarmonySolver {
      */
     private BoardState solve(BoardState initialState) {
         // Initialize shared data structures
-        this.pendingStates = new PendingStates();
         this.initialRemainingMoves = initialState.getRemainingMoves();
+        this.pendingStates = new PendingStates(initialRemainingMoves);
 
         // Add initial state to queue
         pendingStates.add(initialState);
@@ -212,7 +224,7 @@ public class HarmonySolver {
 
         System.out.println("Starting " + config.threadCount + " worker threads...");
         for (int i = 0; i < config.threadCount; i++) {
-            StateProcessor processor = new StateProcessor(pendingStates, config.cacheThreshold);
+            StateProcessor processor = new StateProcessor(pendingStates, config.cacheThreshold, config.sortMode);
             processors.add(processor);
             workerPool.submit(processor);
         }
@@ -337,6 +349,18 @@ public class HarmonySolver {
                 config.debugMode = true;
             } else if (arg.equals("-i") || arg.equals("--invalidity")) {
                 config.invalidityStats = true;
+            } else if (arg.equals("--smallestFirst")) {
+                if (config.sortMode == SortMode.LARGEST_FIRST) {
+                    System.err.println("Error: --smallestFirst and --largestFirst are mutually exclusive");
+                    return null;
+                }
+                config.sortMode = SortMode.SMALLEST_FIRST;
+            } else if (arg.equals("--largestFirst")) {
+                if (config.sortMode == SortMode.SMALLEST_FIRST) {
+                    System.err.println("Error: --smallestFirst and --largestFirst are mutually exclusive");
+                    return null;
+                }
+                config.sortMode = SortMode.LARGEST_FIRST;
             } else if (arg.equals("-h") || arg.equals("--help")) {
                 return null; // Will trigger usage message
             } else if (arg.startsWith("-")) {
@@ -375,6 +399,8 @@ public class HarmonySolver {
         System.out.println("  -c, --cache <N>       Cache threshold: states with N+ moves taken are cached locally (default: 4)");
         System.out.println("  -d, --debug           Debug mode: disable empty queue termination (for breakpoints)");
         System.out.println("  -i, --invalidity      Show invalidity test statistics instead of queue sizes");
+        System.out.println("  --smallestFirst       Process moves with smallest tile sum first");
+        System.out.println("  --largestFirst        Process moves with largest tile sum first");
         System.out.println("  -h, --help            Show this help message");
         System.out.println();
         System.out.println("Example:");
@@ -415,5 +441,6 @@ public class HarmonySolver {
         int cacheThreshold = DEFAULT_CACHE_THRESHOLD;
         boolean debugMode = DEFAULT_DEBUG_MODE;
         boolean invalidityStats = false;
+        SortMode sortMode = SortMode.NONE;
     }
 }

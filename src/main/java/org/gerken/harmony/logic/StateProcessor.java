@@ -1,5 +1,6 @@
 package org.gerken.harmony.logic;
 
+import org.gerken.harmony.HarmonySolver.SortMode;
 import org.gerken.harmony.invalidity.InvalidityTest;
 import org.gerken.harmony.invalidity.InvalidityTestCoordinator;
 import org.gerken.harmony.model.Board;
@@ -8,6 +9,7 @@ import org.gerken.harmony.model.Move;
 import org.gerken.harmony.model.Tile;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,32 +25,35 @@ public class StateProcessor implements Runnable {
     private final long pollTimeoutMs;
     private final ArrayList<BoardState> cache;
     private final int cacheThreshold;
+    private final SortMode sortMode;
 
     // Timing instrumentation
     private long totalProcessingTimeNanos = 0;
     private long statesProcessedByThisThread = 0;
 
     /**
-     * Creates a new state processor with default cache threshold of 4.
+     * Creates a new state processor with default cache threshold of 4 and no sorting.
      *
      * @param pendingStates the shared container of pending states and statistics
      */
     public StateProcessor(PendingStates pendingStates) {
-        this(pendingStates, 4);
+        this(pendingStates, 4, SortMode.NONE);
     }
 
     /**
-     * Creates a new state processor with configurable cache threshold.
+     * Creates a new state processor with configurable cache threshold and sort mode.
      *
      * @param pendingStates the shared container of pending states and statistics
      * @param cacheThreshold states with this many or more moves taken are cached locally
+     * @param sortMode the sort mode for move ordering
      */
-    public StateProcessor(PendingStates pendingStates, int cacheThreshold) {
+    public StateProcessor(PendingStates pendingStates, int cacheThreshold, SortMode sortMode) {
         this.pendingStates = pendingStates;
         this.coordinator = InvalidityTestCoordinator.getInstance();
-        this.pollTimeoutMs = 100; // Short timeout to check solution flag
+        this.pollTimeoutMs = 1; // Short timeout to check solution flag
         this.cache = new ArrayList<>();
         this.cacheThreshold = cacheThreshold;
+        this.sortMode = sortMode;
     }
 
     @Override
@@ -93,6 +98,15 @@ public class StateProcessor implements Runnable {
     private void processState(BoardState state) {
         Board board = state.getBoard();
         List<Move> possibleMoves = generateAllMoves(board);
+
+        // Sort moves if a sort mode is specified
+        if (sortMode != SortMode.NONE) {
+            Comparator<Move> comparator = createMoveComparator(board);
+            if (sortMode == SortMode.LARGEST_FIRST) {
+                comparator = comparator.reversed();
+            }
+            possibleMoves.sort(comparator);
+        }
 
         for (Move move : possibleMoves) {
             // Stop generating states if solution was found
@@ -414,5 +428,22 @@ public class StateProcessor implements Runnable {
             return 0.0;
         }
         return (totalProcessingTimeNanos / (double) statesProcessedByThisThread) / 1_000_000.0;
+    }
+
+    /**
+     * Creates a Comparator that orders moves by the sum of remaining moves of the two tiles.
+     * Smaller sums come first (ascending order).
+     *
+     * @param board the board to look up tile remaining moves
+     * @return a Comparator for Move objects
+     */
+    private Comparator<Move> createMoveComparator(Board board) {
+        return (m1, m2) -> {
+            int sum1 = board.getTile(m1.getRow1(), m1.getCol1()).getRemainingMoves()
+                     + board.getTile(m1.getRow2(), m1.getCol2()).getRemainingMoves();
+            int sum2 = board.getTile(m2.getRow1(), m2.getCol1()).getRemainingMoves()
+                     + board.getTile(m2.getRow2(), m2.getCol2()).getRemainingMoves();
+            return Integer.compare(sum1, sum2);
+        };
     }
 }
