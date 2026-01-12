@@ -47,6 +47,15 @@ public class Tile {
         return new Tile(color, remainingMoves - 1);
     }
 
+    /**
+     * Creates a copy of this tile.
+     *
+     * @return a new tile with the same color and remaining moves
+     */
+    public Tile copy() {
+        return new Tile(color, remainingMoves);
+    }
+
     @Override
     public String toString() {
         return color + ":" + remainingMoves;

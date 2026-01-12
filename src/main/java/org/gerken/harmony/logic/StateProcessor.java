@@ -108,17 +108,17 @@ public class StateProcessor implements Runnable {
             possibleMoves.sort(comparator);
         }
 
+        int generatedCount = 0;
+        int prunedCount = 0;
+
         for (Move move : possibleMoves) {
-            // Stop generating states if solution was found
-            if (pendingStates.isSolutionFound()) {
-                return;
-            }
-
             BoardState nextState = state.applyMove(move);
-            pendingStates.incrementStatesGenerated();
+            generatedCount++;
 
-            // Check if this is the solution
-            if (nextState.isSolved()) {
+            // Check if this is the solution (only possible when no remaining moves)
+            if (nextState.getRemainingMoves() == 0 && nextState.isSolved()) {
+                pendingStates.addStatesGenerated(generatedCount);
+                pendingStates.addStatesPruned(prunedCount);
                 pendingStates.markSolutionFound(nextState);
                 return;
             }
@@ -126,7 +126,7 @@ public class StateProcessor implements Runnable {
             // Prune invalid states
             InvalidityTest invalidatingTest = coordinator.getInvalidatingTest(nextState);
             if (invalidatingTest != null) {
-                pendingStates.incrementStatesPruned();
+                prunedCount++;
                 pendingStates.incrementInvalidityCounter(nextState.getMoveCount(), invalidatingTest.getName());
                 continue;
             }
@@ -134,6 +134,10 @@ public class StateProcessor implements Runnable {
             // Valid state - add to cache or queue for processing
             storeBoardState(nextState);
         }
+
+        // Batch update counters after loop completes
+        pendingStates.addStatesGenerated(generatedCount);
+        pendingStates.addStatesPruned(prunedCount);
     }
 
     /**

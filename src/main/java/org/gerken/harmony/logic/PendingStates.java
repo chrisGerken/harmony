@@ -4,7 +4,6 @@ import org.gerken.harmony.model.BoardState;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -29,7 +28,7 @@ public class PendingStates {
 
     private final ConcurrentLinkedQueue<BoardState>[] queuesByMoveCount;
     private final int maxMoveCount;
-    private final AtomicBoolean solutionFound;
+    private volatile boolean solutionFound;
     private final AtomicReference<BoardState> solution;
     private final AtomicLong statesProcessed;
     private final AtomicLong statesGenerated;
@@ -52,7 +51,7 @@ public class PendingStates {
         for (int i = 0; i <= maxMoveCount; i++) {
             this.queuesByMoveCount[i] = new ConcurrentLinkedQueue<>();
         }
-        this.solutionFound = new AtomicBoolean(false);
+        this.solutionFound = false;
         this.solution = new AtomicReference<>(null);
         this.statesProcessed = new AtomicLong(0);
         this.statesGenerated = new AtomicLong(0);
@@ -132,22 +131,17 @@ public class PendingStates {
      * @return true if a solution was found
      */
     public boolean isSolutionFound() {
-        return solutionFound.get();
+        return solutionFound;
     }
 
     /**
-     * Attempts to mark that a solution has been found.
-     * Uses compare-and-set to ensure only one thread succeeds.
+     * Marks that a solution has been found.
      *
      * @param solutionState the solution board state
-     * @return true if this thread was the first to mark the solution
      */
-    public boolean markSolutionFound(BoardState solutionState) {
-        if (solutionFound.compareAndSet(false, true)) {
-            solution.set(solutionState);
-            return true;
-        }
-        return false;
+    public void markSolutionFound(BoardState solutionState) {
+        solution.set(solutionState);
+        solutionFound = true;
     }
 
     /**
@@ -155,7 +149,7 @@ public class PendingStates {
      * Used for coordinated shutdown even if no solution exists.
      */
     public void setSolutionFound() {
-        solutionFound.set(true);
+        solutionFound = true;
     }
 
     /**
@@ -177,17 +171,21 @@ public class PendingStates {
     }
 
     /**
-     * Increments the count of states that have been generated.
+     * Adds to the count of states that have been generated.
+     *
+     * @param count the number to add
      */
-    public void incrementStatesGenerated() {
-        statesGenerated.incrementAndGet();
+    public void addStatesGenerated(int count) {
+        statesGenerated.addAndGet(count);
     }
 
     /**
-     * Increments the count of states that have been pruned as invalid.
+     * Adds to the count of states that have been pruned as invalid.
+     *
+     * @param count the number to add
      */
-    public void incrementStatesPruned() {
-        statesPruned.incrementAndGet();
+    public void addStatesPruned(int count) {
+        statesPruned.addAndGet(count);
     }
 
     /**
