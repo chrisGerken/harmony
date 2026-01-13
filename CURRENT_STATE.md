@@ -105,7 +105,8 @@ Tile (immutable)
 ### 6. State Persistence (-dur/--duration)
 **Timer-based checkpointing for long-running puzzles**:
 - New `-dur, --duration <N>` parameter (default: 120 minutes)
-- On timeout: collects states from queues and caches, saves to `<puzzle>.state.txt`
+- On timeout: signals threads to stop, waits 10 seconds for in-progress work
+- Collects states from queues and caches, saves to `<puzzle>.state.txt`
 - On startup: checks for state file and resumes if found
 - Handles changing replication factors and thread counts between runs
 - Statistics restart from zero when resuming
@@ -209,6 +210,7 @@ Options:
 - **QueueContext**: Per-thread random queue selection
 - **2D Queue Arrays**: queuesByMoveCount[depth][replica]
 - **State Persistence**: -dur flag, StateSerializer, resume from state file
+- **Graceful Shutdown**: 10 second wait for in-progress states to finish
 
 ### Session 8 (January 12, 2026)
 - **PendingStates Refactored**: Array-based queues, simplified atomics
