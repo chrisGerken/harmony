@@ -1,5 +1,5 @@
 # Current State of Harmony Puzzle Solver
-**Last Updated**: January 12, 2026 (Session 8)
+**Last Updated**: January 13, 2026 (Session 9)
 
 ## Quick Status
 - ✅ **Production Ready**: All code compiles and tests pass
@@ -13,23 +13,36 @@
 - ✅ **Simplified Board**: Target color ID = row index
 - ✅ **Invalidity Stats**: -i flag for detailed invalidity tracking
 - ✅ **Optimized Atomics**: Batch updates, pre-allocated structures
+- ✅ **Queue Replication**: -repl flag for reduced contention with multiple threads
+- ✅ **State Persistence**: -dur flag for timer-based checkpointing and resumption
 
 ## Current Architecture (High Level)
 
 ```
 HarmonySolver (instance-based, central context)
     ├─> Config (threadCount, reportInterval, cacheThreshold, debugMode,
-    │           invalidityStats, sortMode)
+    │           invalidityStats, sortMode, replicationFactor, durationMinutes)
     ├─> SortMode enum (NONE, SMALLEST_FIRST, LARGEST_FIRST)
     ├─> colorNames (public static List<String> - global color mapping)
-    ├─> PendingStates (array of ConcurrentLinkedQueues by depth)
-    │       ├─> queuesByMoveCount: ConcurrentLinkedQueue<BoardState>[]
+    ├─> PendingStates (2D array of ConcurrentLinkedQueues by depth × replication)
+    │       ├─> queuesByMoveCount: ConcurrentLinkedQueue<BoardState>[][]
+    │       ├─> activeQueues: boolean[][] (tracks which queues have been used)
     │       ├─> maxMoveCount: int (set once at init)
+    │       ├─> replicationFactor: int (from -repl flag, default 3)
     │       ├─> solutionFound: volatile boolean
+    │       ├─> getQueueContext(): QueueContext (factory for per-thread context)
     │       └─> addStatesGenerated(int), addStatesPruned(int)
+    ├─> QueueContext (per-thread, provides random queue index)
+    │       └─> getRandomQueueIndex(): int (0 to replicationFactor-1)
     ├─> List<StateProcessor> (worker threads with local caches + timing)
-    │       └─> cache: ArrayList<BoardState>(100_000)
+    │       ├─> cache: ArrayList<BoardState>(100_000)
+    │       ├─> queueContext: QueueContext (obtained once at thread start)
+    │       └─> trackInvalidity: boolean (only track when -i flag set)
     ├─> ProgressReporter (takes HarmonySolver, accesses all via getters)
+    ├─> StateSerializer (static utility for state persistence)
+    │       ├─> saveStates(puzzleFile, states)
+    │       ├─> loadStates(puzzleFile, initialState)
+    │       └─> State file: <puzzle>.state.txt
     └─> InvalidityTestCoordinator (ordered by effectiveness)
             ├─> BlockedSwapTest      (1st - uses targetRow = color directly)
             ├─> StuckTilesTest       (2nd)
@@ -54,82 +67,80 @@ Tile (immutable)
     └─> decrementMoves() - returns new Tile with moves-1
 ```
 
-## Recent Changes (Session 8 - January 12, 2026)
+## Recent Changes (Session 9 - January 13, 2026)
 
-### 1. PendingStates Performance Refactor
-**Array-based queue storage**:
-- Changed from `ConcurrentHashMap` to `ConcurrentLinkedQueue<BoardState>[]`
-- All queues pre-created at initialization
-- Direct array indexing instead of map lookups
+### 1. Conditional Invalidity Statistics
+**Only track when -i flag is specified**:
+- Added `trackInvalidity` boolean to `StateProcessor`
+- `incrementInvalidityCounter()` only called when tracking enabled
+- Reduces atomic operations when detailed stats aren't needed
 
-**Simplified atomics**:
-- `maxMoveCount`: `AtomicInteger` → simple `int` (set once)
-- `solutionFound`: `AtomicBoolean` → `volatile boolean`
+### 2. Active Queues Optimization
+**Skip polling empty queues using boolean tracking**:
+- Added `activeQueues` boolean[][] to `PendingStates`
+- In `add()`: sets `activeQueues[moveCount][queueIndex] = true`
+- In `poll()`: skips queues where `activeQueues` is false
+- Avoids polling queues that have never had states added
 
-**Batch counter methods**:
-- `addStatesGenerated(int count)` - batch update
-- `addStatesPruned(int count)` - batch update
+### 3. Queue Replication (-repl parameter)
+**Distribute states across multiple queues to reduce contention**:
+- New `-repl <N>` command-line parameter (default: 3)
+- `queuesByMoveCount` changed to 2D array: `[maxMoveCount+1][replicationFactor]`
+- States distributed randomly across replicas
 
-### 2. Move Sorting Flags
-New command-line options for move ordering:
-- `--smallestFirst`: Process moves with smallest tile sum first
-- `--largestFirst`: Process moves with largest tile sum first
-- Mutually exclusive; default is no sorting
+### 4. QueueContext Class
+**Per-thread context for random queue selection**:
+- New class `org.gerken.harmony.logic.QueueContext`
+- `getRandomQueueIndex()` returns random int using `ThreadLocalRandom`
+- Each `StateProcessor` gets its own instance via `pendingStates.getQueueContext()`
 
-### 3. StateProcessor Optimizations
-- Only check `isSolved()` when `remainingMoves == 0`
-- Batch counter updates after loop (not per iteration)
-- Removed `isSolutionFound()` check from inside move loop
-- Cache pre-sized to 100,000 entries
+### 5. Updated PendingStates Methods
+**Support for 2D queue structure**:
+- Constructor: `PendingStates(int maxMoveCount, int replicationFactor)`
+- `add(BoardState, QueueContext)`: uses random queue index
+- `poll(QueueContext)`: polls from randomly selected queue
+- `isEmpty()`, `size()`: iterate over all replicated queues
+- `collectAllStates()`: gathers all states for persistence
 
-### 7. BoardState.isSolved() Early Exit
-- Check `remainingMoves != 0` before delegating to board
-- O(1) integer comparison avoids O(rows × cols) tile iteration
-- Safe because board with remaining moves cannot be solved
+### 6. State Persistence (-dur/--duration)
+**Timer-based checkpointing for long-running puzzles**:
+- New `-dur, --duration <N>` parameter (default: 120 minutes)
+- On timeout: collects states from queues and caches, saves to `<puzzle>.state.txt`
+- On startup: checks for state file and resumes if found
+- Handles changing replication factors and thread counts between runs
+- Statistics restart from zero when resuming
 
-### 8. Board Grid Copy Benchmark
-- Tested clone() vs manual loop copy for grid arrays
-- clone() is 4-5x faster (native bulk copy vs per-element)
-- Confirms current implementation using clone() is optimal
-- Benchmark file deleted after testing
-
-### 4. BlockedSwapTest Simplified
-- Removed `findTargetRowForColor()` method
-- Uses `targetRow = tile.getColor()` directly (target row = color ID)
-
-### 5. Tile.copy() Method
-- Added `copy()` method to Tile class
-- Benchmarked: `clone()` is 20x faster than `copy()` for arrays
-- Recommendation: Keep using `clone()` for Tile arrays
-
-### 6. New Test Puzzles
-- `puzzles/3x3_8moves.txt` - 3x3 grid, 8 moves
-- `puzzles/4x4_9moves.txt` - 4x4 grid, 9 moves
-- `puzzles/3x3_12moves.txt` - 3x3 grid, 12 moves
+### 7. StateSerializer Class
+**State file management**:
+- `saveStates()`: Writes move histories to state file
+- `loadStates()`: Replays moves to reconstruct board states
+- `deleteStateFile()`: Removes state file when solution found
 
 ## File Structure
 
 ```
 harmony/
 ├── src/main/java/org/gerken/harmony/
-│   ├── HarmonySolver.java          # ⭐ SortMode enum, new flags
+│   ├── HarmonySolver.java          # ⭐ UPDATED - replicationFactor, -repl flag
 │   ├── PuzzleGenerator.java
 │   ├── TestBuilder.java
-│   ├── TileBenchmark.java          # ⭐ NEW - performance benchmark
+│   ├── TileBenchmark.java
 │   ├── model/
-│   │   ├── Tile.java               # ⭐ UPDATED - copy() method
+│   │   ├── Tile.java
 │   │   ├── Board.java
 │   │   ├── Move.java
 │   │   └── BoardState.java
 │   ├── logic/
-│   │   ├── PendingStates.java      # ⭐ REFACTORED - array queues, batch methods
-│   │   ├── StateProcessor.java     # ⭐ OPTIMIZED - sorting, batching
+│   │   ├── PendingStates.java      # ⭐ REFACTORED - 2D queues, activeQueues, collectAllStates
+│   │   ├── QueueContext.java       # ⭐ NEW - per-thread random queue selection
+│   │   ├── StateSerializer.java    # ⭐ NEW - state persistence and loading
+│   │   ├── StateProcessor.java     # ⭐ UPDATED - trackInvalidity, getCachedStates
 │   │   ├── ProgressReporter.java
 │   │   └── BoardParser.java
 │   └── invalidity/
 │       ├── InvalidityTest.java
 │       ├── InvalidityTestCoordinator.java
-│       ├── BlockedSwapTest.java    # ⭐ SIMPLIFIED - direct color lookup
+│       ├── BlockedSwapTest.java
 │       ├── StuckTilesTest.java
 │       ├── StuckTileTest.java
 │       ├── IsolatedTileTest.java
@@ -145,10 +156,13 @@ harmony/
 │   ├── tiny.txt
 │   ├── easy.txt
 │   ├── simple.txt
-│   ├── 3x3_8moves.txt              # ⭐ NEW
-│   ├── 4x4_9moves.txt              # ⭐ NEW
-│   └── 3x3_12moves.txt             # ⭐ NEW
-├── SESSION_2026-01-12.md           # ⭐ NEW - this session
+│   ├── medium.txt
+│   ├── hard.txt
+│   ├── 3x3_8moves.txt
+│   ├── 4x4_9moves.txt
+│   └── 3x3_12moves.txt
+├── SESSION_2026-01-13.md           # ⭐ NEW - this session
+├── SESSION_2026-01-12.md
 ├── SESSION_2026-01-11_afternoon.md
 ├── SESSION_2026-01-11.md
 ├── CURRENT_STATE.md                # This file
@@ -165,6 +179,8 @@ Options:
   -t, --threads <N>     Number of worker threads (default: 2)
   -r, --report <N>      Progress report interval in seconds (default: 30, 0 to disable)
   -c, --cache <N>       Cache threshold: states with N+ moves taken are cached locally (default: 4)
+  -repl <N>             Replication factor for queue distribution (default: 3)
+  -dur, --duration <N>  Run for N minutes, then save state and exit (default: 120)
   -d, --debug           Debug mode: disable empty queue termination
   -i, --invalidity      Show invalidity test statistics instead of queue sizes
   --smallestFirst       Process moves with smallest tile sum first
@@ -185,6 +201,14 @@ Options:
 | 3x3_12moves.txt | 3x3 | 12 | 21 | 6.6% |
 
 ## Session History
+
+### Session 9 (January 13, 2026)
+- **Conditional Invalidity Stats**: Only track when -i flag set
+- **Active Queues**: Boolean array to skip never-used queues
+- **Queue Replication**: -repl flag for reduced contention
+- **QueueContext**: Per-thread random queue selection
+- **2D Queue Arrays**: queuesByMoveCount[depth][replica]
+- **State Persistence**: -dur flag, StateSerializer, resume from state file
 
 ### Session 8 (January 12, 2026)
 - **PendingStates Refactored**: Array-based queues, simplified atomics
@@ -222,20 +246,21 @@ Options:
 mvn package                          # Build
 ./solve.sh puzzle.txt                # Solve
 ./solve.sh -t 4 puzzle.txt           # 4 threads
+./solve.sh -t 4 -repl 4 puzzle.txt   # 4 threads, 4 queue replicas
 ./solve.sh -i -r 10 puzzle.txt       # Invalidity stats every 10s
 ./solve.sh --smallestFirst puzzle.txt  # Sort moves by smallest sum
 ```
 
 ### Key Files for Next Session
 1. `CURRENT_STATE.md` - This file (start here!)
-2. `SESSION_2026-01-12.md` - This session's details
-3. `PendingStates.java` - Array-based queues, batch methods
-4. `StateProcessor.java` - Move sorting, optimizations
-5. `HarmonySolver.java` - SortMode enum, new flags
-6. `BoardState.java` - isSolved() early exit optimization
+2. `SESSION_2026-01-13.md` - This session's details
+3. `HarmonySolver.java` - Duration timer, state persistence, resumption logic
+4. `StateSerializer.java` - State file save/load
+5. `PendingStates.java` - 2D queue arrays, collectAllStates()
+6. `StateProcessor.java` - trackInvalidity, getCachedStates()
 
 ---
 
-**Ready for**: Production use, further optimization
+**Ready for**: Production use, long-running puzzles with state persistence
 **Status**: ✅ Stable, documented, tested
-**Last Test**: January 12, 2026
+**Last Test**: January 13, 2026

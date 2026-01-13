@@ -432,6 +432,16 @@ public class StateProcessor implements Runnable {
     }
 
     /**
+     * Gets all cached board states.
+     * Used for state persistence when shutting down.
+     *
+     * @return list of all cached board states
+     */
+    public java.util.List<BoardState> getCachedStates() {
+        return new java.util.ArrayList<>(cache);
+    }
+
+    /**
      * Gets the average processing time per state in milliseconds for this processor.
      *
      * @return the average processing time in milliseconds, or 0 if no states processed

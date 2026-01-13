@@ -5,6 +5,8 @@ import org.gerken.harmony.logic.BoardParser;
 import org.gerken.harmony.logic.PendingStates;
 import org.gerken.harmony.logic.ProgressReporter;
 import org.gerken.harmony.logic.StateProcessor;
+import org.gerken.harmony.logic.StateSerializer;
+import org.gerken.harmony.logic.QueueContext;
 import org.gerken.harmony.model.BoardState;
 import org.gerken.harmony.model.Move;
 
@@ -13,7 +15,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Main class for the Harmony Puzzle Solver.
@@ -51,6 +55,7 @@ public class HarmonySolver {
     private static final int DEFAULT_CACHE_THRESHOLD = 4; // moves remaining
     private static final boolean DEFAULT_DEBUG_MODE = false;
     private static final int DEFAULT_REPLICATION_FACTOR = 3;
+    private static final int DEFAULT_DURATION_MINUTES = 120;
 
     /** Sort mode for move ordering in state processing. */
     public enum SortMode { NONE, SMALLEST_FIRST, LARGEST_FIRST }
@@ -66,6 +71,9 @@ public class HarmonySolver {
     private PendingStates pendingStates;
     private List<StateProcessor> processors;
     private int initialRemainingMoves;
+    private final AtomicBoolean timeExpired = new AtomicBoolean(false);
+    private ExecutorService workerPool;
+    private BoardState initialState;
 
     /**
      * Creates a new solver with the given configuration.
@@ -179,19 +187,34 @@ public class HarmonySolver {
             // Check if already solved
             if (initialState.isSolved()) {
                 System.out.println("Puzzle is already solved!");
+                StateSerializer.deleteStateFile(config.puzzleFile);
                 System.exit(0);
+            }
+
+            // Check for existing state file
+            List<BoardState> resumeStates = null;
+            if (StateSerializer.stateFileExists(config.puzzleFile)) {
+                System.out.println("Found existing state file, resuming...");
+                resumeStates = StateSerializer.loadStates(config.puzzleFile, initialState);
+                System.out.println();
             }
 
             // Create solver instance and solve the puzzle
             HarmonySolver solver = new HarmonySolver(config);
-            BoardState solution = solver.solve(initialState);
+            int result = solver.solve(initialState, resumeStates);
 
-            // Print results
-            if (solution != null) {
+            // Handle result: 0 = solution found, 1 = no solution, 2 = time expired (state saved)
+            if (result == 0) {
+                BoardState solution = solver.pendingStates.getSolution();
                 printSolution(solution);
+                StateSerializer.deleteStateFile(config.puzzleFile);
+                System.exit(0);
+            } else if (result == 2) {
+                System.out.println("\nTime limit reached. State saved for resumption.");
                 System.exit(0);
             } else {
                 System.out.println("No solution found. The puzzle may be unsolvable.");
+                StateSerializer.deleteStateFile(config.puzzleFile);
                 System.exit(1);
             }
 
@@ -209,18 +232,29 @@ public class HarmonySolver {
      * Solves the puzzle using multi-threaded depth-first search with pruning.
      *
      * @param initialState the starting board state
-     * @return the solution state, or null if no solution found
+     * @param resumeStates states to resume from (loaded from state file), or null for fresh start
+     * @return result code: 0 = solution found, 1 = no solution, 2 = time expired (state saved)
      */
-    private BoardState solve(BoardState initialState) {
+    private int solve(BoardState initialState, List<BoardState> resumeStates) {
+        this.initialState = initialState;
+
         // Initialize shared data structures
         this.initialRemainingMoves = initialState.getRemainingMoves();
         this.pendingStates = new PendingStates(initialRemainingMoves, config.replicationFactor);
 
-        // Add initial state to queue
-        pendingStates.add(initialState);
+        // Add states to queue - either resume states or initial state
+        if (resumeStates != null && !resumeStates.isEmpty()) {
+            System.out.println("Adding " + resumeStates.size() + " resumed states to queues...");
+            QueueContext ctx = pendingStates.getQueueContext();
+            for (BoardState state : resumeStates) {
+                pendingStates.add(state, ctx);
+            }
+        } else {
+            pendingStates.add(initialState);
+        }
 
         // Create worker threads
-        ExecutorService workerPool = Executors.newFixedThreadPool(config.threadCount);
+        this.workerPool = Executors.newFixedThreadPool(config.threadCount);
         this.processors = new ArrayList<>();
 
         System.out.println("Starting " + config.threadCount + " worker threads...");
@@ -229,6 +263,13 @@ public class HarmonySolver {
             processors.add(processor);
             workerPool.submit(processor);
         }
+
+        // Schedule timer for duration limit
+        ScheduledExecutorService timerExecutor = Executors.newSingleThreadScheduledExecutor();
+        timerExecutor.schedule(() -> {
+            timeExpired.set(true);
+            pendingStates.setSolutionFound();  // Signal threads to stop
+        }, config.durationMinutes, TimeUnit.MINUTES);
 
         // Create and start progress reporter thread (unless disabled)
         ProgressReporter reporter = null;
@@ -239,9 +280,9 @@ public class HarmonySolver {
             reporterThread.start();
         }
 
-        System.out.println("Search started...\n");
+        System.out.println("Search started (will run for " + config.durationMinutes + " minutes)...\n");
 
-        // Wait for solution or queue exhaustion
+        // Wait for solution, queue exhaustion, or time expiration
         try {
             // Check periodically if we should stop
             while (!pendingStates.isSolutionFound()) {
@@ -258,22 +299,68 @@ public class HarmonySolver {
                 }
             }
 
+            // Shutdown timer
+            timerExecutor.shutdownNow();
+
             // Shutdown worker threads
-            pendingStates.setSolutionFound(); // Signal threads to stop
+            pendingStates.setSolutionFound(); // Signal threads to stop accepting new work
             workerPool.shutdown();
-            workerPool.awaitTermination(5, TimeUnit.SECONDS);
+
+            // If time expired, wait longer for in-progress states to finish
+            int waitSeconds = timeExpired.get() ? 10 : 5;
+            if (timeExpired.get()) {
+                System.out.println("\nTime limit reached. Waiting " + waitSeconds + " seconds for in-progress states to finish...");
+            }
+            workerPool.awaitTermination(waitSeconds, TimeUnit.SECONDS);
 
             // Print final summary (if reporting enabled)
             if (reporter != null) {
                 reporter.printFinalSummary(pendingStates.getSolution() != null);
             }
 
-            return pendingStates.getSolution();
+            // Check if time expired
+            if (timeExpired.get() && pendingStates.getSolution() == null) {
+                // Save state for resumption
+                saveState();
+                return 2;  // Time expired
+            }
+
+            // Check if solution found
+            if (pendingStates.getSolution() != null) {
+                return 0;  // Solution found
+            }
+
+            return 1;  // No solution
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            timerExecutor.shutdownNow();
             workerPool.shutdownNow();
-            return null;
+            return 1;
+        }
+    }
+
+    /**
+     * Saves the current state for later resumption.
+     * Collects states from PendingStates queues and StateProcessor caches.
+     */
+    private void saveState() {
+        try {
+            List<BoardState> allStates = new ArrayList<>();
+
+            // Collect states from PendingStates queues
+            allStates.addAll(pendingStates.collectAllStates());
+
+            // Collect states from StateProcessor caches
+            for (StateProcessor processor : processors) {
+                allStates.addAll(processor.getCachedStates());
+            }
+
+            System.out.println("\nCollected " + allStates.size() + " states for persistence");
+            StateSerializer.saveStates(config.puzzleFile, allStates);
+
+        } catch (IOException e) {
+            System.err.println("Error saving state: " + e.getMessage());
         }
     }
 
@@ -377,6 +464,21 @@ public class HarmonySolver {
                     System.err.println("Error: invalid replication factor: " + args[i]);
                     return null;
                 }
+            } else if (arg.equals("-dur") || arg.equals("--duration")) {
+                if (i + 1 >= args.length) {
+                    System.err.println("Error: " + arg + " requires a value");
+                    return null;
+                }
+                try {
+                    config.durationMinutes = Integer.parseInt(args[++i]);
+                    if (config.durationMinutes < 1) {
+                        System.err.println("Error: duration must be positive");
+                        return null;
+                    }
+                } catch (NumberFormatException e) {
+                    System.err.println("Error: invalid duration: " + args[i]);
+                    return null;
+                }
             } else if (arg.equals("-h") || arg.equals("--help")) {
                 return null; // Will trigger usage message
             } else if (arg.startsWith("-")) {
@@ -414,6 +516,7 @@ public class HarmonySolver {
         System.out.println("  -r, --report <N>      Progress report interval in seconds (default: 30, 0 to disable)");
         System.out.println("  -c, --cache <N>       Cache threshold: states with N+ moves taken are cached locally (default: 4)");
         System.out.println("  -repl <N>             Replication factor for queue distribution (default: 3)");
+        System.out.println("  -dur, --duration <N>  Run for N minutes, then save state and exit (default: 120)");
         System.out.println("  -d, --debug           Debug mode: disable empty queue termination (for breakpoints)");
         System.out.println("  -i, --invalidity      Show invalidity test statistics instead of queue sizes");
         System.out.println("  --smallestFirst       Process moves with smallest tile sum first");
@@ -437,6 +540,7 @@ public class HarmonySolver {
         System.out.println("  Report interval: " + (config.reportInterval > 0 ? config.reportInterval + " seconds" : "disabled"));
         System.out.println("  Cache threshold: " + config.cacheThreshold + " moves taken");
         System.out.println("  Replication factor: " + config.replicationFactor);
+        System.out.println("  Duration: " + config.durationMinutes + " minutes");
         System.out.println("  Invalidity tests: " +
             InvalidityTestCoordinator.getInstance().getTestCount());
         if (config.invalidityStats) {
@@ -461,5 +565,6 @@ public class HarmonySolver {
         boolean invalidityStats = false;
         SortMode sortMode = SortMode.NONE;
         int replicationFactor = DEFAULT_REPLICATION_FACTOR;
+        int durationMinutes = DEFAULT_DURATION_MINUTES;
     }
 }

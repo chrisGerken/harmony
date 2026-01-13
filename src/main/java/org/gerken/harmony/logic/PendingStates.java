@@ -376,4 +376,20 @@ public class PendingStates {
 
         return result;
     }
+
+    /**
+     * Collects all board states from all queues.
+     * Used for state persistence when shutting down.
+     *
+     * @return list of all board states in the queues
+     */
+    public java.util.List<BoardState> collectAllStates() {
+        java.util.List<BoardState> allStates = new java.util.ArrayList<>();
+        for (int i = 0; i <= maxMoveCount; i++) {
+            for (int j = 0; j < replicationFactor; j++) {
+                allStates.addAll(queuesByMoveCount[i][j]);
+            }
+        }
+        return allStates;
+    }
 }
