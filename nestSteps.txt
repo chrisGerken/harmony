@@ -1,5 +1,10 @@
-1) in the processState() method in StateProcessor, in the loop iterating over possible moves do not increment the generated and  pruned counters in PendingStates. Instead, count the number of new generated states and the number of pruned states and the add those numbers to the respective atomic counters in PendngStates after the iteration over possible moves completes
+1) Add a new command line integer parameter -repl (for "replication factor") with default value of 3. Pass this value to the PendingStates constructor which will store in a new instance variable replicationFactor.
 
-2) Add a copy method to class Tile. Create an array of 1 million Tiles and compare the time required to copy those tiles with the new copy method vs. using the clone() method and print results. If the clone method is not faster then replace all references of the clone() method with the new copy() method
+2) Create a new class QueueContext whose contructor will take an integer replication factor. Add a method to this class to answer a random integer between 0 and replicationFactor-1, inclusive. Add a zero argument method getQueueContext() on class PendingStates that returns a newly created QueueContext instance.
 
-3) Create several additional puzzles with Generator to test code changes: 1) a 3 tile square with 8 moves, 2) a 4 tile square with 9 moves and 3) another 3 tile square with 12 moves 
+3) Each instance of StateProcessor will call PendingStates once to get its own instance of QueueContext. StateProcessor will never interact with this instance other than to pass it to several PendingStates methods.
+
+4) In PendingStates there is a variable queuesByMoveCount with one ConcurrentLinkedQueue for each number of moves.  modify the declaration and use so that there is now a second dimension whose length is the replication factor. For example if the replication factor is 4 then instead of one ConcurrentLinkedQueue holding board states that have been through five moves there will be 4 such ConcurrentLinkedQueues with those 5-move board states distributed sort of evenly across the 4 ConcurrentLinkedQueues. 
+
+5) Modify the add(BoardState) and poll() methods on PendingStates to accept an additional arguement, a QueueContext. Modify the implementation of add to ask the QueueContext for a random number between 0 and replicationFactor-1 inclusive and to write the given BoardState to the corresponding ConcurrentLinkedQueue. Similarly, the QueueContext will provide a random number to specify which of the queues the PendingStates poll() method should poll.  It's OK if poll(QueueContext) polls an empty queue when there are other queues that have BoardStates. We maintain the depth-first design while reducing contention during reads and writes to the queues.
+

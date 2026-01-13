@@ -50,6 +50,7 @@ public class HarmonySolver {
     private static final int DEFAULT_REPORT_INTERVAL = 30; // seconds
     private static final int DEFAULT_CACHE_THRESHOLD = 4; // moves remaining
     private static final boolean DEFAULT_DEBUG_MODE = false;
+    private static final int DEFAULT_REPLICATION_FACTOR = 3;
 
     /** Sort mode for move ordering in state processing. */
     public enum SortMode { NONE, SMALLEST_FIRST, LARGEST_FIRST }
@@ -213,7 +214,7 @@ public class HarmonySolver {
     private BoardState solve(BoardState initialState) {
         // Initialize shared data structures
         this.initialRemainingMoves = initialState.getRemainingMoves();
-        this.pendingStates = new PendingStates(initialRemainingMoves);
+        this.pendingStates = new PendingStates(initialRemainingMoves, config.replicationFactor);
 
         // Add initial state to queue
         pendingStates.add(initialState);
@@ -224,7 +225,7 @@ public class HarmonySolver {
 
         System.out.println("Starting " + config.threadCount + " worker threads...");
         for (int i = 0; i < config.threadCount; i++) {
-            StateProcessor processor = new StateProcessor(pendingStates, config.cacheThreshold, config.sortMode);
+            StateProcessor processor = new StateProcessor(pendingStates, config.cacheThreshold, config.sortMode, config.invalidityStats);
             processors.add(processor);
             workerPool.submit(processor);
         }
@@ -361,6 +362,21 @@ public class HarmonySolver {
                     return null;
                 }
                 config.sortMode = SortMode.LARGEST_FIRST;
+            } else if (arg.equals("-repl")) {
+                if (i + 1 >= args.length) {
+                    System.err.println("Error: " + arg + " requires a value");
+                    return null;
+                }
+                try {
+                    config.replicationFactor = Integer.parseInt(args[++i]);
+                    if (config.replicationFactor < 1) {
+                        System.err.println("Error: replication factor must be positive");
+                        return null;
+                    }
+                } catch (NumberFormatException e) {
+                    System.err.println("Error: invalid replication factor: " + args[i]);
+                    return null;
+                }
             } else if (arg.equals("-h") || arg.equals("--help")) {
                 return null; // Will trigger usage message
             } else if (arg.startsWith("-")) {
@@ -397,6 +413,7 @@ public class HarmonySolver {
         System.out.println("  -t, --threads <N>     Number of worker threads (default: 2)");
         System.out.println("  -r, --report <N>      Progress report interval in seconds (default: 30, 0 to disable)");
         System.out.println("  -c, --cache <N>       Cache threshold: states with N+ moves taken are cached locally (default: 4)");
+        System.out.println("  -repl <N>             Replication factor for queue distribution (default: 3)");
         System.out.println("  -d, --debug           Debug mode: disable empty queue termination (for breakpoints)");
         System.out.println("  -i, --invalidity      Show invalidity test statistics instead of queue sizes");
         System.out.println("  --smallestFirst       Process moves with smallest tile sum first");
@@ -419,6 +436,7 @@ public class HarmonySolver {
         System.out.println("  Threads: " + config.threadCount);
         System.out.println("  Report interval: " + (config.reportInterval > 0 ? config.reportInterval + " seconds" : "disabled"));
         System.out.println("  Cache threshold: " + config.cacheThreshold + " moves taken");
+        System.out.println("  Replication factor: " + config.replicationFactor);
         System.out.println("  Invalidity tests: " +
             InvalidityTestCoordinator.getInstance().getTestCount());
         if (config.invalidityStats) {
@@ -442,5 +460,6 @@ public class HarmonySolver {
         boolean debugMode = DEFAULT_DEBUG_MODE;
         boolean invalidityStats = false;
         SortMode sortMode = SortMode.NONE;
+        int replicationFactor = DEFAULT_REPLICATION_FACTOR;
     }
 }

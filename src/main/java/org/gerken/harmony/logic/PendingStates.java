@@ -26,8 +26,10 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class PendingStates {
 
-    private final ConcurrentLinkedQueue<BoardState>[] queuesByMoveCount;
+    private final ConcurrentLinkedQueue<BoardState>[][] queuesByMoveCount;
+    private final boolean[][] activeQueues;
     private final int maxMoveCount;
+    private final int replicationFactor;
     private volatile boolean solutionFound;
     private final AtomicReference<BoardState> solution;
     private final AtomicLong statesProcessed;
@@ -40,16 +42,21 @@ public class PendingStates {
     /**
      * Creates a new pending states container with all counters initialized to zero.
      * Pre-creates all queues for the depth-first queue structure based on the
-     * known maximum number of moves.
+     * known maximum number of moves and replication factor.
      *
      * @param maxMoveCount the maximum number of moves (from initial state's remaining moves)
+     * @param replicationFactor the number of replicated queues per move count
      */
     @SuppressWarnings("unchecked")
-    public PendingStates(int maxMoveCount) {
+    public PendingStates(int maxMoveCount, int replicationFactor) {
         this.maxMoveCount = maxMoveCount;
-        this.queuesByMoveCount = (ConcurrentLinkedQueue<BoardState>[]) new ConcurrentLinkedQueue[maxMoveCount + 1];
+        this.replicationFactor = replicationFactor;
+        this.queuesByMoveCount = (ConcurrentLinkedQueue<BoardState>[][]) new ConcurrentLinkedQueue[maxMoveCount + 1][replicationFactor];
+        this.activeQueues = new boolean[maxMoveCount + 1][replicationFactor];  // All false by default
         for (int i = 0; i <= maxMoveCount; i++) {
-            this.queuesByMoveCount[i] = new ConcurrentLinkedQueue<>();
+            for (int j = 0; j < replicationFactor; j++) {
+                this.queuesByMoveCount[i][j] = new ConcurrentLinkedQueue<>();
+            }
         }
         this.solutionFound = false;
         this.solution = new AtomicReference<>(null);
@@ -59,32 +66,63 @@ public class PendingStates {
         this.invalidityCounters = new ConcurrentHashMap<>();
     }
 
+    /**
+     * Creates a new QueueContext for use by a StateProcessor.
+     *
+     * @return a new QueueContext instance
+     */
+    public QueueContext getQueueContext() {
+        return new QueueContext(replicationFactor);
+    }
+
     // ========== Queue Operations (Depth-First Strategy) ==========
 
     /**
-     * Adds a board state to the appropriate depth-specific queue.
+     * Adds a board state to a randomly selected replicated queue at the appropriate depth.
      * States are organized by move count to implement depth-first search.
+     * This operation is thread-safe and non-blocking.
+     *
+     * @param state the board state to add
+     * @param context the QueueContext providing random queue selection
+     */
+    public void add(BoardState state, QueueContext context) {
+        int moveCount = state.getMoveCount();
+        int queueIndex = context.getRandomQueueIndex();
+        activeQueues[moveCount][queueIndex] = true;
+        queuesByMoveCount[moveCount][queueIndex].add(state);
+    }
+
+    /**
+     * Adds a board state to the first replicated queue at the appropriate depth.
+     * Used for initial state when no QueueContext is available.
      * This operation is thread-safe and non-blocking.
      *
      * @param state the board state to add
      */
     public void add(BoardState state) {
         int moveCount = state.getMoveCount();
-        queuesByMoveCount[moveCount].add(state);
+        activeQueues[moveCount][0] = true;
+        queuesByMoveCount[moveCount][0].add(state);
     }
 
     /**
      * Retrieves and removes the next pending board state using depth-first strategy.
      * Always polls from the deepest queue (highest move count) first, then works
-     * backward to shallower queues. Returns null if all queues are empty.
+     * backward to shallower queues. Uses the QueueContext to select which replicated
+     * queue to poll. Returns null if the selected queues are empty.
      * This operation is thread-safe and non-blocking.
      *
-     * @return the next board state from the deepest available queue, or null if all queues are empty
+     * @param context the QueueContext providing random queue selection
+     * @return the next board state from the deepest available queue, or null if selected queues are empty
      */
-    public BoardState poll() {
-        // Try polling from deepest to shallowest
+    public BoardState poll(QueueContext context) {
+        int queueIndex = context.getRandomQueueIndex();
+        // Try polling from deepest to shallowest, only checking active queues
         for (int moveCount = maxMoveCount; moveCount >= 0; moveCount--) {
-            BoardState state = queuesByMoveCount[moveCount].poll();
+            if (!activeQueues[moveCount][queueIndex]) {
+                continue;
+            }
+            BoardState state = queuesByMoveCount[moveCount][queueIndex].poll();
             if (state != null) {
                 return state;
             }
@@ -101,8 +139,10 @@ public class PendingStates {
      */
     public boolean isEmpty() {
         for (int i = 0; i <= maxMoveCount; i++) {
-            if (!queuesByMoveCount[i].isEmpty()) {
-                return false;
+            for (int j = 0; j < replicationFactor; j++) {
+                if (!queuesByMoveCount[i][j].isEmpty()) {
+                    return false;
+                }
             }
         }
         return true;
@@ -118,7 +158,9 @@ public class PendingStates {
     public int size() {
         int total = 0;
         for (int i = 0; i <= maxMoveCount; i++) {
-            total += queuesByMoveCount[i].size();
+            for (int j = 0; j < replicationFactor; j++) {
+                total += queuesByMoveCount[i][j].size();
+            }
         }
         return total;
     }
@@ -258,7 +300,8 @@ public class PendingStates {
     }
 
     /**
-     * Finds the smallest move count with a non-empty queue and returns its size.
+     * Finds the smallest move count with a non-empty queue and returns its total size
+     * across all replicated queues at that depth.
      * Returns an array of [moveCount, queueSize] or null if all queues are empty.
      *
      * @return int array with [smallestMoveCount, queueSize], or null if all queues empty
@@ -266,7 +309,10 @@ public class PendingStates {
     public int[] getSmallestNonEmptyQueueInfo() {
         // Search from smallest to largest move count
         for (int moveCount = 0; moveCount <= maxMoveCount; moveCount++) {
-            int size = queuesByMoveCount[moveCount].size();
+            int size = 0;
+            for (int j = 0; j < replicationFactor; j++) {
+                size += queuesByMoveCount[moveCount][j].size();
+            }
             if (size > 0) {
                 return new int[] { moveCount, size };
             }
@@ -278,6 +324,7 @@ public class PendingStates {
     /**
      * Returns queue sizes for all queues from first non-empty to last non-empty, inclusive.
      * Returns a 2D array where each element is [moveCount, queueSize].
+     * Queue size is the total across all replicated queues at that depth.
      * Returns null if all queues are empty.
      *
      * @return array of [moveCount, queueSize] pairs, or null if all queues empty
@@ -286,7 +333,11 @@ public class PendingStates {
         // Find first non-empty queue
         int firstNonEmpty = -1;
         for (int moveCount = 0; moveCount <= maxMoveCount; moveCount++) {
-            if (queuesByMoveCount[moveCount].size() > 0) {
+            int size = 0;
+            for (int j = 0; j < replicationFactor; j++) {
+                size += queuesByMoveCount[moveCount][j].size();
+            }
+            if (size > 0) {
                 firstNonEmpty = moveCount;
                 break;
             }
@@ -299,7 +350,11 @@ public class PendingStates {
         // Find last non-empty queue
         int lastNonEmpty = firstNonEmpty;
         for (int moveCount = maxMoveCount; moveCount > firstNonEmpty; moveCount--) {
-            if (queuesByMoveCount[moveCount].size() > 0) {
+            int size = 0;
+            for (int j = 0; j < replicationFactor; j++) {
+                size += queuesByMoveCount[moveCount][j].size();
+            }
+            if (size > 0) {
                 lastNonEmpty = moveCount;
                 break;
             }
@@ -312,7 +367,11 @@ public class PendingStates {
         for (int i = 0; i < rangeSize; i++) {
             int moveCount = firstNonEmpty + i;
             result[i][0] = moveCount;
-            result[i][1] = queuesByMoveCount[moveCount].size();
+            int size = 0;
+            for (int j = 0; j < replicationFactor; j++) {
+                size += queuesByMoveCount[moveCount][j].size();
+            }
+            result[i][1] = size;
         }
 
         return result;

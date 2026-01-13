@@ -26,38 +26,45 @@ public class StateProcessor implements Runnable {
     private final ArrayList<BoardState> cache;
     private final int cacheThreshold;
     private final SortMode sortMode;
+    private final boolean trackInvalidity;
+    private QueueContext queueContext;
 
     // Timing instrumentation
     private long totalProcessingTimeNanos = 0;
     private long statesProcessedByThisThread = 0;
 
     /**
-     * Creates a new state processor with default cache threshold of 4 and no sorting.
+     * Creates a new state processor with default cache threshold of 4, no sorting, and no invalidity tracking.
      *
      * @param pendingStates the shared container of pending states and statistics
      */
     public StateProcessor(PendingStates pendingStates) {
-        this(pendingStates, 4, SortMode.NONE);
+        this(pendingStates, 4, SortMode.NONE, false);
     }
 
     /**
-     * Creates a new state processor with configurable cache threshold and sort mode.
+     * Creates a new state processor with configurable cache threshold, sort mode, and invalidity tracking.
      *
      * @param pendingStates the shared container of pending states and statistics
      * @param cacheThreshold states with this many or more moves taken are cached locally
      * @param sortMode the sort mode for move ordering
+     * @param trackInvalidity whether to track invalidity statistics (only when -i flag is set)
      */
-    public StateProcessor(PendingStates pendingStates, int cacheThreshold, SortMode sortMode) {
+    public StateProcessor(PendingStates pendingStates, int cacheThreshold, SortMode sortMode, boolean trackInvalidity) {
         this.pendingStates = pendingStates;
         this.coordinator = InvalidityTestCoordinator.getInstance();
         this.pollTimeoutMs = 1; // Short timeout to check solution flag
         this.cache = new ArrayList<>(100_000);
         this.cacheThreshold = cacheThreshold;
         this.sortMode = sortMode;
+        this.trackInvalidity = trackInvalidity;
     }
 
     @Override
     public void run() {
+        // Get our own QueueContext instance for random queue selection
+        this.queueContext = pendingStates.getQueueContext();
+
         try {
             while (!pendingStates.isSolutionFound()) {
                 BoardState state = getNextBoardState();
@@ -127,7 +134,9 @@ public class StateProcessor implements Runnable {
             InvalidityTest invalidatingTest = coordinator.getInvalidatingTest(nextState);
             if (invalidatingTest != null) {
                 prunedCount++;
-                pendingStates.incrementInvalidityCounter(nextState.getMoveCount(), invalidatingTest.getName());
+                if (trackInvalidity) {
+                    pendingStates.incrementInvalidityCounter(nextState.getMoveCount(), invalidatingTest.getName());
+                }
                 continue;
             }
 
@@ -390,7 +399,7 @@ public class StateProcessor implements Runnable {
         if (!cache.isEmpty()) {
             return cache.remove(cache.size() - 1);  // LIFO: process most recent state
         }
-        return pendingStates.poll();
+        return pendingStates.poll(queueContext);
     }
 
     /**
@@ -408,7 +417,7 @@ public class StateProcessor implements Runnable {
         if (movesTaken >= cacheThreshold) {
             cache.add(state);
         } else {
-            pendingStates.add(state);
+            pendingStates.add(state, queueContext);
         }
     }
 
