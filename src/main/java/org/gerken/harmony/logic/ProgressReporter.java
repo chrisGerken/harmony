@@ -184,24 +184,17 @@ public class ProgressReporter implements Runnable {
     }
 
     /**
-     * Formats a duration in seconds to a human-readable string.
+     * Formats a duration in seconds to a fixed-width string.
      *
      * @param seconds the duration in seconds
-     * @return formatted string (e.g., "1h 23m 45s")
+     * @return formatted string (e.g., "001:23:45")
      */
     private String formatDuration(double seconds) {
-        if (seconds < 60) {
-            return String.format("%.0fs", seconds);
-        } else if (seconds < 3600) {
-            int minutes = (int) (seconds / 60);
-            int secs = (int) (seconds % 60);
-            return String.format("%dm %ds", minutes, secs);
-        } else {
-            int hours = (int) (seconds / 3600);
-            int minutes = (int) ((seconds % 3600) / 60);
-            int secs = (int) (seconds % 60);
-            return String.format("%dh %dm %ds", hours, minutes, secs);
-        }
+        int totalSeconds = (int) seconds;
+        int hours = totalSeconds / 3600;
+        int minutes = (totalSeconds % 3600) / 60;
+        int secs = totalSeconds % 60;
+        return String.format("%03d:%02d:%02d", hours, minutes, secs);
     }
 
     /**

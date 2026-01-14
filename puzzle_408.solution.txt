@@ -1,0 +1,30 @@
+# Harmony Puzzle Solution
+# Puzzle: puzzle_408.txt
+# Moves: 26
+
+  1. B1-D1
+  2. C1-E1
+  3. A2-B2
+  4. E2-F2
+  5. D2-D6
+  6. C2-C4
+  7. E3-E5
+  8. D3-D5
+  9. A3-A4
+ 10. B6-F6
+ 11. A1-A3
+ 12. E6-F6
+ 13. E4-E6
+ 14. B5-C5
+ 15. B5-F5
+ 16. B4-F4
+ 17. A4-F4
+ 18. A3-A5
+ 19. A3-F3
+ 20. A6-C6
+ 21. C3-C5
+ 22. A6-F6
+ 23. B4-D4
+ 24. B3-B4
+ 25. A1-F1
+ 26. A1-A5

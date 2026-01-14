@@ -391,9 +391,43 @@ public class HarmonySolver {
             writer.println("# Puzzle: " + puzzleFile);
             writer.println("# Moves: " + moves.size());
             writer.println();
+
+            // Section 1: Move sequence
+            writer.println("Move sequence:");
             for (int i = 0; i < moves.size(); i++) {
                 writer.printf("%3d. %s%n", i + 1, moves.get(i).getNotation());
             }
+
+            // Section 2: Moves with board states
+            writer.println();
+            writer.println("=".repeat(60));
+            writer.println("Step-by-step board states:");
+            writer.println("=".repeat(60));
+
+            // Get initial board by traversing back through the state chain
+            BoardState initialState = solution;
+            while (initialState.getPreviousBoardState() != null) {
+                initialState = initialState.getPreviousBoardState();
+            }
+
+            // Show initial board
+            writer.println();
+            writer.println("Initial state:");
+            writer.println(initialState.getBoard().toString());
+
+            // Apply each move and show the resulting board
+            org.gerken.harmony.model.Board currentBoard = initialState.getBoard();
+            for (int i = 0; i < moves.size(); i++) {
+                Move move = moves.get(i);
+                currentBoard = currentBoard.swap(
+                    move.getRow1(), move.getCol1(),
+                    move.getRow2(), move.getCol2());
+
+                writer.println();
+                writer.printf("After move %d: %s%n", i + 1, move.getNotation());
+                writer.println(currentBoard.toString());
+            }
+
             System.out.println("\nSolution written to: " + solutionFile);
         } catch (IOException e) {
             System.err.println("Warning: Could not write solution file: " + e.getMessage());

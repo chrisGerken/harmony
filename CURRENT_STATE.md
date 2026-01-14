@@ -1,5 +1,5 @@
 # Current State of Harmony Puzzle Solver
-**Last Updated**: January 14, 2026 (Session 10)
+**Last Updated**: January 14, 2026 (Session 10b)
 
 ## Quick Status
 - ✅ **Production Ready**: All code compiles and tests pass
@@ -16,8 +16,9 @@
 - ✅ **Queue Replication**: -repl flag for reduced contention with multiple threads
 - ✅ **State Persistence**: -dur flag for timer-based checkpointing and resumption
 - ✅ **Duration Time Units**: -dur supports s/m/h/d/w unit suffixes
-- ✅ **Solution File Output**: Solutions written to `<name>.solution.txt`
+- ✅ **Solution File Output**: Solutions with step-by-step board states
 - ✅ **BOARD Format**: New simpler puzzle specification format
+- ✅ **Fixed-Width Time Format**: Progress shows `[hhh:mm:ss]` elapsed time
 
 ## Current Architecture (High Level)
 
@@ -70,28 +71,42 @@ Tile (immutable)
     └─> decrementMoves() - returns new Tile with moves-1
 ```
 
-## Recent Changes (Session 10 - January 14, 2026)
+## Recent Changes (Session 10b - January 14, 2026)
 
-### 1. Enhanced Duration Argument (-dur)
+### 1. Enhanced Solution File with Board Visualization
+**Solution files now show step-by-step board states**:
+- Modified `printSolution()` in `HarmonySolver.java` (lines 376-435)
+- Two sections: move sequence (compact) + step-by-step board states
+- Shows initial state and board after each move for visualization
+
+### 2. Fixed-Width Progress Time Format
+**Changed elapsed time to `[hhh:mm:ss]` format**:
+- Modified `formatDuration()` in `ProgressReporter.java` (lines 192-199)
+- Old: `[1m 15s]` → New: `[000:01:15]`
+- Aligns output better in logs, supports runs up to 999 hours
+
+## Earlier Changes (Session 10 - January 14, 2026)
+
+### 3. Enhanced Duration Argument (-dur)
 **Support time units for flexible duration specification**:
 - Modified `parseDuration()` method in `HarmonySolver.java`
 - Supported units: `s` (seconds), `m` (minutes, default), `h` (hours), `d` (days), `w` (weeks)
 - Examples: `30` = 30 min, `30h` = 30 hours, `5d` = 5 days, `1w` = 1 week
 
-### 2. Solution File Output
+### 4. Solution File Output
 **Write solutions to file in addition to console**:
 - Modified `printSolution()` and added `getSolutionFilePath()` in `HarmonySolver.java`
 - If puzzle is `name.txt`, solution writes to `name.solution.txt`
 - Solution file includes header comments and numbered move sequence
 
-### 3. New BOARD Section Format
+### 5. New BOARD Section Format
 **Simpler puzzle specification format**:
 - Added BOARD section parsing in `BoardParser.java`
 - Format: `BOARD` header followed by lines of `<color_name> <tile1> <moves1> ...`
 - Colors listed in target row order (first color = row 0 target)
 - Old COLORS/TARGETS/TILES format still fully supported
 
-### 4. Updated PuzzleGenerator and TestBuilder
+### 6. Updated PuzzleGenerator and TestBuilder
 **Output puzzles in new BOARD format**:
 - Both utilities now output the simpler BOARD format
 - Groups tiles by color for better readability
@@ -125,7 +140,7 @@ harmony/
 │   │   ├── QueueContext.java       # ⭐ NEW - per-thread random queue selection
 │   │   ├── StateSerializer.java    # ⭐ NEW - state persistence and loading
 │   │   ├── StateProcessor.java     # ⭐ UPDATED - trackInvalidity, getCachedStates
-│   │   ├── ProgressReporter.java
+│   │   ├── ProgressReporter.java   # ⭐ UPDATED - fixed-width time format [hhh:mm:ss]
 │   │   └── BoardParser.java        # ⭐ UPDATED - BOARD format parsing
 │   └── invalidity/
 │       ├── InvalidityTest.java
@@ -195,6 +210,10 @@ Options:
 
 ## Session History
 
+### Session 10b (January 14, 2026 - Later)
+- **Enhanced Solution File**: Now includes step-by-step board states after each move
+- **Fixed-Width Time Format**: Progress reports use `[hhh:mm:ss]` format
+
 ### Session 10 (January 14, 2026)
 - **Duration Time Units**: -dur now supports s/m/h/d/w suffixes (e.g., 30h, 5d)
 - **Solution File Output**: Solutions written to `<name>.solution.txt`
@@ -254,14 +273,15 @@ mvn package                          # Build
 
 ### Key Files for Next Session
 1. `CURRENT_STATE.md` - This file (start here!)
-2. `SESSION_2026-01-14.md` - Latest session's details
-3. `HarmonySolver.java` - Duration with time units, solution file output
-4. `BoardParser.java` - BOARD format parsing
-5. `PuzzleGenerator.java` - BOARD format output
-6. `TestBuilder.java` - BOARD format output
+2. `SESSION_2026-01-14.md` - Latest session's details (includes 10b changes)
+3. `HarmonySolver.java` - Duration with time units, solution file with board visualization
+4. `ProgressReporter.java` - Fixed-width `[hhh:mm:ss]` time format
+5. `BoardParser.java` - BOARD format parsing
+6. `PuzzleGenerator.java` - BOARD format output
+7. `TestBuilder.java` - BOARD format output
 
 ---
 
 **Ready for**: Production use, long-running puzzles with state persistence
 **Status**: ✅ Stable, documented, tested
-**Last Test**: January 14, 2026
+**Last Test**: January 14, 2026 (Session 10b)

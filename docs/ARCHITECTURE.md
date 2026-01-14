@@ -371,8 +371,10 @@ class ProgressReporter implements Runnable {
 ### Example Output
 
 ```
-[5s] Processed: 5.1M | Queue: 278 | Progress: 1:26 58 | Generated: 7.4M | Pruned: 2.2M (30.3%) | Rate: 1.0M/s
+[000:00:05] Processed: 5.1M | Pruned: 30.3% | Queues: 1:58 2:35 3:67 | Rate: 1.0M/s | Avg: 0.003ms
 ```
+
+Note: Time format is fixed-width `[hhh:mm:ss]` for consistent log alignment.
 
 ## Filesystem Offloading
 
