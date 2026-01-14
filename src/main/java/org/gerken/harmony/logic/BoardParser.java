@@ -16,7 +16,9 @@ import java.util.Map;
 /**
  * Parses puzzle input files and creates initial board states.
  *
- * Input file format:
+ * Supports two input formats:
+ *
+ * FORMAT 1 (Traditional):
  * # Comments start with #
  * ROWS <number>
  * COLS <number>
@@ -28,7 +30,19 @@ import java.util.Map;
  * <position> <color_id> <moves>
  * ...
  *
- * Example:
+ * FORMAT 2 (BOARD section):
+ * ROWS <number>
+ * COLS <number>
+ * BOARD
+ * <color_name> <tile1> <moves1> <tile2> <moves2> ... <tileN> <movesN>
+ * ...
+ *
+ * In FORMAT 2, each line after BOARD defines:
+ * - A color name (which becomes the target for that row index)
+ * - Pairs of (position, moves) for each tile of that color
+ * Colors are listed in order: first color is target for row 0, etc.
+ *
+ * Example FORMAT 1:
  * ROWS 3
  * COLS 3
  * COLORS
@@ -41,6 +55,14 @@ import java.util.Map;
  * A2 1 2
  * A3 2 1
  * ...
+ *
+ * Example FORMAT 2:
+ * ROWS 3
+ * COLS 3
+ * BOARD
+ * RED A1 3 B2 2 C3 1
+ * BLUE A2 2 B1 3 C2 1
+ * GREEN A3 1 B3 2 C1 3
  */
 public class BoardParser {
 
@@ -63,6 +85,8 @@ public class BoardParser {
             String line;
             boolean inColorsSection = false;
             boolean inTilesSection = false;
+            boolean inBoardSection = false;
+            int boardColorIndex = 0;  // Tracks which row we're on in BOARD format
 
             while ((line = reader.readLine()) != null) {
                 // Stop reading if we hit the end of puzzle specification marker
@@ -85,12 +109,19 @@ public class BoardParser {
                 } else if (line.equals("COLORS")) {
                     inColorsSection = true;
                     inTilesSection = false;
+                    inBoardSection = false;
                 } else if (line.startsWith("TARGETS ")) {
                     targetNames = line.substring(8).trim().split("\\s+");
                     inColorsSection = false;
                 } else if (line.equals("TILES")) {
                     inTilesSection = true;
                     inColorsSection = false;
+                    inBoardSection = false;
+                } else if (line.equals("BOARD")) {
+                    inBoardSection = true;
+                    inColorsSection = false;
+                    inTilesSection = false;
+                    boardColorIndex = 0;
                 } else if (inColorsSection) {
                     // Parse color mapping: color_name color_id
                     String[] parts = line.split("\\s+");
@@ -107,6 +138,36 @@ public class BoardParser {
                         throw new IllegalArgumentException("Invalid tile format: " + line);
                     }
                     tiles.add(new TileData(parts[0], Integer.parseInt(parts[1]), Integer.parseInt(parts[2])));
+                } else if (inBoardSection) {
+                    // Parse BOARD line: color_name tile1 moves1 tile2 moves2 ...
+                    String[] parts = line.split("\\s+");
+                    if (parts.length < 3 || (parts.length - 1) % 2 != 0) {
+                        throw new IllegalArgumentException("Invalid BOARD line format: " + line);
+                    }
+
+                    String colorName = parts[0];
+                    int colorId = boardColorIndex;  // Color ID = row index in solution
+
+                    // Add color to map
+                    colorMap.put(colorName, colorId);
+
+                    // Parse tile position and moves pairs
+                    for (int i = 1; i < parts.length; i += 2) {
+                        String position = parts[i];
+                        int moves = Integer.parseInt(parts[i + 1]);
+                        tiles.add(new TileData(position, colorId, moves));
+                    }
+
+                    boardColorIndex++;
+                }
+            }
+
+            // If using BOARD format, set targetNames from colorMap
+            if (inBoardSection || (targetNames == null && !colorMap.isEmpty())) {
+                // Build targetNames array from colorMap (ordered by color ID)
+                targetNames = new String[colorMap.size()];
+                for (Map.Entry<String, Integer> entry : colorMap.entrySet()) {
+                    targetNames[entry.getValue()] = entry.getKey();
                 }
             }
 

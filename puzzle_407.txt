@@ -1,0 +1,12 @@
+# Puzzle 407
+ROWS 6
+COLS 6
+
+BOARD
+WHITE    D1 2   E2 1   D3 1   D5 2   C6 1   B4 1
+PINK     A1 2   A4 1   C2 1   D2 3   F3 2   F5 2
+BROWN    A2 2   B2 1   B3 2   C5 1   E4 2   F1 1
+YELLOW   A3 1   B1 1   B6 1   D6 1   F2 1   F4 1
+LTGREEN  A6 2   C4 2   E1 1   E3 1   E5 1   E6 2
+DKGREEN  A5 3   B5 2   C1 1   C3 1   D4 1   F6 1
+

@@ -157,7 +157,8 @@ public class PuzzleGenerator {
     }
 
     /**
-     * Writes the puzzle to a file in the input format.
+     * Writes the puzzle to a file using the BOARD format.
+     * Each line after BOARD contains: color_name tile1 moves1 tile2 moves2 ...
      */
     private static void writePuzzleFile(PuzzleData puzzle, String filename) throws IOException {
         try (PrintWriter writer = new PrintWriter(new FileWriter(filename))) {
@@ -171,34 +172,26 @@ public class PuzzleGenerator {
             writer.println("COLS " + puzzle.cols);
             writer.println();
 
-            // Write color definitions
-            writer.println("# Color definitions (name -> ID)");
-            writer.println("COLORS");
-            for (int i = 0; i < puzzle.colorNames.length; i++) {
-                writer.println(puzzle.colorNames[i] + " " + i);
-            }
-            writer.println();
+            // Write BOARD section
+            // Each line: color_name tile1 moves1 tile2 moves2 ...
+            // Colors are listed in target order (color 0 = row 0 target, etc.)
+            writer.println("BOARD");
+            for (int colorId = 0; colorId < puzzle.colorNames.length; colorId++) {
+                StringBuilder line = new StringBuilder();
+                line.append(puzzle.colorNames[colorId]);
 
-            // Write targets
-            writer.print("TARGETS");
-            for (String colorName : puzzle.colorNames) {
-                writer.print(" " + colorName);
-            }
-            writer.println();
-            writer.println();
-
-            // Write tiles
-            writer.println("# Initial configuration");
-            writer.println("# Format: Position ColorID Moves");
-            writer.println("TILES");
-            for (int row = 0; row < puzzle.rows; row++) {
-                for (int col = 0; col < puzzle.cols; col++) {
-                    Tile tile = puzzle.grid[row][col];
-                    char rowLabel = (char) ('A' + row);
-                    int colLabel = col + 1;
-                    writer.printf("%c%d %d %d%n", rowLabel, colLabel,
-                                  tile.getColor(), tile.getRemainingMoves());
+                // Find all tiles with this color
+                for (int row = 0; row < puzzle.rows; row++) {
+                    for (int col = 0; col < puzzle.cols; col++) {
+                        Tile tile = puzzle.grid[row][col];
+                        if (tile.getColor() == colorId) {
+                            char rowLabel = (char) ('A' + row);
+                            int colLabel = col + 1;
+                            line.append(String.format(" %c%d %d", rowLabel, colLabel, tile.getRemainingMoves()));
+                        }
+                    }
                 }
+                writer.println(line.toString());
             }
         }
     }

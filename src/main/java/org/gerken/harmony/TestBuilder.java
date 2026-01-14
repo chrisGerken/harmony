@@ -435,7 +435,8 @@ public class TestBuilder {
     }
 
     /**
-     * Writes the puzzle file in the format expected by BoardParser.
+     * Writes the puzzle file using the BOARD format.
+     * Each line after BOARD contains: color_name tile1 moves1 tile2 moves2 ...
      */
     private static void writePuzzleFile(Board board, List<String> colorNames,
                                         List<Move> moves, String outputFile) throws IOException {
@@ -448,32 +449,31 @@ public class TestBuilder {
             writer.println("COLS " + board.getColumnCount());
             writer.println();
 
-            // Write color definitions with IDs
-            writer.println("COLORS");
-            for (int i = 0; i < colorNames.size(); i++) {
-                writer.println(colorNames.get(i) + " " + i);
-            }
-            writer.println();
+            // Write BOARD section
+            // Each line: color_name tile1 moves1 tile2 moves2 ...
+            // Colors are listed in target order (color 0 = row 0 target, etc.)
+            writer.println("BOARD");
+            for (int colorId = 0; colorId < colorNames.size(); colorId++) {
+                StringBuilder line = new StringBuilder();
+                line.append(colorNames.get(colorId));
 
-            // Write targets
-            writer.print("TARGETS");
-            for (String colorName : colorNames) {
-                writer.print(" " + colorName);
-            }
-            writer.println();
-            writer.println();
-
-            // Write tiles
-            writer.println("TILES");
-            for (int row = 0; row < board.getRowCount(); row++) {
-                for (int col = 0; col < board.getColumnCount(); col++) {
-                    Tile tile = board.getTile(row, col);
-                    char rowLabel = (char) ('A' + row);
-                    writer.printf("%c%d %d %d%n", rowLabel, col + 1,
-                                  tile.getColor(), tile.getRemainingMoves());
+                // Find all tiles with this color
+                for (int row = 0; row < board.getRowCount(); row++) {
+                    for (int col = 0; col < board.getColumnCount(); col++) {
+                        Tile tile = board.getTile(row, col);
+                        if (tile.getColor() == colorId) {
+                            char rowLabel = (char) ('A' + row);
+                            int colLabel = col + 1;
+                            line.append(String.format(" %c%d %d", rowLabel, colLabel, tile.getRemainingMoves()));
+                        }
+                    }
                 }
+                writer.println(line.toString());
             }
+
             // Include solution with board states after each move
+            writer.println();
+            writer.println("# End of Puzzle Specification");
             writer.println();
             writer.println("# Solution:");
             writeSolution(writer, board, moves);

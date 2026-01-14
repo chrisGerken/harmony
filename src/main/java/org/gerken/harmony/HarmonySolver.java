@@ -10,7 +10,9 @@ import org.gerken.harmony.logic.QueueContext;
 import org.gerken.harmony.model.BoardState;
 import org.gerken.harmony.model.Move;
 
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -206,7 +208,7 @@ public class HarmonySolver {
             // Handle result: 0 = solution found, 1 = no solution, 2 = time expired (state saved)
             if (result == 0) {
                 BoardState solution = solver.pendingStates.getSolution();
-                printSolution(solution);
+                printSolution(solution, config.puzzleFile);
                 StateSerializer.deleteStateFile(config.puzzleFile);
                 System.exit(0);
             } else if (result == 2) {
@@ -365,9 +367,13 @@ public class HarmonySolver {
     }
 
     /**
-     * Prints the solution (sequence of moves).
+     * Prints the solution (sequence of moves) to console and writes it to a solution file.
+     * If puzzle file is "name.txt", solution file will be "name.solution.txt".
+     *
+     * @param solution the solution board state
+     * @param puzzleFile the puzzle file path (used to derive solution file path)
      */
-    private static void printSolution(BoardState solution) {
+    private static void printSolution(BoardState solution, String puzzleFile) {
         List<Move> moves = solution.getMoveHistory();
 
         System.out.println("\nSOLUTION FOUND!");
@@ -377,6 +383,35 @@ public class HarmonySolver {
         for (int i = 0; i < moves.size(); i++) {
             System.out.printf("%3d. %s%n", i + 1, moves.get(i).getNotation());
         }
+
+        // Write solution to file
+        String solutionFile = getSolutionFilePath(puzzleFile);
+        try (PrintWriter writer = new PrintWriter(new FileWriter(solutionFile))) {
+            writer.println("# Harmony Puzzle Solution");
+            writer.println("# Puzzle: " + puzzleFile);
+            writer.println("# Moves: " + moves.size());
+            writer.println();
+            for (int i = 0; i < moves.size(); i++) {
+                writer.printf("%3d. %s%n", i + 1, moves.get(i).getNotation());
+            }
+            System.out.println("\nSolution written to: " + solutionFile);
+        } catch (IOException e) {
+            System.err.println("Warning: Could not write solution file: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Computes the solution file path for a given puzzle file.
+     * If puzzle file is "name.txt", solution file is "name.solution.txt".
+     *
+     * @param puzzleFile the puzzle file path
+     * @return the solution file path
+     */
+    private static String getSolutionFilePath(String puzzleFile) {
+        if (puzzleFile.endsWith(".txt")) {
+            return puzzleFile.substring(0, puzzleFile.length() - 4) + ".solution.txt";
+        }
+        return puzzleFile + ".solution.txt";
     }
 
     /**
@@ -469,16 +504,17 @@ public class HarmonySolver {
                     System.err.println("Error: " + arg + " requires a value");
                     return null;
                 }
-                try {
-                    config.durationMinutes = Integer.parseInt(args[++i]);
-                    if (config.durationMinutes < 1) {
-                        System.err.println("Error: duration must be positive");
-                        return null;
-                    }
-                } catch (NumberFormatException e) {
-                    System.err.println("Error: invalid duration: " + args[i]);
+                String durationStr = args[++i];
+                int durationMinutes = parseDuration(durationStr);
+                if (durationMinutes < 0) {
+                    System.err.println("Error: invalid duration: " + durationStr);
                     return null;
                 }
+                if (durationMinutes < 1) {
+                    System.err.println("Error: duration must be at least 1 minute");
+                    return null;
+                }
+                config.durationMinutes = durationMinutes;
             } else if (arg.equals("-h") || arg.equals("--help")) {
                 return null; // Will trigger usage message
             } else if (arg.startsWith("-")) {
@@ -504,6 +540,70 @@ public class HarmonySolver {
     }
 
     /**
+     * Parses a duration string with optional time unit suffix.
+     * Supported units: s (seconds), m (minutes, default), h (hours), d (days), w (weeks).
+     * Examples: "30" = 30 minutes, "30h" = 30 hours, "5d" = 5 days.
+     *
+     * @param durationStr the duration string to parse
+     * @return duration in minutes, or -1 if parsing fails
+     */
+    private static int parseDuration(String durationStr) {
+        if (durationStr == null || durationStr.isEmpty()) {
+            return -1;
+        }
+
+        // Find where the number ends and the unit begins
+        int unitStart = durationStr.length();
+        for (int i = 0; i < durationStr.length(); i++) {
+            char c = durationStr.charAt(i);
+            if (!Character.isDigit(c)) {
+                unitStart = i;
+                break;
+            }
+        }
+
+        // Parse the numeric value
+        String numberPart = durationStr.substring(0, unitStart);
+        String unitPart = durationStr.substring(unitStart).toLowerCase();
+
+        if (numberPart.isEmpty()) {
+            return -1;
+        }
+
+        int value;
+        try {
+            value = Integer.parseInt(numberPart);
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+
+        if (value < 0) {
+            return -1;
+        }
+
+        // Convert to minutes based on unit
+        if (unitPart.isEmpty() || unitPart.equals("m")) {
+            // Minutes (default)
+            return value;
+        } else if (unitPart.equals("s")) {
+            // Seconds - convert to minutes (round up if non-zero remainder)
+            return (value + 59) / 60;
+        } else if (unitPart.equals("h")) {
+            // Hours
+            return value * 60;
+        } else if (unitPart.equals("d")) {
+            // Days
+            return value * 60 * 24;
+        } else if (unitPart.equals("w")) {
+            // Weeks
+            return value * 60 * 24 * 7;
+        } else {
+            // Unknown unit
+            return -1;
+        }
+    }
+
+    /**
      * Prints usage information.
      */
     private static void printUsage() {
@@ -516,7 +616,9 @@ public class HarmonySolver {
         System.out.println("  -r, --report <N>      Progress report interval in seconds (default: 30, 0 to disable)");
         System.out.println("  -c, --cache <N>       Cache threshold: states with N+ moves taken are cached locally (default: 4)");
         System.out.println("  -repl <N>             Replication factor for queue distribution (default: 3)");
-        System.out.println("  -dur, --duration <N>  Run for N minutes, then save state and exit (default: 120)");
+        System.out.println("  -dur, --duration <N>  Run duration with optional unit suffix (default: 120m)");
+        System.out.println("                        Units: s (seconds), m (minutes), h (hours), d (days), w (weeks)");
+        System.out.println("                        Examples: 30 (30 min), 30h (30 hours), 5d (5 days)");
         System.out.println("  -d, --debug           Debug mode: disable empty queue termination (for breakpoints)");
         System.out.println("  -i, --invalidity      Show invalidity test statistics instead of queue sizes");
         System.out.println("  --smallestFirst       Process moves with smallest tile sum first");
