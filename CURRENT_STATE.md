@@ -1,5 +1,5 @@
 # Current State of Harmony Puzzle Solver
-**Last Updated**: January 13, 2026 (Session 9)
+**Last Updated**: January 14, 2026 (Session 10)
 
 ## Quick Status
 - ✅ **Production Ready**: All code compiles and tests pass
@@ -15,6 +15,9 @@
 - ✅ **Optimized Atomics**: Batch updates, pre-allocated structures
 - ✅ **Queue Replication**: -repl flag for reduced contention with multiple threads
 - ✅ **State Persistence**: -dur flag for timer-based checkpointing and resumption
+- ✅ **Duration Time Units**: -dur supports s/m/h/d/w unit suffixes
+- ✅ **Solution File Output**: Solutions written to `<name>.solution.txt`
+- ✅ **BOARD Format**: New simpler puzzle specification format
 
 ## Current Architecture (High Level)
 
@@ -67,64 +70,50 @@ Tile (immutable)
     └─> decrementMoves() - returns new Tile with moves-1
 ```
 
-## Recent Changes (Session 9 - January 13, 2026)
+## Recent Changes (Session 10 - January 14, 2026)
 
-### 1. Conditional Invalidity Statistics
-**Only track when -i flag is specified**:
-- Added `trackInvalidity` boolean to `StateProcessor`
-- `incrementInvalidityCounter()` only called when tracking enabled
-- Reduces atomic operations when detailed stats aren't needed
+### 1. Enhanced Duration Argument (-dur)
+**Support time units for flexible duration specification**:
+- Modified `parseDuration()` method in `HarmonySolver.java`
+- Supported units: `s` (seconds), `m` (minutes, default), `h` (hours), `d` (days), `w` (weeks)
+- Examples: `30` = 30 min, `30h` = 30 hours, `5d` = 5 days, `1w` = 1 week
 
-### 2. Active Queues Optimization
-**Skip polling empty queues using boolean tracking**:
-- Added `activeQueues` boolean[][] to `PendingStates`
-- In `add()`: sets `activeQueues[moveCount][queueIndex] = true`
-- In `poll()`: skips queues where `activeQueues` is false
-- Avoids polling queues that have never had states added
+### 2. Solution File Output
+**Write solutions to file in addition to console**:
+- Modified `printSolution()` and added `getSolutionFilePath()` in `HarmonySolver.java`
+- If puzzle is `name.txt`, solution writes to `name.solution.txt`
+- Solution file includes header comments and numbered move sequence
 
-### 3. Queue Replication (-repl parameter)
-**Distribute states across multiple queues to reduce contention**:
-- New `-repl <N>` command-line parameter (default: 3)
-- `queuesByMoveCount` changed to 2D array: `[maxMoveCount+1][replicationFactor]`
-- States distributed randomly across replicas
+### 3. New BOARD Section Format
+**Simpler puzzle specification format**:
+- Added BOARD section parsing in `BoardParser.java`
+- Format: `BOARD` header followed by lines of `<color_name> <tile1> <moves1> ...`
+- Colors listed in target row order (first color = row 0 target)
+- Old COLORS/TARGETS/TILES format still fully supported
 
-### 4. QueueContext Class
-**Per-thread context for random queue selection**:
-- New class `org.gerken.harmony.logic.QueueContext`
-- `getRandomQueueIndex()` returns random int using `ThreadLocalRandom`
-- Each `StateProcessor` gets its own instance via `pendingStates.getQueueContext()`
+### 4. Updated PuzzleGenerator and TestBuilder
+**Output puzzles in new BOARD format**:
+- Both utilities now output the simpler BOARD format
+- Groups tiles by color for better readability
+- TestBuilder adds "End of Puzzle Specification" marker before solution
 
-### 5. Updated PendingStates Methods
-**Support for 2D queue structure**:
-- Constructor: `PendingStates(int maxMoveCount, int replicationFactor)`
-- `add(BoardState, QueueContext)`: uses random queue index
-- `poll(QueueContext)`: polls from randomly selected queue
-- `isEmpty()`, `size()`: iterate over all replicated queues
-- `collectAllStates()`: gathers all states for persistence
+## Previous Session (Session 9 - January 13, 2026)
 
-### 6. State Persistence (-dur/--duration)
-**Timer-based checkpointing for long-running puzzles**:
-- New `-dur, --duration <N>` parameter (default: 120 minutes)
-- On timeout: signals threads to stop, waits 10 seconds for in-progress work
-- Collects states from queues and caches, saves to `<puzzle>.state.txt`
-- On startup: checks for state file and resumes if found
-- Handles changing replication factors and thread counts between runs
-- Statistics restart from zero when resuming
-
-### 7. StateSerializer Class
-**State file management**:
-- `saveStates()`: Writes move histories to state file
-- `loadStates()`: Replays moves to reconstruct board states
-- `deleteStateFile()`: Removes state file when solution found
+- **Conditional Invalidity Stats**: Only track when -i flag set
+- **Active Queues Optimization**: Boolean array to skip never-used queues
+- **Queue Replication**: -repl flag for reduced contention
+- **QueueContext Class**: Per-thread random queue selection
+- **State Persistence**: Timer-based checkpointing and resumption
+- **StateSerializer**: State file save/load utilities
 
 ## File Structure
 
 ```
 harmony/
 ├── src/main/java/org/gerken/harmony/
-│   ├── HarmonySolver.java          # ⭐ UPDATED - replicationFactor, -repl flag
-│   ├── PuzzleGenerator.java
-│   ├── TestBuilder.java
+│   ├── HarmonySolver.java          # ⭐ UPDATED - duration units, solution file
+│   ├── PuzzleGenerator.java        # ⭐ UPDATED - BOARD format output
+│   ├── TestBuilder.java            # ⭐ UPDATED - BOARD format output
 │   ├── TileBenchmark.java
 │   ├── model/
 │   │   ├── Tile.java
@@ -137,7 +126,7 @@ harmony/
 │   │   ├── StateSerializer.java    # ⭐ NEW - state persistence and loading
 │   │   ├── StateProcessor.java     # ⭐ UPDATED - trackInvalidity, getCachedStates
 │   │   ├── ProgressReporter.java
-│   │   └── BoardParser.java
+│   │   └── BoardParser.java        # ⭐ UPDATED - BOARD format parsing
 │   └── invalidity/
 │       ├── InvalidityTest.java
 │       ├── InvalidityTestCoordinator.java
@@ -162,7 +151,8 @@ harmony/
 │   ├── 3x3_8moves.txt
 │   ├── 4x4_9moves.txt
 │   └── 3x3_12moves.txt
-├── SESSION_2026-01-13.md           # ⭐ NEW - this session
+├── SESSION_2026-01-14.md           # ⭐ NEW - this session
+├── SESSION_2026-01-13.md
 ├── SESSION_2026-01-12.md
 ├── SESSION_2026-01-11_afternoon.md
 ├── SESSION_2026-01-11.md
@@ -181,7 +171,9 @@ Options:
   -r, --report <N>      Progress report interval in seconds (default: 30, 0 to disable)
   -c, --cache <N>       Cache threshold: states with N+ moves taken are cached locally (default: 4)
   -repl <N>             Replication factor for queue distribution (default: 3)
-  -dur, --duration <N>  Run for N minutes, then save state and exit (default: 120)
+  -dur, --duration <N>  Run duration with optional unit suffix (default: 120m)
+                        Units: s (seconds), m (minutes), h (hours), d (days), w (weeks)
+                        Examples: 30 (30 min), 30h (30 hours), 5d (5 days)
   -d, --debug           Debug mode: disable empty queue termination
   -i, --invalidity      Show invalidity test statistics instead of queue sizes
   --smallestFirst       Process moves with smallest tile sum first
@@ -202,6 +194,13 @@ Options:
 | 3x3_12moves.txt | 3x3 | 12 | 21 | 6.6% |
 
 ## Session History
+
+### Session 10 (January 14, 2026)
+- **Duration Time Units**: -dur now supports s/m/h/d/w suffixes (e.g., 30h, 5d)
+- **Solution File Output**: Solutions written to `<name>.solution.txt`
+- **BOARD Format**: New simpler puzzle specification format
+- **PuzzleGenerator Updated**: Outputs BOARD format
+- **TestBuilder Updated**: Outputs BOARD format
 
 ### Session 9 (January 13, 2026)
 - **Conditional Invalidity Stats**: Only track when -i flag set
@@ -255,14 +254,14 @@ mvn package                          # Build
 
 ### Key Files for Next Session
 1. `CURRENT_STATE.md` - This file (start here!)
-2. `SESSION_2026-01-13.md` - This session's details
-3. `HarmonySolver.java` - Duration timer, state persistence, resumption logic
-4. `StateSerializer.java` - State file save/load
-5. `PendingStates.java` - 2D queue arrays, collectAllStates()
-6. `StateProcessor.java` - trackInvalidity, getCachedStates()
+2. `SESSION_2026-01-14.md` - Latest session's details
+3. `HarmonySolver.java` - Duration with time units, solution file output
+4. `BoardParser.java` - BOARD format parsing
+5. `PuzzleGenerator.java` - BOARD format output
+6. `TestBuilder.java` - BOARD format output
 
 ---
 
 **Ready for**: Production use, long-running puzzles with state persistence
 **Status**: ✅ Stable, documented, tested
-**Last Test**: January 13, 2026
+**Last Test**: January 14, 2026

@@ -411,6 +411,23 @@ board.setTile(0, 1, new Tile(1, 3));  // BLUE tile with 3 moves
 
 ### Color Mapping (Input File)
 
+Two file formats are supported:
+
+**BOARD Format (Recommended)**:
+```
+ROWS 3
+COLS 3
+
+BOARD
+RED A1 3 B2 2 C3 1
+BLUE A2 2 B1 3 C2 1
+GREEN A3 1 B3 2 C1 3
+```
+
+Each line after BOARD: `<color_name> <tile1> <moves1> <tile2> <moves2> ...`
+Colors are listed in target row order (first color = row 0 target).
+
+**Traditional Format**:
 ```
 COLORS
 RED 0

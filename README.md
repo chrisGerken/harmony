@@ -62,6 +62,12 @@ java -jar target/harmony-solver-1.0-SNAPSHOT.jar puzzle.txt
 - `-t <threads>`: Number of worker threads (default: 2)
 - `-r <seconds>`: Progress report interval in seconds (default: 30)
 - `-c <threshold>`: Cache threshold for near-solution states (default: 4)
+- `-repl <N>`: Replication factor for queue distribution (default: 3)
+- `-dur <N>`: Run duration with optional unit suffix (default: 120m)
+  - Units: `s` (seconds), `m` (minutes), `h` (hours), `d` (days), `w` (weeks)
+  - Examples: `30` (30 min), `30h` (30 hours), `5d` (5 days)
+- `-i`: Show invalidity test statistics instead of queue sizes
+- `--smallestFirst` / `--largestFirst`: Move ordering options
 
 ## Performance
 
@@ -114,13 +120,31 @@ Based on testing with depth-first search, intelligent move filtering, and invali
 
 ## Input File Format
 
-Puzzles use a simple text format with integer color IDs:
+Two formats are supported:
+
+### BOARD Format (Recommended)
+Simpler format where each line groups tiles by color:
 
 ```
 ROWS 3
 COLS 3
 
-# Color legend for human readability
+BOARD
+RED A1 3 B2 2 C3 1
+BLUE A2 2 B1 3 C2 1
+GREEN A3 1 B3 2 C1 3
+```
+
+Each line after BOARD: `<color_name> <tile1> <moves1> <tile2> <moves2> ...`
+Colors are listed in target row order (first color = row 0 target).
+
+### Traditional Format
+Original format with separate sections:
+
+```
+ROWS 3
+COLS 3
+
 COLORS
 RED 0
 BLUE 1
@@ -128,7 +152,6 @@ GREEN 2
 
 TARGETS RED BLUE GREEN
 
-# Tiles use color IDs for efficiency
 TILES
 A1 0 2
 A2 1 2
