@@ -1,5 +1,5 @@
 # Current State of Harmony Puzzle Solver
-**Last Updated**: January 14, 2026 (Session 10b)
+**Last Updated**: January 15, 2026 (Session 11)
 
 ## Quick Status
 - ✅ **Production Ready**: All code compiles and tests pass
@@ -19,6 +19,10 @@
 - ✅ **Solution File Output**: Solutions with step-by-step board states
 - ✅ **BOARD Format**: New simpler puzzle specification format
 - ✅ **Fixed-Width Time Format**: Progress shows `[hhh:mm:ss]` elapsed time
+- ✅ **Clean Board Display**: Zero moves hidden (shows `RED` not `RED 0`)
+- ✅ **Case-Insensitive Parsing**: `dkbrown` → `DKBROWN`, `a1` → `A1`
+- ✅ **Position Validation**: Duplicate tile positions detected
+- ✅ **MOVES Section**: Optional section to transform board state
 
 ## Current Architecture (High Level)
 
@@ -71,15 +75,52 @@ Tile (immutable)
     └─> decrementMoves() - returns new Tile with moves-1
 ```
 
-## Recent Changes (Session 10b - January 14, 2026)
+## Recent Changes (Session 11 - January 15, 2026)
 
-### 1. Enhanced Solution File with Board Visualization
+### 1. Board.toString() Hides Zero Moves
+**Tiles with 0 remaining moves now display only the color name**:
+- Modified `Board.java` toString methods (lines 161-167, 206-214)
+- Old: `RED 0` → New: `RED`
+- Tiles with non-zero moves still show the count: `RED 2`
+
+### 2. BoardParser Validates Unique Positions
+**Added validation to detect duplicate tile positions**:
+- Modified `BoardParser.java` (lines 193-200)
+- Uses HashSet to track seen positions during parsing
+- Throws `IllegalArgumentException` if duplicate position found
+
+### 3. BoardParser Case-Insensitive Parsing
+**Lowercase letters are now treated as uppercase**:
+- Color names: `dkbrown` → `DKBROWN`
+- Tile positions: `a1` → `A1`
+- Applied in COLORS, TILES, BOARD, and TARGETS sections
+
+### 4. Optional MOVES Section in BoardParser
+**Added support for MOVES section to transform board state**:
+- MOVES section appears after BOARD or TILES section
+- Move notation: `P1-P2` (e.g., `A1-B1`, `C3-C6`)
+- Moves applied to create actual initial state for solving
+- Fresh BoardState created from final board (discards move history)
+
+Example:
+```
+BOARD
+RED a1 2 a2 2
+BLUE b1 2 b2 2
+MOVES
+a1-b1
+a2-b2
+```
+
+## Earlier Changes (Session 10b - January 14, 2026)
+
+### 5. Enhanced Solution File with Board Visualization
 **Solution files now show step-by-step board states**:
 - Modified `printSolution()` in `HarmonySolver.java` (lines 376-435)
 - Two sections: move sequence (compact) + step-by-step board states
 - Shows initial state and board after each move for visualization
 
-### 2. Fixed-Width Progress Time Format
+### 6. Fixed-Width Progress Time Format
 **Changed elapsed time to `[hhh:mm:ss]` format**:
 - Modified `formatDuration()` in `ProgressReporter.java` (lines 192-199)
 - Old: `[1m 15s]` → New: `[000:01:15]`
@@ -132,7 +173,7 @@ harmony/
 │   ├── TileBenchmark.java
 │   ├── model/
 │   │   ├── Tile.java
-│   │   ├── Board.java
+│   │   ├── Board.java              # ⭐ UPDATED - hides zero moves in toString()
 │   │   ├── Move.java
 │   │   └── BoardState.java
 │   ├── logic/
@@ -141,7 +182,7 @@ harmony/
 │   │   ├── StateSerializer.java    # ⭐ NEW - state persistence and loading
 │   │   ├── StateProcessor.java     # ⭐ UPDATED - trackInvalidity, getCachedStates
 │   │   ├── ProgressReporter.java   # ⭐ UPDATED - fixed-width time format [hhh:mm:ss]
-│   │   └── BoardParser.java        # ⭐ UPDATED - BOARD format parsing
+│   │   └── BoardParser.java        # ⭐ UPDATED - MOVES section, case-insensitive, validation
 │   └── invalidity/
 │       ├── InvalidityTest.java
 │       ├── InvalidityTestCoordinator.java
@@ -166,7 +207,8 @@ harmony/
 │   ├── 3x3_8moves.txt
 │   ├── 4x4_9moves.txt
 │   └── 3x3_12moves.txt
-├── SESSION_2026-01-14.md           # ⭐ NEW - this session
+├── SESSION_2026-01-15.md           # ⭐ NEW - this session
+├── SESSION_2026-01-14.md
 ├── SESSION_2026-01-13.md
 ├── SESSION_2026-01-12.md
 ├── SESSION_2026-01-11_afternoon.md
@@ -209,6 +251,12 @@ Options:
 | 3x3_12moves.txt | 3x3 | 12 | 21 | 6.6% |
 
 ## Session History
+
+### Session 11 (January 15, 2026)
+- **Clean Board Display**: Zero moves hidden in toString() (shows `RED` not `RED 0`)
+- **Case-Insensitive Parsing**: `dkbrown` → `DKBROWN`, `a1` → `A1`
+- **Position Validation**: Duplicate tile positions detected with error
+- **MOVES Section**: Optional section to transform board state before solving
 
 ### Session 10b (January 14, 2026 - Later)
 - **Enhanced Solution File**: Now includes step-by-step board states after each move
@@ -273,15 +321,14 @@ mvn package                          # Build
 
 ### Key Files for Next Session
 1. `CURRENT_STATE.md` - This file (start here!)
-2. `SESSION_2026-01-14.md` - Latest session's details (includes 10b changes)
-3. `HarmonySolver.java` - Duration with time units, solution file with board visualization
-4. `ProgressReporter.java` - Fixed-width `[hhh:mm:ss]` time format
-5. `BoardParser.java` - BOARD format parsing
-6. `PuzzleGenerator.java` - BOARD format output
-7. `TestBuilder.java` - BOARD format output
+2. `SESSION_2026-01-15.md` - Latest session's details
+3. `Board.java` - toString() hides zero moves
+4. `BoardParser.java` - MOVES section, case-insensitive, validation
+5. `HarmonySolver.java` - Duration with time units, solution file with board visualization
+6. `ProgressReporter.java` - Fixed-width `[hhh:mm:ss]` time format
 
 ---
 
 **Ready for**: Production use, long-running puzzles with state persistence
 **Status**: ✅ Stable, documented, tested
-**Last Test**: January 14, 2026 (Session 10b)
+**Last Test**: January 15, 2026 (Session 11)

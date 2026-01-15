@@ -257,8 +257,13 @@ public class BoardParser {
             BoardState boardState = new BoardState(board);
 
             // Apply any moves from the MOVES section
-            for (Move move : moves) {
-                boardState = boardState.applyMove(move);
+            if (!moves.isEmpty()) {
+                for (Move move : moves) {
+                    boardState = boardState.applyMove(move);
+                }
+                // Create fresh BoardState from final board (discard move history)
+                // The MOVES section transforms the BOARD to the actual starting state
+                boardState = new BoardState(boardState.getBoard());
             }
 
             return boardState;
