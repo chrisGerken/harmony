@@ -1,0 +1,251 @@
+# Harmony Puzzle Solution
+# Puzzle: puzzle_411.txt
+# Moves: 26
+
+Move sequence:
+  1. C3-F3
+  2. B5-E5
+  3. A1-A2
+  4. D5-D6
+  5. C1-C2
+  6. E3-E6
+  7. C5-F5
+  8. C5-C6
+  9. D3-D4
+ 10. D4-E4
+ 11. D1-F1
+ 12. B1-F1
+ 13. B4-C4
+ 14. A4-B4
+ 15. A5-F5
+ 16. B6-F6
+ 17. A6-B6
+ 18. A3-A5
+ 19. B3-B4
+ 20. C4-F4
+ 21. C1-C4
+ 22. F2-F6
+ 23. D2-E2
+ 24. E1-E2
+ 25. B2-D2
+ 26. D1-D3
+
+============================================================
+Step-by-step board states:
+============================================================
+
+Initial state:
+A | WHITE 1  | WHITE 1  | WHITE 1  | PINK 2   | BROWN 1  | PINK 1   |
+B | BROWN 1  | RED 1    | PINK 1   | BROWN 2  | ORANGE 1 | BROWN 2  |
+C | ROSE 1   | ROSE 2   | BROWN 1  | WHITE 2  | WHITE 3  | ROSE 1   |
+D | PINK 2   | ORANGE 2 | ORANGE 2 | RED 2    | RED 1    | RED 1    |
+E | ORANGE 1 | PINK 2   | ORANGE 1 | RED 1    | PINK 1   | ORANGE 1 |
+F | RED 2    | BROWN 1  | ROSE 1   | ROSE 2   | ROSE 2   | WHITE 2  |
+
+After move 1: C3-F3
+A | WHITE 1  | WHITE 1  | WHITE 1  | PINK 2   | BROWN 1  | PINK 1   |
+B | BROWN 1  | RED 1    | PINK 1   | BROWN 2  | ORANGE 1 | BROWN 2  |
+C | ROSE 1   | ROSE 2   | ROSE 0   | WHITE 2  | WHITE 3  | ROSE 1   |
+D | PINK 2   | ORANGE 2 | ORANGE 2 | RED 2    | RED 1    | RED 1    |
+E | ORANGE 1 | PINK 2   | ORANGE 1 | RED 1    | PINK 1   | ORANGE 1 |
+F | RED 2    | BROWN 1  | BROWN 0  | ROSE 2   | ROSE 2   | WHITE 2  |
+
+After move 2: B5-E5
+A | WHITE 1  | WHITE 1  | WHITE 1  | PINK 2   | BROWN 1  | PINK 1   |
+B | BROWN 1  | RED 1    | PINK 1   | BROWN 2  | PINK 0   | BROWN 2  |
+C | ROSE 1   | ROSE 2   | ROSE 0   | WHITE 2  | WHITE 3  | ROSE 1   |
+D | PINK 2   | ORANGE 2 | ORANGE 2 | RED 2    | RED 1    | RED 1    |
+E | ORANGE 1 | PINK 2   | ORANGE 1 | RED 1    | ORANGE 0 | ORANGE 1 |
+F | RED 2    | BROWN 1  | BROWN 0  | ROSE 2   | ROSE 2   | WHITE 2  |
+
+After move 3: A1-A2
+A | WHITE 0  | WHITE 0  | WHITE 1  | PINK 2   | BROWN 1  | PINK 1   |
+B | BROWN 1  | RED 1    | PINK 1   | BROWN 2  | PINK 0   | BROWN 2  |
+C | ROSE 1   | ROSE 2   | ROSE 0   | WHITE 2  | WHITE 3  | ROSE 1   |
+D | PINK 2   | ORANGE 2 | ORANGE 2 | RED 2    | RED 1    | RED 1    |
+E | ORANGE 1 | PINK 2   | ORANGE 1 | RED 1    | ORANGE 0 | ORANGE 1 |
+F | RED 2    | BROWN 1  | BROWN 0  | ROSE 2   | ROSE 2   | WHITE 2  |
+
+After move 4: D5-D6
+A | WHITE 0  | WHITE 0  | WHITE 1  | PINK 2   | BROWN 1  | PINK 1   |
+B | BROWN 1  | RED 1    | PINK 1   | BROWN 2  | PINK 0   | BROWN 2  |
+C | ROSE 1   | ROSE 2   | ROSE 0   | WHITE 2  | WHITE 3  | ROSE 1   |
+D | PINK 2   | ORANGE 2 | ORANGE 2 | RED 2    | RED 0    | RED 0    |
+E | ORANGE 1 | PINK 2   | ORANGE 1 | RED 1    | ORANGE 0 | ORANGE 1 |
+F | RED 2    | BROWN 1  | BROWN 0  | ROSE 2   | ROSE 2   | WHITE 2  |
+
+After move 5: C1-C2
+A | WHITE 0  | WHITE 0  | WHITE 1  | PINK 2   | BROWN 1  | PINK 1   |
+B | BROWN 1  | RED 1    | PINK 1   | BROWN 2  | PINK 0   | BROWN 2  |
+C | ROSE 1   | ROSE 0   | ROSE 0   | WHITE 2  | WHITE 3  | ROSE 1   |
+D | PINK 2   | ORANGE 2 | ORANGE 2 | RED 2    | RED 0    | RED 0    |
+E | ORANGE 1 | PINK 2   | ORANGE 1 | RED 1    | ORANGE 0 | ORANGE 1 |
+F | RED 2    | BROWN 1  | BROWN 0  | ROSE 2   | ROSE 2   | WHITE 2  |
+
+After move 6: E3-E6
+A | WHITE 0  | WHITE 0  | WHITE 1  | PINK 2   | BROWN 1  | PINK 1   |
+B | BROWN 1  | RED 1    | PINK 1   | BROWN 2  | PINK 0   | BROWN 2  |
+C | ROSE 1   | ROSE 0   | ROSE 0   | WHITE 2  | WHITE 3  | ROSE 1   |
+D | PINK 2   | ORANGE 2 | ORANGE 2 | RED 2    | RED 0    | RED 0    |
+E | ORANGE 1 | PINK 2   | ORANGE 0 | RED 1    | ORANGE 0 | ORANGE 0 |
+F | RED 2    | BROWN 1  | BROWN 0  | ROSE 2   | ROSE 2   | WHITE 2  |
+
+After move 7: C5-F5
+A | WHITE 0  | WHITE 0  | WHITE 1  | PINK 2   | BROWN 1  | PINK 1   |
+B | BROWN 1  | RED 1    | PINK 1   | BROWN 2  | PINK 0   | BROWN 2  |
+C | ROSE 1   | ROSE 0   | ROSE 0   | WHITE 2  | ROSE 1   | ROSE 1   |
+D | PINK 2   | ORANGE 2 | ORANGE 2 | RED 2    | RED 0    | RED 0    |
+E | ORANGE 1 | PINK 2   | ORANGE 0 | RED 1    | ORANGE 0 | ORANGE 0 |
+F | RED 2    | BROWN 1  | BROWN 0  | ROSE 2   | WHITE 2  | WHITE 2  |
+
+After move 8: C5-C6
+A | WHITE 0  | WHITE 0  | WHITE 1  | PINK 2   | BROWN 1  | PINK 1   |
+B | BROWN 1  | RED 1    | PINK 1   | BROWN 2  | PINK 0   | BROWN 2  |
+C | ROSE 1   | ROSE 0   | ROSE 0   | WHITE 2  | ROSE 0   | ROSE 0   |
+D | PINK 2   | ORANGE 2 | ORANGE 2 | RED 2    | RED 0    | RED 0    |
+E | ORANGE 1 | PINK 2   | ORANGE 0 | RED 1    | ORANGE 0 | ORANGE 0 |
+F | RED 2    | BROWN 1  | BROWN 0  | ROSE 2   | WHITE 2  | WHITE 2  |
+
+After move 9: D3-D4
+A | WHITE 0  | WHITE 0  | WHITE 1  | PINK 2   | BROWN 1  | PINK 1   |
+B | BROWN 1  | RED 1    | PINK 1   | BROWN 2  | PINK 0   | BROWN 2  |
+C | ROSE 1   | ROSE 0   | ROSE 0   | WHITE 2  | ROSE 0   | ROSE 0   |
+D | PINK 2   | ORANGE 2 | RED 1    | ORANGE 1 | RED 0    | RED 0    |
+E | ORANGE 1 | PINK 2   | ORANGE 0 | RED 1    | ORANGE 0 | ORANGE 0 |
+F | RED 2    | BROWN 1  | BROWN 0  | ROSE 2   | WHITE 2  | WHITE 2  |
+
+After move 10: D4-E4
+A | WHITE 0  | WHITE 0  | WHITE 1  | PINK 2   | BROWN 1  | PINK 1   |
+B | BROWN 1  | RED 1    | PINK 1   | BROWN 2  | PINK 0   | BROWN 2  |
+C | ROSE 1   | ROSE 0   | ROSE 0   | WHITE 2  | ROSE 0   | ROSE 0   |
+D | PINK 2   | ORANGE 2 | RED 1    | RED 0    | RED 0    | RED 0    |
+E | ORANGE 1 | PINK 2   | ORANGE 0 | ORANGE 0 | ORANGE 0 | ORANGE 0 |
+F | RED 2    | BROWN 1  | BROWN 0  | ROSE 2   | WHITE 2  | WHITE 2  |
+
+After move 11: D1-F1
+A | WHITE 0  | WHITE 0  | WHITE 1  | PINK 2   | BROWN 1  | PINK 1   |
+B | BROWN 1  | RED 1    | PINK 1   | BROWN 2  | PINK 0   | BROWN 2  |
+C | ROSE 1   | ROSE 0   | ROSE 0   | WHITE 2  | ROSE 0   | ROSE 0   |
+D | RED 1    | ORANGE 2 | RED 1    | RED 0    | RED 0    | RED 0    |
+E | ORANGE 1 | PINK 2   | ORANGE 0 | ORANGE 0 | ORANGE 0 | ORANGE 0 |
+F | PINK 1   | BROWN 1  | BROWN 0  | ROSE 2   | WHITE 2  | WHITE 2  |
+
+After move 12: B1-F1
+A | WHITE 0  | WHITE 0  | WHITE 1  | PINK 2   | BROWN 1  | PINK 1   |
+B | PINK 0   | RED 1    | PINK 1   | BROWN 2  | PINK 0   | BROWN 2  |
+C | ROSE 1   | ROSE 0   | ROSE 0   | WHITE 2  | ROSE 0   | ROSE 0   |
+D | RED 1    | ORANGE 2 | RED 1    | RED 0    | RED 0    | RED 0    |
+E | ORANGE 1 | PINK 2   | ORANGE 0 | ORANGE 0 | ORANGE 0 | ORANGE 0 |
+F | BROWN 0  | BROWN 1  | BROWN 0  | ROSE 2   | WHITE 2  | WHITE 2  |
+
+After move 13: B4-C4
+A | WHITE 0  | WHITE 0  | WHITE 1  | PINK 2   | BROWN 1  | PINK 1   |
+B | PINK 0   | RED 1    | PINK 1   | WHITE 1  | PINK 0   | BROWN 2  |
+C | ROSE 1   | ROSE 0   | ROSE 0   | BROWN 1  | ROSE 0   | ROSE 0   |
+D | RED 1    | ORANGE 2 | RED 1    | RED 0    | RED 0    | RED 0    |
+E | ORANGE 1 | PINK 2   | ORANGE 0 | ORANGE 0 | ORANGE 0 | ORANGE 0 |
+F | BROWN 0  | BROWN 1  | BROWN 0  | ROSE 2   | WHITE 2  | WHITE 2  |
+
+After move 14: A4-B4
+A | WHITE 0  | WHITE 0  | WHITE 1  | WHITE 0  | BROWN 1  | PINK 1   |
+B | PINK 0   | RED 1    | PINK 1   | PINK 1   | PINK 0   | BROWN 2  |
+C | ROSE 1   | ROSE 0   | ROSE 0   | BROWN 1  | ROSE 0   | ROSE 0   |
+D | RED 1    | ORANGE 2 | RED 1    | RED 0    | RED 0    | RED 0    |
+E | ORANGE 1 | PINK 2   | ORANGE 0 | ORANGE 0 | ORANGE 0 | ORANGE 0 |
+F | BROWN 0  | BROWN 1  | BROWN 0  | ROSE 2   | WHITE 2  | WHITE 2  |
+
+After move 15: A5-F5
+A | WHITE 0  | WHITE 0  | WHITE 1  | WHITE 0  | WHITE 1  | PINK 1   |
+B | PINK 0   | RED 1    | PINK 1   | PINK 1   | PINK 0   | BROWN 2  |
+C | ROSE 1   | ROSE 0   | ROSE 0   | BROWN 1  | ROSE 0   | ROSE 0   |
+D | RED 1    | ORANGE 2 | RED 1    | RED 0    | RED 0    | RED 0    |
+E | ORANGE 1 | PINK 2   | ORANGE 0 | ORANGE 0 | ORANGE 0 | ORANGE 0 |
+F | BROWN 0  | BROWN 1  | BROWN 0  | ROSE 2   | BROWN 0  | WHITE 2  |
+
+After move 16: B6-F6
+A | WHITE 0  | WHITE 0  | WHITE 1  | WHITE 0  | WHITE 1  | PINK 1   |
+B | PINK 0   | RED 1    | PINK 1   | PINK 1   | PINK 0   | WHITE 1  |
+C | ROSE 1   | ROSE 0   | ROSE 0   | BROWN 1  | ROSE 0   | ROSE 0   |
+D | RED 1    | ORANGE 2 | RED 1    | RED 0    | RED 0    | RED 0    |
+E | ORANGE 1 | PINK 2   | ORANGE 0 | ORANGE 0 | ORANGE 0 | ORANGE 0 |
+F | BROWN 0  | BROWN 1  | BROWN 0  | ROSE 2   | BROWN 0  | BROWN 1  |
+
+After move 17: A6-B6
+A | WHITE 0  | WHITE 0  | WHITE 1  | WHITE 0  | WHITE 1  | WHITE 0  |
+B | PINK 0   | RED 1    | PINK 1   | PINK 1   | PINK 0   | PINK 0   |
+C | ROSE 1   | ROSE 0   | ROSE 0   | BROWN 1  | ROSE 0   | ROSE 0   |
+D | RED 1    | ORANGE 2 | RED 1    | RED 0    | RED 0    | RED 0    |
+E | ORANGE 1 | PINK 2   | ORANGE 0 | ORANGE 0 | ORANGE 0 | ORANGE 0 |
+F | BROWN 0  | BROWN 1  | BROWN 0  | ROSE 2   | BROWN 0  | BROWN 1  |
+
+After move 18: A3-A5
+A | WHITE 0  | WHITE 0  | WHITE 0  | WHITE 0  | WHITE 0  | WHITE 0  |
+B | PINK 0   | RED 1    | PINK 1   | PINK 1   | PINK 0   | PINK 0   |
+C | ROSE 1   | ROSE 0   | ROSE 0   | BROWN 1  | ROSE 0   | ROSE 0   |
+D | RED 1    | ORANGE 2 | RED 1    | RED 0    | RED 0    | RED 0    |
+E | ORANGE 1 | PINK 2   | ORANGE 0 | ORANGE 0 | ORANGE 0 | ORANGE 0 |
+F | BROWN 0  | BROWN 1  | BROWN 0  | ROSE 2   | BROWN 0  | BROWN 1  |
+
+After move 19: B3-B4
+A | WHITE 0  | WHITE 0  | WHITE 0  | WHITE 0  | WHITE 0  | WHITE 0  |
+B | PINK 0   | RED 1    | PINK 0   | PINK 0   | PINK 0   | PINK 0   |
+C | ROSE 1   | ROSE 0   | ROSE 0   | BROWN 1  | ROSE 0   | ROSE 0   |
+D | RED 1    | ORANGE 2 | RED 1    | RED 0    | RED 0    | RED 0    |
+E | ORANGE 1 | PINK 2   | ORANGE 0 | ORANGE 0 | ORANGE 0 | ORANGE 0 |
+F | BROWN 0  | BROWN 1  | BROWN 0  | ROSE 2   | BROWN 0  | BROWN 1  |
+
+After move 20: C4-F4
+A | WHITE 0  | WHITE 0  | WHITE 0  | WHITE 0  | WHITE 0  | WHITE 0  |
+B | PINK 0   | RED 1    | PINK 0   | PINK 0   | PINK 0   | PINK 0   |
+C | ROSE 1   | ROSE 0   | ROSE 0   | ROSE 1   | ROSE 0   | ROSE 0   |
+D | RED 1    | ORANGE 2 | RED 1    | RED 0    | RED 0    | RED 0    |
+E | ORANGE 1 | PINK 2   | ORANGE 0 | ORANGE 0 | ORANGE 0 | ORANGE 0 |
+F | BROWN 0  | BROWN 1  | BROWN 0  | BROWN 0  | BROWN 0  | BROWN 1  |
+
+After move 21: C1-C4
+A | WHITE 0  | WHITE 0  | WHITE 0  | WHITE 0  | WHITE 0  | WHITE 0  |
+B | PINK 0   | RED 1    | PINK 0   | PINK 0   | PINK 0   | PINK 0   |
+C | ROSE 0   | ROSE 0   | ROSE 0   | ROSE 0   | ROSE 0   | ROSE 0   |
+D | RED 1    | ORANGE 2 | RED 1    | RED 0    | RED 0    | RED 0    |
+E | ORANGE 1 | PINK 2   | ORANGE 0 | ORANGE 0 | ORANGE 0 | ORANGE 0 |
+F | BROWN 0  | BROWN 1  | BROWN 0  | BROWN 0  | BROWN 0  | BROWN 1  |
+
+After move 22: F2-F6
+A | WHITE 0  | WHITE 0  | WHITE 0  | WHITE 0  | WHITE 0  | WHITE 0  |
+B | PINK 0   | RED 1    | PINK 0   | PINK 0   | PINK 0   | PINK 0   |
+C | ROSE 0   | ROSE 0   | ROSE 0   | ROSE 0   | ROSE 0   | ROSE 0   |
+D | RED 1    | ORANGE 2 | RED 1    | RED 0    | RED 0    | RED 0    |
+E | ORANGE 1 | PINK 2   | ORANGE 0 | ORANGE 0 | ORANGE 0 | ORANGE 0 |
+F | BROWN 0  | BROWN 0  | BROWN 0  | BROWN 0  | BROWN 0  | BROWN 0  |
+
+After move 23: D2-E2
+A | WHITE 0  | WHITE 0  | WHITE 0  | WHITE 0  | WHITE 0  | WHITE 0  |
+B | PINK 0   | RED 1    | PINK 0   | PINK 0   | PINK 0   | PINK 0   |
+C | ROSE 0   | ROSE 0   | ROSE 0   | ROSE 0   | ROSE 0   | ROSE 0   |
+D | RED 1    | PINK 1   | RED 1    | RED 0    | RED 0    | RED 0    |
+E | ORANGE 1 | ORANGE 1 | ORANGE 0 | ORANGE 0 | ORANGE 0 | ORANGE 0 |
+F | BROWN 0  | BROWN 0  | BROWN 0  | BROWN 0  | BROWN 0  | BROWN 0  |
+
+After move 24: E1-E2
+A | WHITE 0  | WHITE 0  | WHITE 0  | WHITE 0  | WHITE 0  | WHITE 0  |
+B | PINK 0   | RED 1    | PINK 0   | PINK 0   | PINK 0   | PINK 0   |
+C | ROSE 0   | ROSE 0   | ROSE 0   | ROSE 0   | ROSE 0   | ROSE 0   |
+D | RED 1    | PINK 1   | RED 1    | RED 0    | RED 0    | RED 0    |
+E | ORANGE 0 | ORANGE 0 | ORANGE 0 | ORANGE 0 | ORANGE 0 | ORANGE 0 |
+F | BROWN 0  | BROWN 0  | BROWN 0  | BROWN 0  | BROWN 0  | BROWN 0  |
+
+After move 25: B2-D2
+A | WHITE 0  | WHITE 0  | WHITE 0  | WHITE 0  | WHITE 0  | WHITE 0  |
+B | PINK 0   | PINK 0   | PINK 0   | PINK 0   | PINK 0   | PINK 0   |
+C | ROSE 0   | ROSE 0   | ROSE 0   | ROSE 0   | ROSE 0   | ROSE 0   |
+D | RED 1    | RED 0    | RED 1    | RED 0    | RED 0    | RED 0    |
+E | ORANGE 0 | ORANGE 0 | ORANGE 0 | ORANGE 0 | ORANGE 0 | ORANGE 0 |
+F | BROWN 0  | BROWN 0  | BROWN 0  | BROWN 0  | BROWN 0  | BROWN 0  |
+
+After move 26: D1-D3
+A | WHITE 0  | WHITE 0  | WHITE 0  | WHITE 0  | WHITE 0  | WHITE 0  |
+B | PINK 0   | PINK 0   | PINK 0   | PINK 0   | PINK 0   | PINK 0   |
+C | ROSE 0   | ROSE 0   | ROSE 0   | ROSE 0   | ROSE 0   | ROSE 0   |
+D | RED 0    | RED 0    | RED 0    | RED 0    | RED 0    | RED 0    |
+E | ORANGE 0 | ORANGE 0 | ORANGE 0 | ORANGE 0 | ORANGE 0 | ORANGE 0 |
+F | BROWN 0  | BROWN 0  | BROWN 0  | BROWN 0  | BROWN 0  | BROWN 0  |
