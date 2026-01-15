@@ -161,7 +161,10 @@ public class Board {
             for (int col = 0; col < getColumnCount(); col++) {
                 Tile tile = grid[row][col];
                 String colorName = colorNames.get(tile.getColor());
-                String cell = colorName + " " + tile.getRemainingMoves();
+                // Only show moves count if non-zero
+                String cell = tile.getRemainingMoves() == 0
+                    ? colorName
+                    : colorName + " " + tile.getRemainingMoves();
                 result.append("| ");
                 result.append(cell);
                 // Pad to align columns
@@ -203,7 +206,12 @@ public class Board {
             for (int col = 0; col < getColumnCount(); col++) {
                 Tile tile = grid[row][col];
                 result.append("| ");
-                result.append(String.format("%d:%-2d", tile.getColor(), tile.getRemainingMoves()));
+                // Only show moves count if non-zero
+                if (tile.getRemainingMoves() == 0) {
+                    result.append(String.format("%-4d", tile.getColor()));
+                } else {
+                    result.append(String.format("%d:%-2d", tile.getColor(), tile.getRemainingMoves()));
+                }
                 result.append(" ");
             }
             result.append("|");

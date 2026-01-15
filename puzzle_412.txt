@@ -1,0 +1,15 @@
+# Puzzle 412
+ROWS 6
+COLS 6
+
+BOARD
+dkbrown    a4 2   a6 1   c1 1   c3 1   e2 1   f4 1      
+brown      b1 1   b2 1   c4 2   c5 2   d6 2   e3 1
+ltbrown    a1 1   b4 2   b5 2   c6 1   f2 2   f3 2
+yellow     c2 2   d3 1   d5 1   e1 1   e4 1   f6 1
+ltyellow   a2 1   b3 1   b6 1   d1 1   d4 1   f1 2
+white      a3 2   a5 2   d2 1   e5 1   e6 2   f5 2
+
+
+
+

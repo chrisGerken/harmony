@@ -1,7 +1,3 @@
-1) enhance the -dur command line argument by letting the user specify units of time. The value will be an integer followed by one or two characters for the units. Unit characters include s (seconds), m (minute, default), h (hour), d (day) and w (week). For example "30h" means 30 hours, "5d" means 5 days and 30 means 30 minutes.
+1) Modify the way a board is printed out so that if a tile has zero remaining moves then the number of moves (0) is not printed, just the color name
 
-
-2) When a solution is found it is written to the console. Continue doing that but also write the solution to a file. If the puzzle specification is named <name>.txt then the solution should be written to a file named <name>.solution.txt. 
-
-
-3) Support a new way of specifying a puzzle. Currently we specify several sections: COLORS, TARGETS and TILES. Also allow specifying a single section: BOARD. With BOARD, there will be the header BOARD followed by one line for each row in the board (the number of rows and columns are still specified the same way). Each row following the BOARD header is of the format: <one word color name> <tile 1> <moves> <tile 2> <moves> ... <tile n> <moves> where n is the number of columns. The colors are listed in the same order as the final solution. The first color named is the color of all the tiles in the top row of the solution. The second color named is the color of all the tiles in the second row of the final solution.  For each color named, there will be as many tiles listed as there are columns in the board. The tiles are the tiles in the original board that have that color and are of the usual form (e.g. A1 for the upper left hand tile, B3, C5, etc.). After each tile is the number of remaining moves for that tile.
+2) When parsing a board, make sure that there is exactly one tile for each row and column combination

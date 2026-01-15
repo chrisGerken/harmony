@@ -1,0 +1,33 @@
+# Harmony Puzzle Solution
+# Puzzle: puzzles/tiny.txt
+# Moves: 4
+
+Move sequence:
+  1. A1-B1
+  2. A2-B2
+  3. A2-B2
+  4. A2-B2
+
+============================================================
+Step-by-step board states:
+============================================================
+
+Initial state:
+A | BLUE 1 | BLUE 3 |
+B | RED 1  | RED 3  |
+
+After move 1: A1-B1
+A | RED    | BLUE 3 |
+B | BLUE   | RED 3  |
+
+After move 2: A2-B2
+A | RED    | RED 2  |
+B | BLUE   | BLUE 2 |
+
+After move 3: A2-B2
+A | RED    | BLUE 1 |
+B | BLUE   | RED 1  |
+
+After move 4: A2-B2
+A | RED    | RED    |
+B | BLUE   | BLUE   |

@@ -1,0 +1,13 @@
+# Test puzzle with MOVES section
+# Start with a near-solved state and apply one move
+
+ROWS 2
+COLS 2
+
+BOARD
+RED a1 1 a2 1
+BLUE b1 1 b2 1
+
+# Apply this move to get the actual starting state
+MOVES
+a1-b1
