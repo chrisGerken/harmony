@@ -1,3 +1,1 @@
-1) Modify the way a board is printed out so that if a tile has zero remaining moves then the number of moves (0) is not printed, just the color name
-
-2) When parsing a board, make sure that there is exactly one tile for each row and column combination
+1) create a document to be consumed by a chatbot. This document will describe what questions to ask and how to write a file (named interview.txt) containing the answers so as to build a puzzle specification using the BOARD and MOVES format  
