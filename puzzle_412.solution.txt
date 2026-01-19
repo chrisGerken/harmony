@@ -1,0 +1,242 @@
+# Harmony Puzzle Solution
+# Puzzle: puzzle_412.txt
+# Moves: 25
+
+Move sequence:
+  1. A1-C1
+  2. D1-E1
+  3. A2-E2
+  4. B3-E3
+  5. D4-E4
+  6. D6-F6
+  7. B6-E6
+  8. B6-F6
+  9. B5-C5
+ 10. B4-C4
+ 11. B1-B2
+ 12. B4-B5
+ 13. A3-F3
+ 14. A3-C3
+ 15. C2-F2
+ 16. C2-C4
+ 17. C5-C6
+ 18. D2-F2
+ 19. D3-D5
+ 20. F1-F5
+ 21. E5-F5
+ 22. F1-F3
+ 23. A4-A5
+ 24. A4-F4
+ 25. A5-A6
+
+============================================================
+Step-by-step board states:
+============================================================
+
+Initial state:
+A | LTBROWN 1  | LTYELLOW 1 | WHITE 2    | DKBROWN 2  | WHITE 2    | DKBROWN 1  |
+B | BROWN 1    | BROWN 1    | LTYELLOW 1 | LTBROWN 2  | LTBROWN 2  | LTYELLOW 1 |
+C | DKBROWN 1  | YELLOW 2   | DKBROWN 1  | BROWN 2    | BROWN 2    | LTBROWN 1  |
+D | LTYELLOW 1 | WHITE 1    | YELLOW 1   | LTYELLOW 1 | YELLOW 1   | BROWN 2    |
+E | YELLOW 1   | DKBROWN 1  | BROWN 1    | YELLOW 1   | WHITE 1    | WHITE 2    |
+F | LTYELLOW 2 | LTBROWN 2  | LTBROWN 2  | DKBROWN 1  | WHITE 2    | YELLOW 1   |
+
+After move 1: A1-C1
+A | DKBROWN    | LTYELLOW 1 | WHITE 2    | DKBROWN 2  | WHITE 2    | DKBROWN 1  |
+B | BROWN 1    | BROWN 1    | LTYELLOW 1 | LTBROWN 2  | LTBROWN 2  | LTYELLOW 1 |
+C | LTBROWN    | YELLOW 2   | DKBROWN 1  | BROWN 2    | BROWN 2    | LTBROWN 1  |
+D | LTYELLOW 1 | WHITE 1    | YELLOW 1   | LTYELLOW 1 | YELLOW 1   | BROWN 2    |
+E | YELLOW 1   | DKBROWN 1  | BROWN 1    | YELLOW 1   | WHITE 1    | WHITE 2    |
+F | LTYELLOW 2 | LTBROWN 2  | LTBROWN 2  | DKBROWN 1  | WHITE 2    | YELLOW 1   |
+
+After move 2: D1-E1
+A | DKBROWN    | LTYELLOW 1 | WHITE 2    | DKBROWN 2  | WHITE 2    | DKBROWN 1  |
+B | BROWN 1    | BROWN 1    | LTYELLOW 1 | LTBROWN 2  | LTBROWN 2  | LTYELLOW 1 |
+C | LTBROWN    | YELLOW 2   | DKBROWN 1  | BROWN 2    | BROWN 2    | LTBROWN 1  |
+D | YELLOW     | WHITE 1    | YELLOW 1   | LTYELLOW 1 | YELLOW 1   | BROWN 2    |
+E | LTYELLOW   | DKBROWN 1  | BROWN 1    | YELLOW 1   | WHITE 1    | WHITE 2    |
+F | LTYELLOW 2 | LTBROWN 2  | LTBROWN 2  | DKBROWN 1  | WHITE 2    | YELLOW 1   |
+
+After move 3: A2-E2
+A | DKBROWN    | DKBROWN    | WHITE 2    | DKBROWN 2  | WHITE 2    | DKBROWN 1  |
+B | BROWN 1    | BROWN 1    | LTYELLOW 1 | LTBROWN 2  | LTBROWN 2  | LTYELLOW 1 |
+C | LTBROWN    | YELLOW 2   | DKBROWN 1  | BROWN 2    | BROWN 2    | LTBROWN 1  |
+D | YELLOW     | WHITE 1    | YELLOW 1   | LTYELLOW 1 | YELLOW 1   | BROWN 2    |
+E | LTYELLOW   | LTYELLOW   | BROWN 1    | YELLOW 1   | WHITE 1    | WHITE 2    |
+F | LTYELLOW 2 | LTBROWN 2  | LTBROWN 2  | DKBROWN 1  | WHITE 2    | YELLOW 1   |
+
+After move 4: B3-E3
+A | DKBROWN    | DKBROWN    | WHITE 2    | DKBROWN 2  | WHITE 2    | DKBROWN 1  |
+B | BROWN 1    | BROWN 1    | BROWN      | LTBROWN 2  | LTBROWN 2  | LTYELLOW 1 |
+C | LTBROWN    | YELLOW 2   | DKBROWN 1  | BROWN 2    | BROWN 2    | LTBROWN 1  |
+D | YELLOW     | WHITE 1    | YELLOW 1   | LTYELLOW 1 | YELLOW 1   | BROWN 2    |
+E | LTYELLOW   | LTYELLOW   | LTYELLOW   | YELLOW 1   | WHITE 1    | WHITE 2    |
+F | LTYELLOW 2 | LTBROWN 2  | LTBROWN 2  | DKBROWN 1  | WHITE 2    | YELLOW 1   |
+
+After move 5: D4-E4
+A | DKBROWN    | DKBROWN    | WHITE 2    | DKBROWN 2  | WHITE 2    | DKBROWN 1  |
+B | BROWN 1    | BROWN 1    | BROWN      | LTBROWN 2  | LTBROWN 2  | LTYELLOW 1 |
+C | LTBROWN    | YELLOW 2   | DKBROWN 1  | BROWN 2    | BROWN 2    | LTBROWN 1  |
+D | YELLOW     | WHITE 1    | YELLOW 1   | YELLOW     | YELLOW 1   | BROWN 2    |
+E | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   | WHITE 1    | WHITE 2    |
+F | LTYELLOW 2 | LTBROWN 2  | LTBROWN 2  | DKBROWN 1  | WHITE 2    | YELLOW 1   |
+
+After move 6: D6-F6
+A | DKBROWN    | DKBROWN    | WHITE 2    | DKBROWN 2  | WHITE 2    | DKBROWN 1  |
+B | BROWN 1    | BROWN 1    | BROWN      | LTBROWN 2  | LTBROWN 2  | LTYELLOW 1 |
+C | LTBROWN    | YELLOW 2   | DKBROWN 1  | BROWN 2    | BROWN 2    | LTBROWN 1  |
+D | YELLOW     | WHITE 1    | YELLOW 1   | YELLOW     | YELLOW 1   | YELLOW     |
+E | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   | WHITE 1    | WHITE 2    |
+F | LTYELLOW 2 | LTBROWN 2  | LTBROWN 2  | DKBROWN 1  | WHITE 2    | BROWN 1    |
+
+After move 7: B6-E6
+A | DKBROWN    | DKBROWN    | WHITE 2    | DKBROWN 2  | WHITE 2    | DKBROWN 1  |
+B | BROWN 1    | BROWN 1    | BROWN      | LTBROWN 2  | LTBROWN 2  | WHITE 1    |
+C | LTBROWN    | YELLOW 2   | DKBROWN 1  | BROWN 2    | BROWN 2    | LTBROWN 1  |
+D | YELLOW     | WHITE 1    | YELLOW 1   | YELLOW     | YELLOW 1   | YELLOW     |
+E | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   | WHITE 1    | LTYELLOW   |
+F | LTYELLOW 2 | LTBROWN 2  | LTBROWN 2  | DKBROWN 1  | WHITE 2    | BROWN 1    |
+
+After move 8: B6-F6
+A | DKBROWN    | DKBROWN    | WHITE 2    | DKBROWN 2  | WHITE 2    | DKBROWN 1  |
+B | BROWN 1    | BROWN 1    | BROWN      | LTBROWN 2  | LTBROWN 2  | BROWN      |
+C | LTBROWN    | YELLOW 2   | DKBROWN 1  | BROWN 2    | BROWN 2    | LTBROWN 1  |
+D | YELLOW     | WHITE 1    | YELLOW 1   | YELLOW     | YELLOW 1   | YELLOW     |
+E | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   | WHITE 1    | LTYELLOW   |
+F | LTYELLOW 2 | LTBROWN 2  | LTBROWN 2  | DKBROWN 1  | WHITE 2    | WHITE      |
+
+After move 9: B5-C5
+A | DKBROWN    | DKBROWN    | WHITE 2    | DKBROWN 2  | WHITE 2    | DKBROWN 1  |
+B | BROWN 1    | BROWN 1    | BROWN      | LTBROWN 2  | BROWN 1    | BROWN      |
+C | LTBROWN    | YELLOW 2   | DKBROWN 1  | BROWN 2    | LTBROWN 1  | LTBROWN 1  |
+D | YELLOW     | WHITE 1    | YELLOW 1   | YELLOW     | YELLOW 1   | YELLOW     |
+E | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   | WHITE 1    | LTYELLOW   |
+F | LTYELLOW 2 | LTBROWN 2  | LTBROWN 2  | DKBROWN 1  | WHITE 2    | WHITE      |
+
+After move 10: B4-C4
+A | DKBROWN    | DKBROWN    | WHITE 2    | DKBROWN 2  | WHITE 2    | DKBROWN 1  |
+B | BROWN 1    | BROWN 1    | BROWN      | BROWN 1    | BROWN 1    | BROWN      |
+C | LTBROWN    | YELLOW 2   | DKBROWN 1  | LTBROWN 1  | LTBROWN 1  | LTBROWN 1  |
+D | YELLOW     | WHITE 1    | YELLOW 1   | YELLOW     | YELLOW 1   | YELLOW     |
+E | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   | WHITE 1    | LTYELLOW   |
+F | LTYELLOW 2 | LTBROWN 2  | LTBROWN 2  | DKBROWN 1  | WHITE 2    | WHITE      |
+
+After move 11: B1-B2
+A | DKBROWN    | DKBROWN    | WHITE 2    | DKBROWN 2  | WHITE 2    | DKBROWN 1  |
+B | BROWN      | BROWN      | BROWN      | BROWN 1    | BROWN 1    | BROWN      |
+C | LTBROWN    | YELLOW 2   | DKBROWN 1  | LTBROWN 1  | LTBROWN 1  | LTBROWN 1  |
+D | YELLOW     | WHITE 1    | YELLOW 1   | YELLOW     | YELLOW 1   | YELLOW     |
+E | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   | WHITE 1    | LTYELLOW   |
+F | LTYELLOW 2 | LTBROWN 2  | LTBROWN 2  | DKBROWN 1  | WHITE 2    | WHITE      |
+
+After move 12: B4-B5
+A | DKBROWN    | DKBROWN    | WHITE 2    | DKBROWN 2  | WHITE 2    | DKBROWN 1  |
+B | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      |
+C | LTBROWN    | YELLOW 2   | DKBROWN 1  | LTBROWN 1  | LTBROWN 1  | LTBROWN 1  |
+D | YELLOW     | WHITE 1    | YELLOW 1   | YELLOW     | YELLOW 1   | YELLOW     |
+E | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   | WHITE 1    | LTYELLOW   |
+F | LTYELLOW 2 | LTBROWN 2  | LTBROWN 2  | DKBROWN 1  | WHITE 2    | WHITE      |
+
+After move 13: A3-F3
+A | DKBROWN    | DKBROWN    | LTBROWN 1  | DKBROWN 2  | WHITE 2    | DKBROWN 1  |
+B | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      |
+C | LTBROWN    | YELLOW 2   | DKBROWN 1  | LTBROWN 1  | LTBROWN 1  | LTBROWN 1  |
+D | YELLOW     | WHITE 1    | YELLOW 1   | YELLOW     | YELLOW 1   | YELLOW     |
+E | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   | WHITE 1    | LTYELLOW   |
+F | LTYELLOW 2 | LTBROWN 2  | WHITE 1    | DKBROWN 1  | WHITE 2    | WHITE      |
+
+After move 14: A3-C3
+A | DKBROWN    | DKBROWN    | DKBROWN    | DKBROWN 2  | WHITE 2    | DKBROWN 1  |
+B | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      |
+C | LTBROWN    | YELLOW 2   | LTBROWN    | LTBROWN 1  | LTBROWN 1  | LTBROWN 1  |
+D | YELLOW     | WHITE 1    | YELLOW 1   | YELLOW     | YELLOW 1   | YELLOW     |
+E | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   | WHITE 1    | LTYELLOW   |
+F | LTYELLOW 2 | LTBROWN 2  | WHITE 1    | DKBROWN 1  | WHITE 2    | WHITE      |
+
+After move 15: C2-F2
+A | DKBROWN    | DKBROWN    | DKBROWN    | DKBROWN 2  | WHITE 2    | DKBROWN 1  |
+B | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      |
+C | LTBROWN    | LTBROWN 1  | LTBROWN    | LTBROWN 1  | LTBROWN 1  | LTBROWN 1  |
+D | YELLOW     | WHITE 1    | YELLOW 1   | YELLOW     | YELLOW 1   | YELLOW     |
+E | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   | WHITE 1    | LTYELLOW   |
+F | LTYELLOW 2 | YELLOW 1   | WHITE 1    | DKBROWN 1  | WHITE 2    | WHITE      |
+
+After move 16: C2-C4
+A | DKBROWN    | DKBROWN    | DKBROWN    | DKBROWN 2  | WHITE 2    | DKBROWN 1  |
+B | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      |
+C | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN 1  | LTBROWN 1  |
+D | YELLOW     | WHITE 1    | YELLOW 1   | YELLOW     | YELLOW 1   | YELLOW     |
+E | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   | WHITE 1    | LTYELLOW   |
+F | LTYELLOW 2 | YELLOW 1   | WHITE 1    | DKBROWN 1  | WHITE 2    | WHITE      |
+
+After move 17: C5-C6
+A | DKBROWN    | DKBROWN    | DKBROWN    | DKBROWN 2  | WHITE 2    | DKBROWN 1  |
+B | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      |
+C | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    |
+D | YELLOW     | WHITE 1    | YELLOW 1   | YELLOW     | YELLOW 1   | YELLOW     |
+E | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   | WHITE 1    | LTYELLOW   |
+F | LTYELLOW 2 | YELLOW 1   | WHITE 1    | DKBROWN 1  | WHITE 2    | WHITE      |
+
+After move 18: D2-F2
+A | DKBROWN    | DKBROWN    | DKBROWN    | DKBROWN 2  | WHITE 2    | DKBROWN 1  |
+B | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      |
+C | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    |
+D | YELLOW     | YELLOW     | YELLOW 1   | YELLOW     | YELLOW 1   | YELLOW     |
+E | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   | WHITE 1    | LTYELLOW   |
+F | LTYELLOW 2 | WHITE      | WHITE 1    | DKBROWN 1  | WHITE 2    | WHITE      |
+
+After move 19: D3-D5
+A | DKBROWN    | DKBROWN    | DKBROWN    | DKBROWN 2  | WHITE 2    | DKBROWN 1  |
+B | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      |
+C | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    |
+D | YELLOW     | YELLOW     | YELLOW     | YELLOW     | YELLOW     | YELLOW     |
+E | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   | WHITE 1    | LTYELLOW   |
+F | LTYELLOW 2 | WHITE      | WHITE 1    | DKBROWN 1  | WHITE 2    | WHITE      |
+
+After move 20: F1-F5
+A | DKBROWN    | DKBROWN    | DKBROWN    | DKBROWN 2  | WHITE 2    | DKBROWN 1  |
+B | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      |
+C | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    |
+D | YELLOW     | YELLOW     | YELLOW     | YELLOW     | YELLOW     | YELLOW     |
+E | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   | WHITE 1    | LTYELLOW   |
+F | WHITE 1    | WHITE      | WHITE 1    | DKBROWN 1  | LTYELLOW 1 | WHITE      |
+
+After move 21: E5-F5
+A | DKBROWN    | DKBROWN    | DKBROWN    | DKBROWN 2  | WHITE 2    | DKBROWN 1  |
+B | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      |
+C | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    |
+D | YELLOW     | YELLOW     | YELLOW     | YELLOW     | YELLOW     | YELLOW     |
+E | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   |
+F | WHITE 1    | WHITE      | WHITE 1    | DKBROWN 1  | WHITE      | WHITE      |
+
+After move 22: F1-F3
+A | DKBROWN    | DKBROWN    | DKBROWN    | DKBROWN 2  | WHITE 2    | DKBROWN 1  |
+B | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      |
+C | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    |
+D | YELLOW     | YELLOW     | YELLOW     | YELLOW     | YELLOW     | YELLOW     |
+E | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   |
+F | WHITE      | WHITE      | WHITE      | DKBROWN 1  | WHITE      | WHITE      |
+
+After move 23: A4-A5
+A | DKBROWN    | DKBROWN    | DKBROWN    | WHITE 1    | DKBROWN 1  | DKBROWN 1  |
+B | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      |
+C | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    |
+D | YELLOW     | YELLOW     | YELLOW     | YELLOW     | YELLOW     | YELLOW     |
+E | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   |
+F | WHITE      | WHITE      | WHITE      | DKBROWN 1  | WHITE      | WHITE      |
+
+After move 24: A4-F4
+A | DKBROWN    | DKBROWN    | DKBROWN    | DKBROWN    | DKBROWN 1  | DKBROWN 1  |
+B | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      |
+C | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    |
+D | YELLOW     | YELLOW     | YELLOW     | YELLOW     | YELLOW     | YELLOW     |
+E | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   |
+F | WHITE      | WHITE      | WHITE      | WHITE      | WHITE      | WHITE      |
+
+After move 25: A5-A6
+A | DKBROWN    | DKBROWN    | DKBROWN    | DKBROWN    | DKBROWN    | DKBROWN    |
+B | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      | BROWN      |
+C | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    | LTBROWN    |
+D | YELLOW     | YELLOW     | YELLOW     | YELLOW     | YELLOW     | YELLOW     |
+E | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   | LTYELLOW   |
+F | WHITE      | WHITE      | WHITE      | WHITE      | WHITE      | WHITE      |

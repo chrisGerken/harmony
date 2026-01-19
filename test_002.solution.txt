@@ -1,0 +1,188 @@
+# Harmony Puzzle Solution
+# Puzzle: test_002.txt
+# Moves: 19
+
+Move sequence:
+  1. E1-F1
+  2. E2-F2
+  3. E3-F3
+  4. A6-B6
+  5. A5-B5
+  6. A4-B4
+  7. A3-B3
+  8. A2-B2
+  9. A1-B1
+ 10. A1-B1
+ 11. B5-B6
+ 12. B3-B4
+ 13. B1-B2
+ 14. A3-A4
+ 15. A3-A4
+ 16. A2-A5
+ 17. A2-B2
+ 18. A4-A5
+ 19. A3-A4
+
+============================================================
+Step-by-step board states:
+============================================================
+
+Initial state:
+A | RED 2    | BLUE 2   | BLUE 2   | BLUE 2   | BLUE 2   | BLUE 2   |
+B | RED 4    | RED 4    | RED 4    | RED 4    | BLUE 3   | RED 1    |
+C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |
+D | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   |
+E | CYAN 1   | CYAN 1   | CYAN 1   | PURPLE   | PURPLE   | PURPLE   |
+F | PURPLE 1 | PURPLE 1 | PURPLE 1 | CYAN     | CYAN     | CYAN     |
+
+After move 1: E1-F1
+A | RED 2    | BLUE 2   | BLUE 2   | BLUE 2   | BLUE 2   | BLUE 2   |
+B | RED 4    | RED 4    | RED 4    | RED 4    | BLUE 3   | RED 1    |
+C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |
+D | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   |
+E | PURPLE   | CYAN 1   | CYAN 1   | PURPLE   | PURPLE   | PURPLE   |
+F | CYAN     | PURPLE 1 | PURPLE 1 | CYAN     | CYAN     | CYAN     |
+
+After move 2: E2-F2
+A | RED 2    | BLUE 2   | BLUE 2   | BLUE 2   | BLUE 2   | BLUE 2   |
+B | RED 4    | RED 4    | RED 4    | RED 4    | BLUE 3   | RED 1    |
+C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |
+D | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   |
+E | PURPLE   | PURPLE   | CYAN 1   | PURPLE   | PURPLE   | PURPLE   |
+F | CYAN     | CYAN     | PURPLE 1 | CYAN     | CYAN     | CYAN     |
+
+After move 3: E3-F3
+A | RED 2    | BLUE 2   | BLUE 2   | BLUE 2   | BLUE 2   | BLUE 2   |
+B | RED 4    | RED 4    | RED 4    | RED 4    | BLUE 3   | RED 1    |
+C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |
+D | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   |
+E | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
+F | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     |
+
+After move 4: A6-B6
+A | RED 2    | BLUE 2   | BLUE 2   | BLUE 2   | BLUE 2   | RED      |
+B | RED 4    | RED 4    | RED 4    | RED 4    | BLUE 3   | BLUE 1   |
+C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |
+D | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   |
+E | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
+F | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     |
+
+After move 5: A5-B5
+A | RED 2    | BLUE 2   | BLUE 2   | BLUE 2   | BLUE 2   | RED      |
+B | RED 4    | RED 4    | RED 4    | RED 4    | BLUE 1   | BLUE 1   |
+C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |
+D | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   |
+E | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
+F | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     |
+
+After move 6: A4-B4
+A | RED 2    | BLUE 2   | BLUE 2   | RED 3    | BLUE 2   | RED      |
+B | RED 4    | RED 4    | RED 4    | BLUE 1   | BLUE 1   | BLUE 1   |
+C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |
+D | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   |
+E | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
+F | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     |
+
+After move 7: A3-B3
+A | RED 2    | BLUE 2   | RED 3    | RED 3    | BLUE 2   | RED      |
+B | RED 4    | RED 4    | BLUE 1   | BLUE 1   | BLUE 1   | BLUE 1   |
+C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |
+D | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   |
+E | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
+F | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     |
+
+After move 8: A2-B2
+A | RED 2    | RED 3    | RED 3    | RED 3    | BLUE 2   | RED      |
+B | RED 4    | BLUE 1   | BLUE 1   | BLUE 1   | BLUE 1   | BLUE 1   |
+C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |
+D | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   |
+E | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
+F | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     |
+
+After move 9: A1-B1
+A | RED 3    | RED 3    | RED 3    | RED 3    | BLUE 2   | RED      |
+B | RED 1    | BLUE 1   | BLUE 1   | BLUE 1   | BLUE 1   | BLUE 1   |
+C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |
+D | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   |
+E | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
+F | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     |
+
+After move 10: A1-B1
+A | RED      | RED 3    | RED 3    | RED 3    | BLUE 2   | RED      |
+B | RED 2    | BLUE 1   | BLUE 1   | BLUE 1   | BLUE 1   | BLUE 1   |
+C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |
+D | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   |
+E | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
+F | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     |
+
+After move 11: B5-B6
+A | RED      | RED 3    | RED 3    | RED 3    | BLUE 2   | RED      |
+B | RED 2    | BLUE 1   | BLUE 1   | BLUE 1   | BLUE     | BLUE     |
+C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |
+D | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   |
+E | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
+F | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     |
+
+After move 12: B3-B4
+A | RED      | RED 3    | RED 3    | RED 3    | BLUE 2   | RED      |
+B | RED 2    | BLUE 1   | BLUE     | BLUE     | BLUE     | BLUE     |
+C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |
+D | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   |
+E | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
+F | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     |
+
+After move 13: B1-B2
+A | RED      | RED 3    | RED 3    | RED 3    | BLUE 2   | RED      |
+B | BLUE     | RED 1    | BLUE     | BLUE     | BLUE     | BLUE     |
+C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |
+D | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   |
+E | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
+F | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     |
+
+After move 14: A3-A4
+A | RED      | RED 3    | RED 2    | RED 2    | BLUE 2   | RED      |
+B | BLUE     | RED 1    | BLUE     | BLUE     | BLUE     | BLUE     |
+C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |
+D | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   |
+E | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
+F | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     |
+
+After move 15: A3-A4
+A | RED      | RED 3    | RED 1    | RED 1    | BLUE 2   | RED      |
+B | BLUE     | RED 1    | BLUE     | BLUE     | BLUE     | BLUE     |
+C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |
+D | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   |
+E | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
+F | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     |
+
+After move 16: A2-A5
+A | RED      | BLUE 1   | RED 1    | RED 1    | RED 2    | RED      |
+B | BLUE     | RED 1    | BLUE     | BLUE     | BLUE     | BLUE     |
+C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |
+D | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   |
+E | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
+F | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     |
+
+After move 17: A2-B2
+A | RED      | RED      | RED 1    | RED 1    | RED 2    | RED      |
+B | BLUE     | BLUE     | BLUE     | BLUE     | BLUE     | BLUE     |
+C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |
+D | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   |
+E | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
+F | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     |
+
+After move 18: A4-A5
+A | RED      | RED      | RED 1    | RED 1    | RED      | RED      |
+B | BLUE     | BLUE     | BLUE     | BLUE     | BLUE     | BLUE     |
+C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |
+D | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   |
+E | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
+F | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     |
+
+After move 19: A3-A4
+A | RED      | RED      | RED      | RED      | RED      | RED      |
+B | BLUE     | BLUE     | BLUE     | BLUE     | BLUE     | BLUE     |
+C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |
+D | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   | ORANGE   |
+E | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
+F | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     | CYAN     |

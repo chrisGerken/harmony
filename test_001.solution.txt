@@ -1,0 +1,64 @@
+# Harmony Puzzle Solution
+# Puzzle: test_001.txt
+# Moves: 7
+
+Move sequence:
+  1. C1-D1
+  2. C2-D2
+  3. C3-D3
+  4. A1-B1
+  5. A1-A2
+  6. A1-B1
+  7. A1-B1
+
+============================================================
+Step-by-step board states:
+============================================================
+
+Initial state:
+A | B 3 | R 3 | R   | R   |
+B | R 2 | B   | B   | B   |
+C | W 1 | W 1 | W 1 | G   |
+D | G 1 | G 1 | G 1 | W   |
+
+After move 1: C1-D1
+A | B 3 | R 3 | R   | R   |
+B | R 2 | B   | B   | B   |
+C | G   | W 1 | W 1 | G   |
+D | W   | G 1 | G 1 | W   |
+
+After move 2: C2-D2
+A | B 3 | R 3 | R   | R   |
+B | R 2 | B   | B   | B   |
+C | G   | G   | W 1 | G   |
+D | W   | W   | G 1 | W   |
+
+After move 3: C3-D3
+A | B 3 | R 3 | R   | R   |
+B | R 2 | B   | B   | B   |
+C | G   | G   | G   | G   |
+D | W   | W   | W   | W   |
+
+After move 4: A1-B1
+A | R 1 | R 3 | R   | R   |
+B | B 2 | B   | B   | B   |
+C | G   | G   | G   | G   |
+D | W   | W   | W   | W   |
+
+After move 5: A1-A2
+A | R 2 | R   | R   | R   |
+B | B 2 | B   | B   | B   |
+C | G   | G   | G   | G   |
+D | W   | W   | W   | W   |
+
+After move 6: A1-B1
+A | B 1 | R   | R   | R   |
+B | R 1 | B   | B   | B   |
+C | G   | G   | G   | G   |
+D | W   | W   | W   | W   |
+
+After move 7: A1-B1
+A | R   | R   | R   | R   |
+B | B   | B   | B   | B   |
+C | G   | G   | G   | G   |
+D | W   | W   | W   | W   |
