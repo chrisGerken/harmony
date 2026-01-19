@@ -411,35 +411,69 @@ A tile with 0 moves cannot participate in any swaps. If it's in the wrong row fo
 ### 4. BlockedSwapTest
 
 **File**: `src/main/java/org/gerken/harmony/invalidity/BlockedSwapTest.java`
+**Enhanced**: 2026-01-19 (Session 12) - Now checks both T1 and T2 scenarios
 
 #### Purpose
 
-Detects blocked swap scenarios. If a tile T1 has 1 remaining move and is not in its correct row, and the tile in T1's target row (at the same column) has 0 remaining moves, then T1 cannot reach its correct position, making the board invalid.
+Detects blocked swap scenarios. A board is invalid if:
+- **T1 scenario**: A tile T1 has 1 remaining move, is not in its correct row, and the tile T2 in T1's target row (same column) has 0 remaining moves
+- **T2 scenario**: A tile T2 has 0 remaining moves and is blocking another tile T1 (with 1 move) that needs to reach T2's row
 
 #### Logic
 
+The test checks each moved tile both as a potential T1 (blocked tile) and as a potential T2 (blocking tile):
+
 ```java
-for (each tile T1 on the board) {
-    // Only consider tiles with exactly 1 remaining move
-    if (tile.getRemainingMoves() != 1) continue;
+// Check both tiles involved in the last move
+// Each tile could be:
+// 1. A blocked tile (T1): has 1 move, not in target row, blocked by 0-move tile
+// 2. A blocking tile (T2): has 0 moves, blocking another tile with 1 move
 
-    // Find the target row for this tile's color
-    int targetRow = findTargetRowForColor(board, tile.getColor());
-
-    // If tile is already in its target row, skip
-    if (currentRow == targetRow) continue;
-
-    // Check the tile in the target row at the same column
-    Tile blockingTile = board.getTile(targetRow, sameColumn);
-
-    // If the blocking tile has 0 moves, T1 cannot swap into position
-    if (blockingTile.getRemainingMoves() == 0) {
-        return true;  // Invalid - tile is blocked!
-    }
+if (isTileBlocked(board, row1, col1) || isTileBlocking(board, row1, col1)) {
+    return true;
 }
 ```
 
-#### Example
+**isTileBlocked()** - Checks if a tile with 1 move is blocked:
+```java
+// Only consider tiles with exactly 1 remaining move
+if (tile.getRemainingMoves() != 1) return false;
+
+// Target row equals the tile's color (by convention)
+int targetRow = tile.getColor();
+
+// If tile is already in its target row, it's not blocked
+if (row == targetRow) return false;
+
+// Check the tile in the target row at the same column
+Tile blockingTile = board.getTile(targetRow, col);
+
+// If the blocking tile has 0 moves, this tile cannot swap into position
+return blockingTile.getRemainingMoves() == 0;
+```
+
+**isTileBlocking()** - Checks if a tile with 0 moves is blocking another tile:
+```java
+// Only consider tiles with exactly 0 remaining moves (potential blockers)
+if (tile.getRemainingMoves() != 0) return false;
+
+// Check all other tiles in the same column
+for (int otherRow = 0; otherRow < board.getRowCount(); otherRow++) {
+    if (otherRow == row) continue;
+
+    Tile otherTile = board.getTile(otherRow, col);
+
+    // Check if this other tile is blocked by the tile at (row, col):
+    // - Has exactly 1 remaining move
+    // - Needs to reach row 'row' (its color == row, since target row = color)
+    if (otherTile.getRemainingMoves() == 1 && otherTile.getColor() == row) {
+        return true;
+    }
+}
+return false;
+```
+
+#### Example 1: T1 Scenario (tile is blocked)
 
 Board state:
 - Row A needs RED tiles
@@ -452,18 +486,30 @@ This is **Invalid** because:
 - A1 has exactly 1 move remaining
 - B1 has 0 moves, so cannot participate in a swap
 - A1 cannot reach its target position
-- The puzzle is unsolvable
+
+#### Example 2: T2 Scenario (tile is blocking)
+
+Board state after a move places B1:
+- Row A needs RED tiles
+- Row B needs BLUE tiles
+- A1: BLUE with 1 move (needs to go to row B)
+- B1: RED with 0 moves (just moved here)
+
+If the last move placed B1 at its current position with 0 moves, the **isTileBlocking()** check on B1 detects that A1 (1 move, needs row B) is blocked.
 
 #### Why It Works
 
 For a tile with 1 move to reach its target row, it must swap with the tile currently in its target position (same column). If that blocking tile has 0 moves, the swap cannot happen. The tile with 1 move is permanently blocked from reaching its destination.
 
+The enhancement (Session 12) ensures we detect this condition regardless of whether the blocked tile (T1) or the blocking tile (T2) was involved in the last move.
+
 #### Performance
 
-⚡ **Fast**: O(N×M×R) where R is number of rows (typically small)
-- Iterates over all tiles: O(N×M)
-- For each tile with 1 move, finds target row: O(R)
-- Total: O(N×M×R)
+⚡ **Fast**: O(R) per moved tile where R is number of rows
+- Only checks tiles involved in the last move (optimization)
+- isTileBlocked: O(1) - single lookup
+- isTileBlocking: O(R) - scans column for blocked tiles
+- Total per state: O(R) (typically small)
 
 ### 5. IsolatedTileTest
 
@@ -637,6 +683,11 @@ The current active tests (BlockedSwapTest, StuckTilesTest, IsolatedTileTest, Sta
 - Reordered tests by effectiveness (BlockedSwap first)
 - Added `-i` flag for invalidity statistics tracking
 - Board simplified: target color = row index
+
+**2026-01-19 Update (Session 12)**:
+- Enhanced BlockedSwapTest to check moved tiles both as T1 (blocked) and T2 (blocking)
+- Added `isTileBlocking()` method to detect when a 0-move tile blocks another tile in the same column
+- Previously only checked if moved tiles were blocked; now also checks if they are blocking others
 
 ## Adding New Tests
 

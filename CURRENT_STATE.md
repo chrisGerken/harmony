@@ -1,5 +1,5 @@
 # Current State of Harmony Puzzle Solver
-**Last Updated**: January 15, 2026 (Session 11)
+**Last Updated**: January 19, 2026 (Session 12)
 
 ## Quick Status
 - ✅ **Production Ready**: All code compiles and tests pass
@@ -75,9 +75,20 @@ Tile (immutable)
     └─> decrementMoves() - returns new Tile with moves-1
 ```
 
-## Recent Changes (Session 11 - January 15, 2026)
+## Recent Changes (Session 12 - January 19, 2026)
 
-### 1. Board.toString() Hides Zero Moves
+### 1. Enhanced BlockedSwapTest
+**Now checks moved tiles both as T1 (blocked) and T2 (blocking)**:
+- Modified `BlockedSwapTest.java` (lines 42-62, 91-128)
+- Previously only checked if moved tiles were blocked (T1 with 1 move)
+- Now also checks if moved tiles are blocking others (T2 with 0 moves)
+- Added new `isTileBlocking()` method to detect when a 0-move tile blocks another tile in the same column
+
+**Scenario now caught**: If a move places a tile T2 with 0 remaining moves in a position where it blocks another tile T1 (which has 1 move and needs to reach T2's row), the board is now correctly detected as invalid.
+
+## Earlier Changes (Session 11 - January 15, 2026)
+
+### 2. Board.toString() Hides Zero Moves
 **Tiles with 0 remaining moves now display only the color name**:
 - Modified `Board.java` toString methods (lines 161-167, 206-214)
 - Old: `RED 0` → New: `RED`
@@ -186,7 +197,7 @@ harmony/
 │   └── invalidity/
 │       ├── InvalidityTest.java
 │       ├── InvalidityTestCoordinator.java
-│       ├── BlockedSwapTest.java
+│       ├── BlockedSwapTest.java        # ⭐ UPDATED - checks both T1 and T2 scenarios
 │       ├── StuckTilesTest.java
 │       ├── StuckTileTest.java
 │       ├── IsolatedTileTest.java
@@ -207,7 +218,8 @@ harmony/
 │   ├── 3x3_8moves.txt
 │   ├── 4x4_9moves.txt
 │   └── 3x3_12moves.txt
-├── SESSION_2026-01-15.md           # ⭐ NEW - this session
+├── SESSION_2026-01-19.md           # ⭐ NEW - this session
+├── SESSION_2026-01-15.md
 ├── SESSION_2026-01-14.md
 ├── SESSION_2026-01-13.md
 ├── SESSION_2026-01-12.md
@@ -251,6 +263,10 @@ Options:
 | 3x3_12moves.txt | 3x3 | 12 | 21 | 6.6% |
 
 ## Session History
+
+### Session 12 (January 19, 2026)
+- **Enhanced BlockedSwapTest**: Now checks moved tiles both as T1 (blocked) and T2 (blocking)
+- Added `isTileBlocking()` method to detect when a 0-move tile blocks another tile in the same column
 
 ### Session 11 (January 15, 2026)
 - **Clean Board Display**: Zero moves hidden in toString() (shows `RED` not `RED 0`)
@@ -321,14 +337,14 @@ mvn package                          # Build
 
 ### Key Files for Next Session
 1. `CURRENT_STATE.md` - This file (start here!)
-2. `SESSION_2026-01-15.md` - Latest session's details
-3. `Board.java` - toString() hides zero moves
-4. `BoardParser.java` - MOVES section, case-insensitive, validation
-5. `HarmonySolver.java` - Duration with time units, solution file with board visualization
-6. `ProgressReporter.java` - Fixed-width `[hhh:mm:ss]` time format
+2. `BlockedSwapTest.java` - Enhanced to check both T1 (blocked) and T2 (blocking) scenarios
+3. `docs/INVALIDITY_TESTS.md` - Updated BlockedSwapTest documentation
+4. `Board.java` - toString() hides zero moves
+5. `BoardParser.java` - MOVES section, case-insensitive, validation
+6. `HarmonySolver.java` - Duration with time units, solution file with board visualization
 
 ---
 
 **Ready for**: Production use, long-running puzzles with state persistence
 **Status**: ✅ Stable, documented, tested
-**Last Test**: January 15, 2026 (Session 11)
+**Last Test**: January 19, 2026 (Session 12)
