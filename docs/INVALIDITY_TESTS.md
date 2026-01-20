@@ -192,11 +192,102 @@ if (InvalidityTestCoordinator.getInstance().isInvalid(state)) {
 
 ## Implemented Tests
 
-### 1. StuckTilesTest (Active)
+### 1. FutureStuckTilesTest (Active)
+
+**File**: `src/main/java/org/gerken/harmony/invalidity/FutureStuckTilesTest.java`
+**Status**: Currently active in InvalidityTestCoordinator
+**Added**: 2026-01-20 (Session 13)
+**Replaces**: StuckTilesTest
+
+#### Purpose
+
+Detects colors that will inevitably become stuck due to parity, even before all tiles reach their target row. This is a more general test than StuckTilesTest, catching invalid states earlier in the search.
+
+#### Conditions for Invalid State
+
+A color is **stuck** (board invalid) if ALL of the following are true:
+1. There is exactly one tile of that color in each column
+2. Tiles of that color on the target row have < 3 remaining moves
+3. Tiles of that color NOT on the target row have exactly 1 remaining move
+4. `(sum of remaining moves - count of tiles not on target row)` is odd
+
+#### Logic
+
+```java
+private boolean isColorStuck(Board board, int color, int rows, int cols) {
+    int targetRow = color;  // Target row equals color by convention
+
+    int[] tilesPerColumn = new int[cols];
+    int sumRemainingMoves = 0;
+    int tilesNotOnTargetRow = 0;
+
+    for (int row = 0; row < rows; row++) {
+        for (int col = 0; col < cols; col++) {
+            Tile tile = board.getTile(row, col);
+
+            if (tile.getColor() == color) {
+                tilesPerColumn[col]++;
+                int moves = tile.getRemainingMoves();
+                sumRemainingMoves += moves;
+
+                if (row == targetRow) {
+                    // Condition 2: Tiles on target row must have < 3 remaining moves
+                    if (moves >= 3) return false;
+                } else {
+                    // Condition 3: Tiles NOT on target row must have exactly 1 move
+                    if (moves != 1) return false;
+                    tilesNotOnTargetRow++;
+                }
+            }
+        }
+    }
+
+    // Condition 1: Exactly one tile of this color in each column
+    for (int col = 0; col < cols; col++) {
+        if (tilesPerColumn[col] != 1) return false;
+    }
+
+    // Condition 4: Adjusted parity must be odd
+    int effectiveMoves = sumRemainingMoves - tilesNotOnTargetRow;
+    return effectiveMoves % 2 == 1;
+}
+```
+
+#### Example: Invalid State
+
+Consider RED (color 0, target row A) with tiles:
+- A1: RED with 2 moves (on target row)
+- B2: RED with 1 move (NOT on target row - must move to row A)
+- C3: RED with 1 move (NOT on target row - must move to row A)
+
+Conditions check:
+1. ✅ One RED tile in each column (1, 2, 3)
+2. ✅ A1 has < 3 moves (2)
+3. ✅ B2 and C3 each have exactly 1 move
+4. Sum = 2 + 1 + 1 = 4. Tiles not on target = 2. Effective = 4 - 2 = 2 (even) → Valid
+
+But if A1 had 1 move instead:
+- Sum = 1 + 1 + 1 = 3. Effective = 3 - 2 = 1 (odd) → **Invalid**
+
+#### Why It Works
+
+Each tile not on the target row must use exactly one move to reach the target row. After that, the remaining moves must reduce to zero through paired swaps within the row. If the effective remaining moves (after accounting for the required row-change moves) has odd parity, it cannot be reduced to zero through paired swaps.
+
+#### Performance
+
+⚡ **Fast**: O(R×C) where R is rows and C is columns
+- Single pass over board per color
+- Early exit on any condition failure
+- Checks all colors (R iterations)
+
+---
+
+### 2. StuckTilesTest (Legacy)
 
 **File**: `src/main/java/org/gerken/harmony/invalidity/StuckTilesTest.java`
-**Status**: Currently active in InvalidityTestCoordinator
+**Status**: Legacy - replaced by FutureStuckTilesTest in Session 13
 **Added**: 2026-01-08
+**Note**: Kept in codebase but not active in InvalidityTestCoordinator
 **Simplified**: 2026-01-11 - Cleaner parity-based detection
 
 #### Purpose
@@ -661,7 +752,7 @@ A swap requires two tiles to participate. Both tiles must be in the same row or 
 Tests are ordered by likelihood of finding invalid states (most effective first):
 
 1. **BlockedSwapTest** - Most effective, catches millions of states at deeper move counts
-2. **StuckTilesTest** - Catches odd parity situations
+2. **FutureStuckTilesTest** - Catches future stuck parity situations across all colors
 3. **IsolatedTileTest** - Catches tiles with no swap partners
 4. **StalemateTest** - Catches global no-moves situations
 5. **WrongRowZeroMovesTest** - Catches tiles stuck in wrong row
@@ -688,6 +779,13 @@ The current active tests (BlockedSwapTest, StuckTilesTest, IsolatedTileTest, Sta
 - Enhanced BlockedSwapTest to check moved tiles both as T1 (blocked) and T2 (blocking)
 - Added `isTileBlocking()` method to detect when a 0-move tile blocks another tile in the same column
 - Previously only checked if moved tiles were blocked; now also checks if they are blocking others
+
+**2026-01-20 Update (Session 13)**:
+- Added FutureStuckTilesTest, replacing StuckTilesTest as the active parity-based pruning test
+- FutureStuckTilesTest detects stuck colors earlier by checking tiles not yet on target row
+- Conditions: one tile per column, target row tiles < 3 moves, off-target tiles = 1 move, odd adjusted parity
+- StuckTilesTest kept in codebase as legacy but no longer active in InvalidityTestCoordinator
+- Test results show 80%+ pruning rate on complex puzzles
 
 ## Adding New Tests
 

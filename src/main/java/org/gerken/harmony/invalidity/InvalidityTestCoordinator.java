@@ -11,7 +11,7 @@ import java.util.List;
  * This class is thread-safe and uses a singleton pattern.
  *
  * Currently registered tests:
- * 1. StuckTilesTest - Detects rows with all correct colors but odd number of tiles with 1 move (odd parity)
+ * 1. FutureStuckTilesTest - Detects colors that will inevitably become stuck due to parity
  * 2. WrongRowZeroMovesTest - Detects tiles with 0 moves in wrong row (cannot move to correct row)
  * 3. BlockedSwapTest - Detects tiles with 1 move blocked by 0-move tiles in target position
  * 4. IsolatedTileTest - Detects tiles with moves remaining but no valid swap partners
@@ -33,7 +33,7 @@ public class InvalidityTestCoordinator {
         // Register invalidity test implementations here
         // Order: most likely to invalidate first for early exit optimization
         testList.add(BlockedSwapTest.getInstance());
-        testList.add(StuckTilesTest.getInstance());
+        testList.add(FutureStuckTilesTest.getInstance());
         testList.add(IsolatedTileTest.getInstance());
         testList.add(StalemateTest.getInstance());
         testList.add(WrongRowZeroMovesTest.getInstance());

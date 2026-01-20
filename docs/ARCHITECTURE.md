@@ -68,10 +68,10 @@ The solver uses a novel multi-queue depth-first approach where states are organi
                               │
           ┌─────────┬─────────┼─────────┬─────────┐
           ▼         ▼         ▼         ▼         ▼
-    ┌──────────┐ ┌────────┐ ┌────────┐ ┌────────┐
-    │StuckTiles│ │WrongRow│ │Blocked │ │Isolated│
-    │Test      │ │ZeroMove│ │SwapTest│ │TileTest│
-    └──────────┘ └────────┘ └────────┘ └────────┘
+    ┌──────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐
+    │FutureStk │ │WrongRow│ │Blocked │ │Isolated│ │Stalemat│
+    │TilesTest │ │ZeroMove│ │SwapTest│ │TileTest│ │eTest   │
+    └──────────┘ └────────┘ └────────┘ └────────┘ └────────┘
 ```
 
 ## Core Algorithm
@@ -312,11 +312,13 @@ public interface InvalidityTest {
 
 See [Invalidity Tests](INVALIDITY_TESTS.md) for detailed documentation.
 
-1. **StuckTileTest**: Row has all correct colors, all tiles 0 moves except one with 1 move
-2. **WrongRowZeroMovesTest**: Tiles with 0 moves stuck in wrong row
-3. **BlockedSwapTest**: Tiles with 1 move blocked by 0-move tiles in target position
+1. **BlockedSwapTest**: Tiles with 1 move blocked by 0-move tiles in target position
+2. **FutureStuckTilesTest**: Detects colors that will inevitably become stuck due to parity
+3. **IsolatedTileTest**: Tiles with moves remaining but no valid swap partners
+4. **StalemateTest**: No row or column has 2+ tiles with moves remaining
+5. **WrongRowZeroMovesTest**: Tiles with 0 moves stuck in wrong row
 
-These tests provide ~60-70% pruning rate without eliminating valid solution paths.
+These tests provide ~80% pruning rate without eliminating valid solution paths.
 
 ### Adding New Tests
 

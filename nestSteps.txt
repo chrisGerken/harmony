@@ -1,1 +1,5 @@
-1) create a document to be consumed by a chatbot. This document will describe what questions to ask and how to write a file (named interview.txt) containing the answers so as to build a puzzle specification using the BOARD and MOVES format  
+1) Create a new invalidity test and call it FutureStuckTilesTest. A board is invalid if all of these conditions are true: (1) for a given color, there is exactly one tile of that color in each column, (2) Tiles of that color that are on the target row must each have less than 3 remaining moves, (3) Tiles of that color not on the target row must each have exactly one remaining move, (4) The sum of the remaining moves on all of the color's tiles minus the number of tiles of that color not on the target row is odd (since each of the tiles not on the row must be moved exactly once, we need to not count those moves).
+
+2) Use FutureStuckTilesTest instead of StuckTilesTest
+
+3) No need to try to reduce the number of colors tested. Testing all five colors in FutureStuckTilesTest is probably as simple and fast as testing just the colors of the tiles that were moved. 

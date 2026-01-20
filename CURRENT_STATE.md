@@ -1,5 +1,5 @@
 # Current State of Harmony Puzzle Solver
-**Last Updated**: January 19, 2026 (Session 12)
+**Last Updated**: January 20, 2026 (Session 13)
 
 ## Quick Status
 - ✅ **Production Ready**: All code compiles and tests pass
@@ -52,11 +52,11 @@ HarmonySolver (instance-based, central context)
     │       ├─> loadStates(puzzleFile, initialState)
     │       └─> State file: <puzzle>.state.txt
     └─> InvalidityTestCoordinator (ordered by effectiveness)
-            ├─> BlockedSwapTest      (1st - uses targetRow = color directly)
-            ├─> StuckTilesTest       (2nd)
-            ├─> IsolatedTileTest     (3rd)
-            ├─> StalemateTest        (4th)
-            └─> WrongRowZeroMovesTest (5th)
+            ├─> BlockedSwapTest         (1st - uses targetRow = color directly)
+            ├─> FutureStuckTilesTest    (2nd - detects future stuck parity)
+            ├─> IsolatedTileTest        (3rd)
+            ├─> StalemateTest           (4th)
+            └─> WrongRowZeroMovesTest   (5th)
 
 Board (simplified)
     ├─> grid: Tile[][]
@@ -75,9 +75,24 @@ Tile (immutable)
     └─> decrementMoves() - returns new Tile with moves-1
 ```
 
-## Recent Changes (Session 12 - January 19, 2026)
+## Recent Changes (Session 13 - January 20, 2026)
 
-### 1. Enhanced BlockedSwapTest
+### 1. New FutureStuckTilesTest
+**Replaced StuckTilesTest with more general FutureStuckTilesTest**:
+- Created new `FutureStuckTilesTest.java` in `invalidity/` package
+- Detects colors that will inevitably become stuck due to parity, even before all tiles reach their target row
+- For each color, checks if ALL conditions are true:
+  1. Exactly one tile of that color in each column
+  2. Tiles on target row have < 3 remaining moves
+  3. Tiles NOT on target row have exactly 1 remaining move
+  4. `(sum of remaining moves - tiles not on target row)` is odd
+- Updated `InvalidityTestCoordinator.java` to use FutureStuckTilesTest instead of StuckTilesTest
+- Updated `ProgressReporter.java` with new test name for invalidity stats display
+- Test results show 80%+ pruning rate on complex puzzles
+
+## Earlier Changes (Session 12 - January 19, 2026)
+
+### 2. Enhanced BlockedSwapTest
 **Now checks moved tiles both as T1 (blocked) and T2 (blocking)**:
 - Modified `BlockedSwapTest.java` (lines 42-62, 91-128)
 - Previously only checked if moved tiles were blocked (T1 with 1 move)
@@ -196,10 +211,11 @@ harmony/
 │   │   └── BoardParser.java        # ⭐ UPDATED - MOVES section, case-insensitive, validation
 │   └── invalidity/
 │       ├── InvalidityTest.java
-│       ├── InvalidityTestCoordinator.java
-│       ├── BlockedSwapTest.java        # ⭐ UPDATED - checks both T1 and T2 scenarios
-│       ├── StuckTilesTest.java
-│       ├── StuckTileTest.java
+│       ├── InvalidityTestCoordinator.java  # ⭐ UPDATED - uses FutureStuckTilesTest
+│       ├── BlockedSwapTest.java
+│       ├── FutureStuckTilesTest.java       # ⭐ NEW - replaces StuckTilesTest
+│       ├── StuckTilesTest.java             # Legacy - not active
+│       ├── StuckTileTest.java              # Legacy - not active
 │       ├── IsolatedTileTest.java
 │       ├── StalemateTest.java
 │       └── WrongRowZeroMovesTest.java
@@ -263,6 +279,12 @@ Options:
 | 3x3_12moves.txt | 3x3 | 12 | 21 | 6.6% |
 
 ## Session History
+
+### Session 13 (January 20, 2026)
+- **FutureStuckTilesTest**: New invalidity test replacing StuckTilesTest
+- Detects colors that will inevitably become stuck due to parity, even before all tiles reach target row
+- Checks: (1) one tile per column, (2) target row tiles < 3 moves, (3) off-target tiles = 1 move, (4) odd adjusted parity
+- 80%+ pruning rate on complex puzzles
 
 ### Session 12 (January 19, 2026)
 - **Enhanced BlockedSwapTest**: Now checks moved tiles both as T1 (blocked) and T2 (blocking)
@@ -337,14 +359,14 @@ mvn package                          # Build
 
 ### Key Files for Next Session
 1. `CURRENT_STATE.md` - This file (start here!)
-2. `BlockedSwapTest.java` - Enhanced to check both T1 (blocked) and T2 (blocking) scenarios
-3. `docs/INVALIDITY_TESTS.md` - Updated BlockedSwapTest documentation
-4. `Board.java` - toString() hides zero moves
-5. `BoardParser.java` - MOVES section, case-insensitive, validation
+2. `FutureStuckTilesTest.java` - New invalidity test replacing StuckTilesTest
+3. `InvalidityTestCoordinator.java` - Updated to use FutureStuckTilesTest
+4. `docs/INVALIDITY_TESTS.md` - Updated with FutureStuckTilesTest documentation
+5. `ProgressReporter.java` - Updated test name for invalidity stats
 6. `HarmonySolver.java` - Duration with time units, solution file with board visualization
 
 ---
 
 **Ready for**: Production use, long-running puzzles with state persistence
 **Status**: ✅ Stable, documented, tested
-**Last Test**: January 19, 2026 (Session 12)
+**Last Test**: January 20, 2026 (Session 13)

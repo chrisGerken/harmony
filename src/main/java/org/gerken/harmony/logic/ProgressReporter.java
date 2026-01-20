@@ -130,9 +130,9 @@ public class ProgressReporter implements Runnable {
         }
 
         // Test names in display order (matches coordinator order)
-        String[] testNames = {"BlockedSwapTest", "StuckTilesTest", "IsolatedTileTest",
+        String[] testNames = {"BlockedSwapTest", "FutureStuckTilesTest", "IsolatedTileTest",
                               "StalemateTest", "WrongRowZeroMovesTest"};
-        String[] shortNames = {"BlockedSwap", "StuckTiles", "IsolatedTile",
+        String[] shortNames = {"BlockedSwap", "FutureStuck", "IsolatedTile",
                                "Stalemate", "WrongRowZero"};
 
         // Print header with blank line before for readability
