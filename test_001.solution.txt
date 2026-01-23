@@ -20,45 +20,53 @@ A | B 3 | R 3 | R   | R   |
 B | R 2 | B   | B   | B   |
 C | W 1 | W 1 | W 1 | G   |
 D | G 1 | G 1 | G 1 | W   |
+Score: 10
 
 After move 1: C1-D1
 A | B 3 | R 3 | R   | R   |
 B | R 2 | B   | B   | B   |
 C | G   | W 1 | W 1 | G   |
 D | W   | G 1 | G 1 | W   |
+Score: 8
 
 After move 2: C2-D2
 A | B 3 | R 3 | R   | R   |
 B | R 2 | B   | B   | B   |
 C | G   | G   | W 1 | G   |
 D | W   | W   | G 1 | W   |
+Score: 6
 
 After move 3: C3-D3
 A | B 3 | R 3 | R   | R   |
 B | R 2 | B   | B   | B   |
 C | G   | G   | G   | G   |
 D | W   | W   | W   | W   |
+Score: 4
 
 After move 4: A1-B1
 A | R 1 | R 3 | R   | R   |
 B | B 2 | B   | B   | B   |
 C | G   | G   | G   | G   |
 D | W   | W   | W   | W   |
+Score: 1
 
 After move 5: A1-A2
 A | R 2 | R   | R   | R   |
 B | B 2 | B   | B   | B   |
 C | G   | G   | G   | G   |
 D | W   | W   | W   | W   |
+Score: 0
 
 After move 6: A1-B1
 A | B 1 | R   | R   | R   |
 B | R 1 | B   | B   | B   |
 C | G   | G   | G   | G   |
 D | W   | W   | W   | W   |
+Score: 2
 
 After move 7: A1-B1
 A | R   | R   | R   | R   |
 B | B   | B   | B   | B   |
 C | G   | G   | G   | G   |
 D | W   | W   | W   | W   |
+Score: 0

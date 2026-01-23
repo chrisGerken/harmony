@@ -1,5 +1,11 @@
-1) Create a new invalidity test and call it FutureStuckTilesTest. A board is invalid if all of these conditions are true: (1) for a given color, there is exactly one tile of that color in each column, (2) Tiles of that color that are on the target row must each have less than 3 remaining moves, (3) Tiles of that color not on the target row must each have exactly one remaining move, (4) The sum of the remaining moves on all of the color's tiles minus the number of tiles of that color not on the target row is odd (since each of the tiles not on the row must be moved exactly once, we need to not count those moves).
+1) Support the idea of a board's score. We need to add an Integer attribute with default value null to Board to hold the score when we calculate the score, but there will be times that we do not, for now, calculate a board's score. Once calcuated, a board's score needs to be persisted and recovered when writing and reading board states. For the board score's getter method, if the score is null then calculate and save the score.
 
-2) Use FutureStuckTilesTest instead of StuckTilesTest
+2) The score is calculated by adding all of the following:
+- the number of tiles that are not in their target row
+- for each column, the number of tiles in the column minus the number of uniquely colored tiles in that column
+- for each tile with more than two remaining moves, the number of remaining moves minus 2.
 
-3) No need to try to reduce the number of colors tested. Testing all five colors in FutureStuckTilesTest is probably as simple and fast as testing just the colors of the tiles that were moved. 
+3) The toString() method of Board should write the score on it's own line
+
+4) TestBuilder should display the score of each board in the sequence of boards shown in the solution
+

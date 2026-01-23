@@ -1,6 +1,7 @@
 package org.gerken.harmony;
 
 import org.gerken.harmony.model.Board;
+import org.gerken.harmony.model.BoardState;
 import org.gerken.harmony.model.Move;
 import org.gerken.harmony.model.Tile;
 
@@ -12,6 +13,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Builds test states by starting from a solved puzzle and applying moves backwards.
@@ -535,6 +537,97 @@ public class TestBuilder {
         }
 
         return new Board(newGrid);
+    }
+
+    /**
+     * Generates a random puzzle and returns the solution path as an array of BoardStates.
+     * The puzzle is created by starting from a solved state and applying random moves backwards.
+     *
+     * @param rows the number of rows
+     * @param cols the number of columns
+     * @param numMoves the number of moves to apply (puzzle complexity)
+     * @return array of BoardStates where element 0 is the initial scrambled state,
+     *         and subsequent elements show the state after each solution move
+     */
+    public static BoardState[] generatePuzzleWithSolution(int rows, int cols, int numMoves) {
+        return generatePuzzleWithSolution(rows, cols, numMoves, new Random());
+    }
+
+    /**
+     * Generates a random puzzle and returns the solution path as an array of BoardStates.
+     * The puzzle is created by starting from a solved state and applying random moves backwards.
+     *
+     * @param rows the number of rows
+     * @param cols the number of columns
+     * @param numMoves the number of moves to apply (puzzle complexity)
+     * @param random the random number generator to use
+     * @return array of BoardStates where element 0 is the initial scrambled state,
+     *         and subsequent elements show the state after each solution move
+     */
+    public static BoardState[] generatePuzzleWithSolution(int rows, int cols, int numMoves, Random random) {
+        // Build solved board
+        Board solvedBoard = buildSolvedBoard(rows, cols);
+
+        // Generate random moves (these will be the solution when played forward)
+        List<Move> solutionMoves = new ArrayList<>();
+        for (int i = 0; i < numMoves; i++) {
+            Move move = generateRandomMove(rows, cols, random);
+            solutionMoves.add(move);
+        }
+
+        // Apply moves backwards to create the scrambled initial state
+        Board scrambledBoard = solvedBoard;
+        for (int i = numMoves - 1; i >= 0; i--) {
+            scrambledBoard = applyMoveBackwards(scrambledBoard, solutionMoves.get(i));
+        }
+
+        // Create the solution path array
+        BoardState[] solutionPath = new BoardState[numMoves + 1];
+
+        // Element 0: initial scrambled state
+        BoardState currentState = new BoardState(scrambledBoard);
+        solutionPath[0] = currentState;
+
+        // Elements 1 to numMoves: state after each solution move
+        for (int i = 0; i < numMoves; i++) {
+            currentState = currentState.applyMove(solutionMoves.get(i));
+            solutionPath[i + 1] = currentState;
+        }
+
+        return solutionPath;
+    }
+
+    /**
+     * Generates a random valid move for the given board dimensions.
+     * Moves are either horizontal (same row) or vertical (same column).
+     *
+     * @param rows the number of rows
+     * @param cols the number of columns
+     * @param random the random number generator
+     * @return a random valid move
+     */
+    private static Move generateRandomMove(int rows, int cols, Random random) {
+        boolean horizontal = random.nextBoolean();
+
+        if (horizontal) {
+            // Same row, different columns
+            int row = random.nextInt(rows);
+            int col1 = random.nextInt(cols);
+            int col2;
+            do {
+                col2 = random.nextInt(cols);
+            } while (col2 == col1);
+            return new Move(row, col1, row, col2);
+        } else {
+            // Same column, different rows
+            int col = random.nextInt(cols);
+            int row1 = random.nextInt(rows);
+            int row2;
+            do {
+                row2 = random.nextInt(rows);
+            } while (row2 == row1);
+            return new Move(row1, col, row2, col);
+        }
     }
 
     /**

@@ -101,6 +101,7 @@ public class StateProcessor implements Runnable {
 
     /**
      * Processes a board state by generating all possible successor states.
+     * Collects all valid states first, then stores them in batch.
      */
     private void processState(BoardState state) {
         Board board = state.getBoard();
@@ -117,6 +118,9 @@ public class StateProcessor implements Runnable {
 
         int generatedCount = 0;
         int prunedCount = 0;
+
+        // Collect valid states instead of storing immediately
+        List<BoardState> validStates = new ArrayList<>();
 
         for (Move move : possibleMoves) {
             BoardState nextState = state.applyMove(move);
@@ -140,9 +144,12 @@ public class StateProcessor implements Runnable {
                 continue;
             }
 
-            // Valid state - add to cache or queue for processing
-            storeBoardState(nextState);
+            // Valid state - collect for later storage
+            validStates.add(nextState);
         }
+
+        // Store all valid states after processing all moves
+        storeBoardStates(validStates);
 
         // Batch update counters after loop completes
         pendingStates.addStatesGenerated(generatedCount);
@@ -403,21 +410,23 @@ public class StateProcessor implements Runnable {
     }
 
     /**
-     * Stores a board state either in the local cache or the shared queue.
+     * Stores a list of board states either in the local cache or the shared queue.
      * Board states with cacheThreshold or more moves already taken are cached locally to reduce
      * contention on the shared ConcurrentLinkedQueue, as these deeper states benefit from
      * being processed by the same thread.
      *
-     * @param state the board state to store
+     * @param states the list of board states to store
      */
-    private void storeBoardState(BoardState state) {
-        int movesTaken = state.getMoveCount();
+    private void storeBoardStates(List<BoardState> states) {
+        for (BoardState state : states) {
+            int movesTaken = state.getMoveCount();
 
-        // Cache deeper states locally, send early states to shared queue
-        if (movesTaken >= cacheThreshold) {
-            cache.add(state);
-        } else {
-            pendingStates.add(state, queueContext);
+            // Cache deeper states locally, send early states to shared queue
+            if (movesTaken >= cacheThreshold) {
+                cache.add(state);
+            } else {
+                pendingStates.add(state, queueContext);
+            }
         }
     }
 
