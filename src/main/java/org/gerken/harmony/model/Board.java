@@ -2,7 +2,9 @@ package org.gerken.harmony.model;
 
 import org.gerken.harmony.HarmonySolver;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Represents the puzzle board - a grid of tiles with target colors for each row.
@@ -15,6 +17,7 @@ import java.util.List;
 public class Board {
 
     private final Tile[][] grid;
+    private Integer score = null;
 
     /**
      * Creates a new board with the specified dimensions.
@@ -106,6 +109,65 @@ public class Board {
     }
 
     /**
+     * Gets the score for this board. The score is lazily calculated on first access.
+     * Score calculation:
+     * - Number of tiles not in their target row (target row = color ID)
+     * - For each column: (tiles in column) - (unique colors in column)
+     * - For each tile with > 2 remaining moves: (remaining moves - 2)
+     *
+     * @return the board score
+     */
+    public int getScore() {
+        if (score == null) {
+            score = calculateScore();
+        }
+        return score;
+    }
+
+    /**
+     * Calculates the board score.
+     */
+    private int calculateScore() {
+        int total = 0;
+
+        // Component 1: Count tiles not in their target row
+        for (int row = 0; row < getRowCount(); row++) {
+            for (int col = 0; col < getColumnCount(); col++) {
+                Tile tile = grid[row][col];
+                // Target row for a tile is its color ID
+                if (tile.getColor() != row) {
+                    total++;
+                }
+            }
+        }
+
+        // Component 2: For each column, (tiles in column) - (unique colors in column)
+        for (int col = 0; col < getColumnCount(); col++) {
+            Set<Integer> uniqueColors = new HashSet<>();
+            int tilesInColumn = 0;
+            for (int row = 0; row < getRowCount(); row++) {
+                Tile tile = grid[row][col];
+                uniqueColors.add(tile.getColor());
+                tilesInColumn++;
+            }
+            total += tilesInColumn - uniqueColors.size();
+        }
+
+        // Component 3: For each tile with > 2 remaining moves, add (remaining moves - 2)
+        for (int row = 0; row < getRowCount(); row++) {
+            for (int col = 0; col < getColumnCount(); col++) {
+                Tile tile = grid[row][col];
+                int moves = tile.getRemainingMoves();
+                if (moves > 2) {
+                    total += moves - 2;
+                }
+            }
+        }
+
+        return total;
+    }
+
+    /**
      * Creates a deep copy of the grid.
      */
     private Tile[][] deepCopyGrid(Tile[][] original) {
@@ -174,10 +236,9 @@ public class Board {
                 }
             }
             result.append("|");
-            if (row < getRowCount() - 1) {
-                result.append("\n");
-            }
+            result.append("\n");
         }
+        result.append("Score: ").append(getScore());
 
         return result.toString();
     }
@@ -215,10 +276,9 @@ public class Board {
                 result.append(" ");
             }
             result.append("|");
-            if (row < getRowCount() - 1) {
-                result.append("\n");
-            }
+            result.append("\n");
         }
+        result.append("Score: ").append(getScore());
 
         return result.toString();
     }
