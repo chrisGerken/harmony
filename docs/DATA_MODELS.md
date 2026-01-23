@@ -73,11 +73,29 @@ Represents the puzzle board - a 2D grid of tiles with target colors for each row
 ```java
 public class Board {
     private final Tile[][] grid;           // 2D array of tiles
+    private Integer score;                 // Lazy-calculated heuristic score (null until computed)
     // Target color for each row = row index (row 0 → color 0, row 1 → color 1, etc.)
 }
 ```
 
 **Note**: Colors are represented as `int` for efficiency. See Tile documentation for rationale.
+
+### Board Score (Added 2026-01-23)
+
+The board has a lazy-calculated heuristic score that measures "distance from solution":
+- **Lower score = closer to solution** (solved board has score 0)
+- Calculated on first call to `getScore()`, then cached
+
+**Score Formula** (sum of):
+1. Number of tiles NOT in their target row (target row = color ID)
+2. For each column: (tiles in column) - (unique colors in column)
+3. For each tile with > 2 remaining moves: (remaining moves - 2)
+
+```java
+Board board = /* ... */;
+int score = board.getScore();  // Calculates and caches if null
+System.out.println(board);     // Includes "Score: N" on last line
+```
 
 ### Coordinate System
 
@@ -103,6 +121,7 @@ public class Board {
 |--------|---------|-------------|
 | `swap(r1, c1, r2, c2)` | `Board` | Returns new board with tiles swapped and moves decremented |
 | `isSolved()` | `boolean` | Checks if all tiles match row colors and have 0 moves |
+| `getScore()` | `int` | Returns heuristic score (calculates and caches if needed) |
 
 ### Win Condition
 

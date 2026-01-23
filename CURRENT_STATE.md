@@ -1,5 +1,5 @@
 # Current State of Harmony Puzzle Solver
-**Last Updated**: January 20, 2026 (Session 13)
+**Last Updated**: January 23, 2026 (Session 14)
 
 ## Quick Status
 - ✅ **Production Ready**: All code compiles and tests pass
@@ -23,6 +23,8 @@
 - ✅ **Case-Insensitive Parsing**: `dkbrown` → `DKBROWN`, `a1` → `A1`
 - ✅ **Position Validation**: Duplicate tile positions detected
 - ✅ **MOVES Section**: Optional section to transform board state
+- ✅ **Board Scoring**: Lazy-calculated heuristic score for board states
+- ✅ **ScoreWatcher Utility**: Analyzes scoring heuristic effectiveness
 
 ## Current Architecture (High Level)
 
@@ -60,7 +62,10 @@ HarmonySolver (instance-based, central context)
 
 Board (simplified)
     ├─> grid: Tile[][]
-    └─> getRowTargetColor(row) returns row  # Target color = row index
+    ├─> score: Integer (null until calculated, lazy initialization)
+    ├─> getScore(): int (calculates and caches score if null)
+    ├─> getRowTargetColor(row) returns row  # Target color = row index
+    └─> toString() includes "Score: N" on its own line
 
 BoardState (linked list structure)
     ├─> board: Board
@@ -75,7 +80,43 @@ Tile (immutable)
     └─> decrementMoves() - returns new Tile with moves-1
 ```
 
-## Recent Changes (Session 13 - January 20, 2026)
+## Recent Changes (Session 14 - January 23, 2026)
+
+### 1. Board Scoring System
+**Added lazy-calculated heuristic score to Board class**:
+- Added `Integer score` attribute with default value null
+- Added `getScore()` method that calculates and caches score on first access
+- Score formula (sum of):
+  - Number of tiles NOT in their target row (target row = color ID)
+  - For each column: (tiles in column) - (unique colors in column)
+  - For each tile with > 2 remaining moves: (remaining moves - 2)
+- Updated both `toString()` methods to include "Score: N" on its own line
+- Lower score = closer to solution (solved board has score 0)
+
+### 2. ScoreWatcher Utility
+**New class to analyze scoring heuristic effectiveness**:
+- Created `ScoreWatcher.java` in main package
+- Generates random puzzles and reports score progression through solution
+- Shows for each move: score, valid moves count, min/max possible scores, rank, percentile
+- Only marks score increases with ↑ (score going up = getting worse)
+- Displays statistics: average percentile, optimal move rate, score increase rate
+- Usage: `java ScoreWatcher <rows> <cols> <numMoves>`
+
+### 3. TestBuilder.generatePuzzleWithSolution()
+**New static method for programmatic puzzle generation**:
+- Added `generatePuzzleWithSolution(int rows, int cols, int numMoves)` method
+- Returns `BoardState[]` where element 0 is initial scrambled state
+- Subsequent elements show state after each solution move
+- Overloaded version accepts `Random` for reproducible puzzles
+
+### 4. StateProcessor Batch Storage
+**Refactored processState() to collect valid states before storing**:
+- Changed from immediate `storeBoardState(state)` calls to batch collection
+- Renamed `storeBoardState(BoardState)` to `storeBoardStates(List<BoardState>)`
+- Valid states collected in ArrayList, then stored in batch after all moves processed
+- Enables future enhancements like sorting by score before storage
+
+## Earlier Changes (Session 13 - January 20, 2026)
 
 ### 1. New FutureStuckTilesTest
 **Replaced StuckTilesTest with more general FutureStuckTilesTest**:
@@ -193,20 +234,21 @@ a2-b2
 ```
 harmony/
 ├── src/main/java/org/gerken/harmony/
-│   ├── HarmonySolver.java          # ⭐ UPDATED - duration units, solution file
-│   ├── PuzzleGenerator.java        # ⭐ UPDATED - BOARD format output
-│   ├── TestBuilder.java            # ⭐ UPDATED - BOARD format output
+│   ├── HarmonySolver.java          # duration units, solution file
+│   ├── PuzzleGenerator.java        # BOARD format output
+│   ├── TestBuilder.java            # ⭐ UPDATED - generatePuzzleWithSolution() method
+│   ├── ScoreWatcher.java           # ⭐ NEW - scoring heuristic analysis utility
 │   ├── TileBenchmark.java
 │   ├── model/
 │   │   ├── Tile.java
-│   │   ├── Board.java              # ⭐ UPDATED - hides zero moves in toString()
+│   │   ├── Board.java              # ⭐ UPDATED - score attribute, getScore(), toString() shows score
 │   │   ├── Move.java
 │   │   └── BoardState.java
 │   ├── logic/
 │   │   ├── PendingStates.java      # ⭐ REFACTORED - 2D queues, activeQueues, collectAllStates
 │   │   ├── QueueContext.java       # ⭐ NEW - per-thread random queue selection
 │   │   ├── StateSerializer.java    # ⭐ NEW - state persistence and loading
-│   │   ├── StateProcessor.java     # ⭐ UPDATED - trackInvalidity, getCachedStates
+│   │   ├── StateProcessor.java     # ⭐ UPDATED - storeBoardStates(List), batch collection
 │   │   ├── ProgressReporter.java   # ⭐ UPDATED - fixed-width time format [hhh:mm:ss]
 │   │   └── BoardParser.java        # ⭐ UPDATED - MOVES section, case-insensitive, validation
 │   └── invalidity/
@@ -279,6 +321,13 @@ Options:
 | 3x3_12moves.txt | 3x3 | 12 | 21 | 6.6% |
 
 ## Session History
+
+### Session 14 (January 23, 2026)
+- **Board Scoring**: Added lazy-calculated heuristic score to Board class
+- Score = (tiles not in target row) + (duplicate colors per column) + (excess moves per tile)
+- **ScoreWatcher**: New utility to analyze scoring heuristic effectiveness
+- **TestBuilder.generatePuzzleWithSolution()**: Static method returning BoardState array
+- **StateProcessor Refactored**: processState() collects valid states, storeBoardStates(List)
 
 ### Session 13 (January 20, 2026)
 - **FutureStuckTilesTest**: New invalidity test replacing StuckTilesTest
@@ -359,14 +408,13 @@ mvn package                          # Build
 
 ### Key Files for Next Session
 1. `CURRENT_STATE.md` - This file (start here!)
-2. `FutureStuckTilesTest.java` - New invalidity test replacing StuckTilesTest
-3. `InvalidityTestCoordinator.java` - Updated to use FutureStuckTilesTest
-4. `docs/INVALIDITY_TESTS.md` - Updated with FutureStuckTilesTest documentation
-5. `ProgressReporter.java` - Updated test name for invalidity stats
-6. `HarmonySolver.java` - Duration with time units, solution file with board visualization
+2. `Board.java` - Added score attribute, getScore(), toString() with score
+3. `ScoreWatcher.java` - New utility for scoring heuristic analysis
+4. `TestBuilder.java` - Added generatePuzzleWithSolution() static method
+5. `StateProcessor.java` - Refactored to batch store valid states
 
 ---
 
-**Ready for**: Production use, long-running puzzles with state persistence
+**Ready for**: Production use, scoring heuristic analysis and optimization
 **Status**: ✅ Stable, documented, tested
-**Last Test**: January 20, 2026 (Session 13)
+**Last Test**: January 23, 2026 (Session 14)
