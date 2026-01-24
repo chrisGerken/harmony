@@ -46,7 +46,7 @@ public class StateProcessor implements Runnable {
      * Creates a new state processor with configurable cache threshold, sort mode, and invalidity tracking.
      *
      * @param pendingStates the shared container of pending states and statistics
-     * @param cacheThreshold states with this many or more moves taken are cached locally
+     * @param cacheThreshold states with board score at or above this are cached locally
      * @param sortMode the sort mode for move ordering
      * @param trackInvalidity whether to track invalidity statistics (only when -i flag is set)
      */
@@ -395,7 +395,7 @@ public class StateProcessor implements Runnable {
 
     /**
      * Gets the next board state to process.
-     * First checks the local cache for near-solution states (< cacheThreshold moves remaining).
+     * First checks the local cache for high-score states (>= cacheThreshold board score).
      * Uses LIFO (stack) order to maintain depth-first search behavior and minimize cache growth.
      * If cache is empty, polls from the shared pending states queue.
      * This reduces contention on the shared ConcurrentLinkedQueue.
@@ -411,18 +411,34 @@ public class StateProcessor implements Runnable {
 
     /**
      * Stores a list of board states either in the local cache or the shared queue.
-     * Board states with cacheThreshold or more moves already taken are cached locally to reduce
-     * contention on the shared ConcurrentLinkedQueue, as these deeper states benefit from
-     * being processed by the same thread.
+     * If the parent state has first=true, all states are cached locally to follow
+     * the primary search path. Otherwise, board states with board score at or above
+     * cacheThreshold are cached locally to reduce contention on the shared
+     * ConcurrentLinkedQueue. Lower scores (closer to solution) go to the shared
+     * queue for priority processing.
      *
      * @param states the list of board states to store
      */
     private void storeBoardStates(List<BoardState> states) {
-        for (BoardState state : states) {
-            int movesTaken = state.getMoveCount();
+        // Check if parent state has first=true (all states share same parent)
+    	if (!states.isEmpty() && states.get(0).getPreviousBoardState().isFirst()) {
+            BoardState parent = states.get(0).getPreviousBoardState();
+            if (parent != null && parent.isFirst()) {
+                // Parent is on primary search path - cache all states locally
+            	for (BoardState state: states) {
+            		state.setFirst(states.size() == 1);
+            	}
+            	cache.addAll(states);
+                return;
+            }
+        }
 
-            // Cache deeper states locally, send early states to shared queue
-            if (movesTaken >= cacheThreshold) {
+        // Normal logic: cache by score threshold
+        for (BoardState state : states) {
+            int boardScore = state.getBoard().getScore();
+            state.setFirst(false);
+            // Cache high-score states locally, send low-score states to shared queue
+            if (boardScore >= cacheThreshold) {
                 cache.add(state);
             } else {
                 pendingStates.add(state, queueContext);

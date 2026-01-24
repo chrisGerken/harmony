@@ -54,7 +54,7 @@ public class HarmonySolver {
 
     private static final int DEFAULT_THREAD_COUNT = 2;
     private static final int DEFAULT_REPORT_INTERVAL = 30; // seconds
-    private static final int DEFAULT_CACHE_THRESHOLD = 4; // moves remaining
+    private static final int DEFAULT_CACHE_THRESHOLD = 4; // board score threshold
     private static final boolean DEFAULT_DEBUG_MODE = false;
     private static final int DEFAULT_REPLICATION_FACTOR = 3;
     private static final int DEFAULT_DURATION_MINUTES = 120;
@@ -126,7 +126,7 @@ public class HarmonySolver {
     /**
      * Gets the configured cache threshold.
      *
-     * @return the cache threshold in moves remaining
+     * @return the cache threshold in board score
      */
     public int getCacheThreshold() {
         return config.cacheThreshold;
@@ -181,8 +181,9 @@ public class HarmonySolver {
             System.out.println("Loading puzzle from: " + config.puzzleFile);
             BoardState initialState = BoardParser.parse(config.puzzleFile);
             System.out.println("Puzzle loaded successfully.");
-            System.out.println("Board size: " + initialState.getBoard().getRowCount() +
+            System.out.println("Board size:     " + initialState.getBoard().getRowCount() +
                              "x" + initialState.getBoard().getColumnCount());
+            System.out.println("Board score:    " + initialState.getBoard().getScore());
             System.out.println("Moves required: " + initialState.getRemainingMoves());
             System.out.println();
 
@@ -242,10 +243,13 @@ public class HarmonySolver {
 
         // Initialize shared data structures
         this.initialRemainingMoves = initialState.getRemainingMoves();
-        this.pendingStates = new PendingStates(initialRemainingMoves, config.replicationFactor);
+        int initialScore = initialState.getBoard().getScore();
+        this.pendingStates = new PendingStates(initialScore, config.replicationFactor);
 
         // Add states to queue - either resume states or initial state
         if (resumeStates != null && !resumeStates.isEmpty()) {
+            // Sort by remaining moves (least first) so states closest to solution are added first
+            resumeStates.sort((s1, s2) -> Integer.compare(s1.getRemainingMoves(), s2.getRemainingMoves()));
             System.out.println("Adding " + resumeStates.size() + " resumed states to queues...");
             QueueContext ctx = pendingStates.getQueueContext();
             for (BoardState state : resumeStates) {
@@ -648,7 +652,7 @@ public class HarmonySolver {
         System.out.println("Options:");
         System.out.println("  -t, --threads <N>     Number of worker threads (default: 2)");
         System.out.println("  -r, --report <N>      Progress report interval in seconds (default: 30, 0 to disable)");
-        System.out.println("  -c, --cache <N>       Cache threshold: states with N+ moves taken are cached locally (default: 4)");
+        System.out.println("  -c, --cache <N>       Cache threshold: states with board score >= N are cached locally (default: 4)");
         System.out.println("  -repl <N>             Replication factor for queue distribution (default: 3)");
         System.out.println("  -dur, --duration <N>  Run duration with optional unit suffix (default: 120m)");
         System.out.println("                        Units: s (seconds), m (minutes), h (hours), d (days), w (weeks)");
@@ -674,7 +678,7 @@ public class HarmonySolver {
         System.out.println("Configuration:");
         System.out.println("  Threads: " + config.threadCount);
         System.out.println("  Report interval: " + (config.reportInterval > 0 ? config.reportInterval + " seconds" : "disabled"));
-        System.out.println("  Cache threshold: " + config.cacheThreshold + " moves taken");
+        System.out.println("  Cache threshold: " + config.cacheThreshold + " board score");
         System.out.println("  Replication factor: " + config.replicationFactor);
         System.out.println("  Duration: " + config.durationMinutes + " minutes");
         System.out.println("  Invalidity tests: " +

@@ -1,0 +1,5 @@
+1) When restoring state, sort the board states in each queue by remaining moves, so that the first board state in the queue has the least number of remaining moves
+
+2) Add a boolean flag named first to BoardState. When the first board state is returned to HarmonySolver from BoardParser then set the first value for that state to true.  When applying a move to board state S1 to get a new board state S2, if S1 has only one possible move then set the first value for S2 to the first vale for S1, otherwise set the first value for S2 to false;
+
+3) In the storeBoardStates() method in class StateProcessor, if the parent state for each of the states in the list has a first value of true, then add all of the states to the state processor's cache, otherwise perform the current method logic.

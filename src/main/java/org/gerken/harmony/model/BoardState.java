@@ -13,6 +13,7 @@ public class BoardState {
     private final Move lastMove;
     private final int remainingMoves;
     private BoardState previousBoardState = null;
+    private boolean first = false;
 
     /**
      * Creates a new board state with the given board and no moves.
@@ -88,6 +89,24 @@ public class BoardState {
     }
 
     /**
+     * Gets whether this is a "first" state (on the primary search path from initial state).
+     *
+     * @return true if this is a first state
+     */
+    public boolean isFirst() {
+        return first;
+    }
+
+    /**
+     * Sets whether this is a "first" state.
+     *
+     * @param first true if this is a first state
+     */
+    public void setFirst(boolean first) {
+        this.first = first;
+    }
+
+    /**
      * Gets the number of moves taken to reach this state.
      *
      * @return the move count
@@ -115,6 +134,7 @@ public class BoardState {
     /**
      * Creates a new board state by applying a move to this state.
      * Decrements the remaining moves count by 1 (each move reduces two tiles by 1 each).
+     * The new state's first flag is set to false.
      *
      * @param move the move to apply
      * @return a new board state with the move applied
@@ -125,6 +145,7 @@ public class BoardState {
         // Each move decrements two tiles by 1 each, so remaining moves decreases by 1
         BoardState newState = new BoardState(newBoard, move, remainingMoves - 1);
         newState.setPreviousBoardState(this);
+        // Propagate first flag only if this state is first AND there's exactly one possible move
         return newState;
     }
 
@@ -174,4 +195,9 @@ public class BoardState {
         }
         return totalRemainingMoves / 2;
     }
+
+	@Override
+	public String toString() {
+		return board.toString() + "\nRemaining moves: " + remainingMoves ;
+	}
 }

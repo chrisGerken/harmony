@@ -1,0 +1,278 @@
+# Harmony Puzzle Solution
+# Puzzle: puzzle_414.txt
+# Moves: 26
+
+Move sequence:
+  1. B5-D5
+  2. D6-E6
+  3. A2-A4
+  4. A1-F1
+  5. A1-E1
+  6. C4-C5
+  7. C5-F5
+  8. A2-A6
+  9. B2-F2
+ 10. B2-C2
+ 11. A5-E5
+ 12. E1-E2
+ 13. C6-F6
+ 14. C1-D1
+ 15. B6-F6
+ 16. A3-F3
+ 17. C4-E4
+ 18. E3-E5
+ 19. B3-F3
+ 20. B1-B4
+ 21. F1-F3
+ 22. C4-F4
+ 23. F2-F6
+ 24. C4-D4
+ 25. C1-C3
+ 26. D2-D3
+
+============================================================
+Step-by-step board states:
+============================================================
+
+Initial state:
+A | VDBLUE 2 | WHITE 1  | VLBLUE 2 | WHITE 2  | DKBLUE 2 | WHITE 1  |
+B | VLBLUE 1 | VDBLUE 2 | VDBLUE 2 | VLBLUE 1 | BLUE 1   | VDBLUE 2 |
+C | BLUE 1   | VLBLUE 1 | LTBLUE 1 | VDBLUE 2 | DKBLUE 2 | VLBLUE 2 |
+D | LTBLUE 2 | BLUE 1   | BLUE 1   | LTBLUE 1 | VLBLUE 1 | DKBLUE 1 |
+E | WHITE 1  | DKBLUE 1 | DKBLUE 1 | VDBLUE 2 | WHITE 1  | BLUE 1   |
+F | DKBLUE 3 | LTBLUE 2 | WHITE 1  | BLUE 2   | LTBLUE 1 | LTBLUE 1 |
+Score: 29
+
+After move 1: B5-D5
+A | VDBLUE 2 | WHITE 1  | VLBLUE 2 | WHITE 2  | DKBLUE 2 | WHITE 1  |
+B | VLBLUE 1 | VDBLUE 2 | VDBLUE 2 | VLBLUE 1 | VLBLUE   | VDBLUE 2 |
+C | BLUE 1   | VLBLUE 1 | LTBLUE 1 | VDBLUE 2 | DKBLUE 2 | VLBLUE 2 |
+D | LTBLUE 2 | BLUE 1   | BLUE 1   | LTBLUE 1 | BLUE     | DKBLUE 1 |
+E | WHITE 1  | DKBLUE 1 | DKBLUE 1 | VDBLUE 2 | WHITE 1  | BLUE 1   |
+F | DKBLUE 3 | LTBLUE 2 | WHITE 1  | BLUE 2   | LTBLUE 1 | LTBLUE 1 |
+Score: 27
+
+After move 2: D6-E6
+A | VDBLUE 2 | WHITE 1  | VLBLUE 2 | WHITE 2  | DKBLUE 2 | WHITE 1  |
+B | VLBLUE 1 | VDBLUE 2 | VDBLUE 2 | VLBLUE 1 | VLBLUE   | VDBLUE 2 |
+C | BLUE 1   | VLBLUE 1 | LTBLUE 1 | VDBLUE 2 | DKBLUE 2 | VLBLUE 2 |
+D | LTBLUE 2 | BLUE 1   | BLUE 1   | LTBLUE 1 | BLUE     | BLUE     |
+E | WHITE 1  | DKBLUE 1 | DKBLUE 1 | VDBLUE 2 | WHITE 1  | DKBLUE   |
+F | DKBLUE 3 | LTBLUE 2 | WHITE 1  | BLUE 2   | LTBLUE 1 | LTBLUE 1 |
+Score: 25
+
+After move 3: A2-A4
+A | VDBLUE 2 | WHITE 1  | VLBLUE 2 | WHITE    | DKBLUE 2 | WHITE 1  |
+B | VLBLUE 1 | VDBLUE 2 | VDBLUE 2 | VLBLUE 1 | VLBLUE   | VDBLUE 2 |
+C | BLUE 1   | VLBLUE 1 | LTBLUE 1 | VDBLUE 2 | DKBLUE 2 | VLBLUE 2 |
+D | LTBLUE 2 | BLUE 1   | BLUE 1   | LTBLUE 1 | BLUE     | BLUE     |
+E | WHITE 1  | DKBLUE 1 | DKBLUE 1 | VDBLUE 2 | WHITE 1  | DKBLUE   |
+F | DKBLUE 3 | LTBLUE 2 | WHITE 1  | BLUE 2   | LTBLUE 1 | LTBLUE 1 |
+Score: 25
+
+After move 4: A1-F1
+A | DKBLUE 2 | WHITE 1  | VLBLUE 2 | WHITE    | DKBLUE 2 | WHITE 1  |
+B | VLBLUE 1 | VDBLUE 2 | VDBLUE 2 | VLBLUE 1 | VLBLUE   | VDBLUE 2 |
+C | BLUE 1   | VLBLUE 1 | LTBLUE 1 | VDBLUE 2 | DKBLUE 2 | VLBLUE 2 |
+D | LTBLUE 2 | BLUE 1   | BLUE 1   | LTBLUE 1 | BLUE     | BLUE     |
+E | WHITE 1  | DKBLUE 1 | DKBLUE 1 | VDBLUE 2 | WHITE 1  | DKBLUE   |
+F | VDBLUE 1 | LTBLUE 2 | WHITE 1  | BLUE 2   | LTBLUE 1 | LTBLUE 1 |
+Score: 23
+
+After move 5: A1-E1
+A | WHITE    | WHITE 1  | VLBLUE 2 | WHITE    | DKBLUE 2 | WHITE 1  |
+B | VLBLUE 1 | VDBLUE 2 | VDBLUE 2 | VLBLUE 1 | VLBLUE   | VDBLUE 2 |
+C | BLUE 1   | VLBLUE 1 | LTBLUE 1 | VDBLUE 2 | DKBLUE 2 | VLBLUE 2 |
+D | LTBLUE 2 | BLUE 1   | BLUE 1   | LTBLUE 1 | BLUE     | BLUE     |
+E | DKBLUE 1 | DKBLUE 1 | DKBLUE 1 | VDBLUE 2 | WHITE 1  | DKBLUE   |
+F | VDBLUE 1 | LTBLUE 2 | WHITE 1  | BLUE 2   | LTBLUE 1 | LTBLUE 1 |
+Score: 21
+
+After move 6: C4-C5
+A | WHITE    | WHITE 1  | VLBLUE 2 | WHITE    | DKBLUE 2 | WHITE 1  |
+B | VLBLUE 1 | VDBLUE 2 | VDBLUE 2 | VLBLUE 1 | VLBLUE   | VDBLUE 2 |
+C | BLUE 1   | VLBLUE 1 | LTBLUE 1 | DKBLUE 1 | VDBLUE 1 | VLBLUE 2 |
+D | LTBLUE 2 | BLUE 1   | BLUE 1   | LTBLUE 1 | BLUE     | BLUE     |
+E | DKBLUE 1 | DKBLUE 1 | DKBLUE 1 | VDBLUE 2 | WHITE 1  | DKBLUE   |
+F | VDBLUE 1 | LTBLUE 2 | WHITE 1  | BLUE 2   | LTBLUE 1 | LTBLUE 1 |
+Score: 19
+
+After move 7: C5-F5
+A | WHITE    | WHITE 1  | VLBLUE 2 | WHITE    | DKBLUE 2 | WHITE 1  |
+B | VLBLUE 1 | VDBLUE 2 | VDBLUE 2 | VLBLUE 1 | VLBLUE   | VDBLUE 2 |
+C | BLUE 1   | VLBLUE 1 | LTBLUE 1 | DKBLUE 1 | LTBLUE   | VLBLUE 2 |
+D | LTBLUE 2 | BLUE 1   | BLUE 1   | LTBLUE 1 | BLUE     | BLUE     |
+E | DKBLUE 1 | DKBLUE 1 | DKBLUE 1 | VDBLUE 2 | WHITE 1  | DKBLUE   |
+F | VDBLUE 1 | LTBLUE 2 | WHITE 1  | BLUE 2   | VDBLUE   | LTBLUE 1 |
+Score: 17
+
+After move 8: A2-A6
+A | WHITE    | WHITE    | VLBLUE 2 | WHITE    | DKBLUE 2 | WHITE    |
+B | VLBLUE 1 | VDBLUE 2 | VDBLUE 2 | VLBLUE 1 | VLBLUE   | VDBLUE 2 |
+C | BLUE 1   | VLBLUE 1 | LTBLUE 1 | DKBLUE 1 | LTBLUE   | VLBLUE 2 |
+D | LTBLUE 2 | BLUE 1   | BLUE 1   | LTBLUE 1 | BLUE     | BLUE     |
+E | DKBLUE 1 | DKBLUE 1 | DKBLUE 1 | VDBLUE 2 | WHITE 1  | DKBLUE   |
+F | VDBLUE 1 | LTBLUE 2 | WHITE 1  | BLUE 2   | VDBLUE   | LTBLUE 1 |
+Score: 17
+
+After move 9: B2-F2
+A | WHITE    | WHITE    | VLBLUE 2 | WHITE    | DKBLUE 2 | WHITE    |
+B | VLBLUE 1 | LTBLUE 1 | VDBLUE 2 | VLBLUE 1 | VLBLUE   | VDBLUE 2 |
+C | BLUE 1   | VLBLUE 1 | LTBLUE 1 | DKBLUE 1 | LTBLUE   | VLBLUE 2 |
+D | LTBLUE 2 | BLUE 1   | BLUE 1   | LTBLUE 1 | BLUE     | BLUE     |
+E | DKBLUE 1 | DKBLUE 1 | DKBLUE 1 | VDBLUE 2 | WHITE 1  | DKBLUE   |
+F | VDBLUE 1 | VDBLUE 1 | WHITE 1  | BLUE 2   | VDBLUE   | LTBLUE 1 |
+Score: 16
+
+After move 10: B2-C2
+A | WHITE    | WHITE    | VLBLUE 2 | WHITE    | DKBLUE 2 | WHITE    |
+B | VLBLUE 1 | VLBLUE   | VDBLUE 2 | VLBLUE 1 | VLBLUE   | VDBLUE 2 |
+C | BLUE 1   | LTBLUE   | LTBLUE 1 | DKBLUE 1 | LTBLUE   | VLBLUE 2 |
+D | LTBLUE 2 | BLUE 1   | BLUE 1   | LTBLUE 1 | BLUE     | BLUE     |
+E | DKBLUE 1 | DKBLUE 1 | DKBLUE 1 | VDBLUE 2 | WHITE 1  | DKBLUE   |
+F | VDBLUE 1 | VDBLUE 1 | WHITE 1  | BLUE 2   | VDBLUE   | LTBLUE 1 |
+Score: 14
+
+After move 11: A5-E5
+A | WHITE    | WHITE    | VLBLUE 2 | WHITE    | WHITE    | WHITE    |
+B | VLBLUE 1 | VLBLUE   | VDBLUE 2 | VLBLUE 1 | VLBLUE   | VDBLUE 2 |
+C | BLUE 1   | LTBLUE   | LTBLUE 1 | DKBLUE 1 | LTBLUE   | VLBLUE 2 |
+D | LTBLUE 2 | BLUE 1   | BLUE 1   | LTBLUE 1 | BLUE     | BLUE     |
+E | DKBLUE 1 | DKBLUE 1 | DKBLUE 1 | VDBLUE 2 | DKBLUE 1 | DKBLUE   |
+F | VDBLUE 1 | VDBLUE 1 | WHITE 1  | BLUE 2   | VDBLUE   | LTBLUE 1 |
+Score: 12
+
+After move 12: E1-E2
+A | WHITE    | WHITE    | VLBLUE 2 | WHITE    | WHITE    | WHITE    |
+B | VLBLUE 1 | VLBLUE   | VDBLUE 2 | VLBLUE 1 | VLBLUE   | VDBLUE 2 |
+C | BLUE 1   | LTBLUE   | LTBLUE 1 | DKBLUE 1 | LTBLUE   | VLBLUE 2 |
+D | LTBLUE 2 | BLUE 1   | BLUE 1   | LTBLUE 1 | BLUE     | BLUE     |
+E | DKBLUE   | DKBLUE   | DKBLUE 1 | VDBLUE 2 | DKBLUE 1 | DKBLUE   |
+F | VDBLUE 1 | VDBLUE 1 | WHITE 1  | BLUE 2   | VDBLUE   | LTBLUE 1 |
+Score: 12
+
+After move 13: C6-F6
+A | WHITE    | WHITE    | VLBLUE 2 | WHITE    | WHITE    | WHITE    |
+B | VLBLUE 1 | VLBLUE   | VDBLUE 2 | VLBLUE 1 | VLBLUE   | VDBLUE 2 |
+C | BLUE 1   | LTBLUE   | LTBLUE 1 | DKBLUE 1 | LTBLUE   | LTBLUE   |
+D | LTBLUE 2 | BLUE 1   | BLUE 1   | LTBLUE 1 | BLUE     | BLUE     |
+E | DKBLUE   | DKBLUE   | DKBLUE 1 | VDBLUE 2 | DKBLUE 1 | DKBLUE   |
+F | VDBLUE 1 | VDBLUE 1 | WHITE 1  | BLUE 2   | VDBLUE   | VLBLUE 1 |
+Score: 11
+
+After move 14: C1-D1
+A | WHITE    | WHITE    | VLBLUE 2 | WHITE    | WHITE    | WHITE    |
+B | VLBLUE 1 | VLBLUE   | VDBLUE 2 | VLBLUE 1 | VLBLUE   | VDBLUE 2 |
+C | LTBLUE 1 | LTBLUE   | LTBLUE 1 | DKBLUE 1 | LTBLUE   | LTBLUE   |
+D | BLUE     | BLUE 1   | BLUE 1   | LTBLUE 1 | BLUE     | BLUE     |
+E | DKBLUE   | DKBLUE   | DKBLUE 1 | VDBLUE 2 | DKBLUE 1 | DKBLUE   |
+F | VDBLUE 1 | VDBLUE 1 | WHITE 1  | BLUE 2   | VDBLUE   | VLBLUE 1 |
+Score: 9
+
+After move 15: B6-F6
+A | WHITE    | WHITE    | VLBLUE 2 | WHITE    | WHITE    | WHITE    |
+B | VLBLUE 1 | VLBLUE   | VDBLUE 2 | VLBLUE 1 | VLBLUE   | VLBLUE   |
+C | LTBLUE 1 | LTBLUE   | LTBLUE 1 | DKBLUE 1 | LTBLUE   | LTBLUE   |
+D | BLUE     | BLUE 1   | BLUE 1   | LTBLUE 1 | BLUE     | BLUE     |
+E | DKBLUE   | DKBLUE   | DKBLUE 1 | VDBLUE 2 | DKBLUE 1 | DKBLUE   |
+F | VDBLUE 1 | VDBLUE 1 | WHITE 1  | BLUE 2   | VDBLUE   | VDBLUE 1 |
+Score: 7
+
+After move 16: A3-F3
+A | WHITE    | WHITE    | WHITE    | WHITE    | WHITE    | WHITE    |
+B | VLBLUE 1 | VLBLUE   | VDBLUE 2 | VLBLUE 1 | VLBLUE   | VLBLUE   |
+C | LTBLUE 1 | LTBLUE   | LTBLUE 1 | DKBLUE 1 | LTBLUE   | LTBLUE   |
+D | BLUE     | BLUE 1   | BLUE 1   | LTBLUE 1 | BLUE     | BLUE     |
+E | DKBLUE   | DKBLUE   | DKBLUE 1 | VDBLUE 2 | DKBLUE 1 | DKBLUE   |
+F | VDBLUE 1 | VDBLUE 1 | VLBLUE 1 | BLUE 2   | VDBLUE   | VDBLUE 1 |
+Score: 6
+
+After move 17: C4-E4
+A | WHITE    | WHITE    | WHITE    | WHITE    | WHITE    | WHITE    |
+B | VLBLUE 1 | VLBLUE   | VDBLUE 2 | VLBLUE 1 | VLBLUE   | VLBLUE   |
+C | LTBLUE 1 | LTBLUE   | LTBLUE 1 | VDBLUE 1 | LTBLUE   | LTBLUE   |
+D | BLUE     | BLUE 1   | BLUE 1   | LTBLUE 1 | BLUE     | BLUE     |
+E | DKBLUE   | DKBLUE   | DKBLUE 1 | DKBLUE   | DKBLUE 1 | DKBLUE   |
+F | VDBLUE 1 | VDBLUE 1 | VLBLUE 1 | BLUE 2   | VDBLUE   | VDBLUE 1 |
+Score: 5
+
+After move 18: E3-E5
+A | WHITE    | WHITE    | WHITE    | WHITE    | WHITE    | WHITE    |
+B | VLBLUE 1 | VLBLUE   | VDBLUE 2 | VLBLUE 1 | VLBLUE   | VLBLUE   |
+C | LTBLUE 1 | LTBLUE   | LTBLUE 1 | VDBLUE 1 | LTBLUE   | LTBLUE   |
+D | BLUE     | BLUE 1   | BLUE 1   | LTBLUE 1 | BLUE     | BLUE     |
+E | DKBLUE   | DKBLUE   | DKBLUE   | DKBLUE   | DKBLUE   | DKBLUE   |
+F | VDBLUE 1 | VDBLUE 1 | VLBLUE 1 | BLUE 2   | VDBLUE   | VDBLUE 1 |
+Score: 5
+
+After move 19: B3-F3
+A | WHITE    | WHITE    | WHITE    | WHITE    | WHITE    | WHITE    |
+B | VLBLUE 1 | VLBLUE   | VLBLUE   | VLBLUE 1 | VLBLUE   | VLBLUE   |
+C | LTBLUE 1 | LTBLUE   | LTBLUE 1 | VDBLUE 1 | LTBLUE   | LTBLUE   |
+D | BLUE     | BLUE 1   | BLUE 1   | LTBLUE 1 | BLUE     | BLUE     |
+E | DKBLUE   | DKBLUE   | DKBLUE   | DKBLUE   | DKBLUE   | DKBLUE   |
+F | VDBLUE 1 | VDBLUE 1 | VDBLUE 1 | BLUE 2   | VDBLUE   | VDBLUE 1 |
+Score: 3
+
+After move 20: B1-B4
+A | WHITE    | WHITE    | WHITE    | WHITE    | WHITE    | WHITE    |
+B | VLBLUE   | VLBLUE   | VLBLUE   | VLBLUE   | VLBLUE   | VLBLUE   |
+C | LTBLUE 1 | LTBLUE   | LTBLUE 1 | VDBLUE 1 | LTBLUE   | LTBLUE   |
+D | BLUE     | BLUE 1   | BLUE 1   | LTBLUE 1 | BLUE     | BLUE     |
+E | DKBLUE   | DKBLUE   | DKBLUE   | DKBLUE   | DKBLUE   | DKBLUE   |
+F | VDBLUE 1 | VDBLUE 1 | VDBLUE 1 | BLUE 2   | VDBLUE   | VDBLUE 1 |
+Score: 3
+
+After move 21: F1-F3
+A | WHITE    | WHITE    | WHITE    | WHITE    | WHITE    | WHITE    |
+B | VLBLUE   | VLBLUE   | VLBLUE   | VLBLUE   | VLBLUE   | VLBLUE   |
+C | LTBLUE 1 | LTBLUE   | LTBLUE 1 | VDBLUE 1 | LTBLUE   | LTBLUE   |
+D | BLUE     | BLUE 1   | BLUE 1   | LTBLUE 1 | BLUE     | BLUE     |
+E | DKBLUE   | DKBLUE   | DKBLUE   | DKBLUE   | DKBLUE   | DKBLUE   |
+F | VDBLUE   | VDBLUE 1 | VDBLUE   | BLUE 2   | VDBLUE   | VDBLUE 1 |
+Score: 3
+
+After move 22: C4-F4
+A | WHITE    | WHITE    | WHITE    | WHITE    | WHITE    | WHITE    |
+B | VLBLUE   | VLBLUE   | VLBLUE   | VLBLUE   | VLBLUE   | VLBLUE   |
+C | LTBLUE 1 | LTBLUE   | LTBLUE 1 | BLUE 1   | LTBLUE   | LTBLUE   |
+D | BLUE     | BLUE 1   | BLUE 1   | LTBLUE 1 | BLUE     | BLUE     |
+E | DKBLUE   | DKBLUE   | DKBLUE   | DKBLUE   | DKBLUE   | DKBLUE   |
+F | VDBLUE   | VDBLUE 1 | VDBLUE   | VDBLUE   | VDBLUE   | VDBLUE 1 |
+Score: 2
+
+After move 23: F2-F6
+A | WHITE    | WHITE    | WHITE    | WHITE    | WHITE    | WHITE    |
+B | VLBLUE   | VLBLUE   | VLBLUE   | VLBLUE   | VLBLUE   | VLBLUE   |
+C | LTBLUE 1 | LTBLUE   | LTBLUE 1 | BLUE 1   | LTBLUE   | LTBLUE   |
+D | BLUE     | BLUE 1   | BLUE 1   | LTBLUE 1 | BLUE     | BLUE     |
+E | DKBLUE   | DKBLUE   | DKBLUE   | DKBLUE   | DKBLUE   | DKBLUE   |
+F | VDBLUE   | VDBLUE   | VDBLUE   | VDBLUE   | VDBLUE   | VDBLUE   |
+Score: 2
+
+After move 24: C4-D4
+A | WHITE    | WHITE    | WHITE    | WHITE    | WHITE    | WHITE    |
+B | VLBLUE   | VLBLUE   | VLBLUE   | VLBLUE   | VLBLUE   | VLBLUE   |
+C | LTBLUE 1 | LTBLUE   | LTBLUE 1 | LTBLUE   | LTBLUE   | LTBLUE   |
+D | BLUE     | BLUE 1   | BLUE 1   | BLUE     | BLUE     | BLUE     |
+E | DKBLUE   | DKBLUE   | DKBLUE   | DKBLUE   | DKBLUE   | DKBLUE   |
+F | VDBLUE   | VDBLUE   | VDBLUE   | VDBLUE   | VDBLUE   | VDBLUE   |
+Score: 0
+
+After move 25: C1-C3
+A | WHITE    | WHITE    | WHITE    | WHITE    | WHITE    | WHITE    |
+B | VLBLUE   | VLBLUE   | VLBLUE   | VLBLUE   | VLBLUE   | VLBLUE   |
+C | LTBLUE   | LTBLUE   | LTBLUE   | LTBLUE   | LTBLUE   | LTBLUE   |
+D | BLUE     | BLUE 1   | BLUE 1   | BLUE     | BLUE     | BLUE     |
+E | DKBLUE   | DKBLUE   | DKBLUE   | DKBLUE   | DKBLUE   | DKBLUE   |
+F | VDBLUE   | VDBLUE   | VDBLUE   | VDBLUE   | VDBLUE   | VDBLUE   |
+Score: 0
+
+After move 26: D2-D3
+A | WHITE    | WHITE    | WHITE    | WHITE    | WHITE    | WHITE    |
+B | VLBLUE   | VLBLUE   | VLBLUE   | VLBLUE   | VLBLUE   | VLBLUE   |
+C | LTBLUE   | LTBLUE   | LTBLUE   | LTBLUE   | LTBLUE   | LTBLUE   |
+D | BLUE     | BLUE     | BLUE     | BLUE     | BLUE     | BLUE     |
+E | DKBLUE   | DKBLUE   | DKBLUE   | DKBLUE   | DKBLUE   | DKBLUE   |
+F | VDBLUE   | VDBLUE   | VDBLUE   | VDBLUE   | VDBLUE   | VDBLUE   |
+Score: 0
