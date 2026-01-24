@@ -6,10 +6,10 @@ Move sequence:
   1. C1-D1
   2. C2-D2
   3. C3-D3
-  4. A1-B1
+  4. A1-A2
   5. A1-A2
   6. A1-B1
-  7. A1-B1
+  7. A1-A2
 
 ============================================================
 Step-by-step board states:
@@ -43,28 +43,28 @@ C | G   | G   | G   | G   |
 D | W   | W   | W   | W   |
 Score: 4
 
-After move 4: A1-B1
-A | R 1 | R 3 | R   | R   |
-B | B 2 | B   | B   | B   |
+After move 4: A1-A2
+A | R 2 | B 2 | R   | R   |
+B | R 2 | B   | B   | B   |
 C | G   | G   | G   | G   |
 D | W   | W   | W   | W   |
-Score: 1
+Score: 4
 
 After move 5: A1-A2
-A | R 2 | R   | R   | R   |
-B | B 2 | B   | B   | B   |
-C | G   | G   | G   | G   |
-D | W   | W   | W   | W   |
-Score: 0
-
-After move 6: A1-B1
-A | B 1 | R   | R   | R   |
-B | R 1 | B   | B   | B   |
+A | B 1 | R 1 | R   | R   |
+B | R 2 | B   | B   | B   |
 C | G   | G   | G   | G   |
 D | W   | W   | W   | W   |
 Score: 2
 
-After move 7: A1-B1
+After move 6: A1-B1
+A | R 1 | R 1 | R   | R   |
+B | B   | B   | B   | B   |
+C | G   | G   | G   | G   |
+D | W   | W   | W   | W   |
+Score: 0
+
+After move 7: A1-A2
 A | R   | R   | R   | R   |
 B | B   | B   | B   | B   |
 C | G   | G   | G   | G   |

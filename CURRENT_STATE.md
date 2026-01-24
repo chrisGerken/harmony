@@ -1,5 +1,5 @@
 # Current State of Harmony Puzzle Solver
-**Last Updated**: January 20, 2026 (Session 13)
+**Last Updated**: January 24, 2026 (Session 15)
 
 ## Quick Status
 - ✅ **Production Ready**: All code compiles and tests pass
@@ -23,6 +23,10 @@
 - ✅ **Case-Insensitive Parsing**: `dkbrown` → `DKBROWN`, `a1` → `A1`
 - ✅ **Position Validation**: Duplicate tile positions detected
 - ✅ **MOVES Section**: Optional section to transform board state
+- ✅ **Board Scoring**: Lazy-calculated heuristic score for board states
+- ✅ **ScoreWatcher Utility**: Analyzes scoring heuristic effectiveness
+- ✅ **Score-Based Queuing**: PendingStates indexes by board score (lower = priority)
+- ✅ **First Flag**: BoardState tracks primary search path for caching strategy
 
 ## Current Architecture (High Level)
 
@@ -32,12 +36,13 @@ HarmonySolver (instance-based, central context)
     │           invalidityStats, sortMode, replicationFactor, durationMinutes)
     ├─> SortMode enum (NONE, SMALLEST_FIRST, LARGEST_FIRST)
     ├─> colorNames (public static List<String> - global color mapping)
-    ├─> PendingStates (2D array of ConcurrentLinkedQueues by depth × replication)
-    │       ├─> queuesByMoveCount: ConcurrentLinkedQueue<BoardState>[][]
+    ├─> PendingStates (2D array of ConcurrentLinkedQueues by SCORE × replication)
+    │       ├─> queuesByScore: ConcurrentLinkedQueue<BoardState>[][]
     │       ├─> activeQueues: boolean[][] (tracks which queues have been used)
-    │       ├─> maxMoveCount: int (set once at init)
+    │       ├─> maxScore: int (initialScore + 6)
     │       ├─> replicationFactor: int (from -repl flag, default 3)
     │       ├─> solutionFound: volatile boolean
+    │       ├─> poll(): Returns state from LOWEST score queue first
     │       ├─> getQueueContext(): QueueContext (factory for per-thread context)
     │       └─> addStatesGenerated(int), addStatesPruned(int)
     ├─> QueueContext (per-thread, provides random queue index)
@@ -45,8 +50,10 @@ HarmonySolver (instance-based, central context)
     ├─> List<StateProcessor> (worker threads with local caches + timing)
     │       ├─> cache: ArrayList<BoardState>(100_000)
     │       ├─> queueContext: QueueContext (obtained once at thread start)
-    │       └─> trackInvalidity: boolean (only track when -i flag set)
+    │       ├─> trackInvalidity: boolean (only track when -i flag set)
+    │       └─> storeBoardStates(): caches all when parent.isFirst()
     ├─> ProgressReporter (takes HarmonySolver, accesses all via getters)
+    │       └─> Displays queues from max score down to 0
     ├─> StateSerializer (static utility for state persistence)
     │       ├─> saveStates(puzzleFile, states)
     │       ├─> loadStates(puzzleFile, initialState)
@@ -60,13 +67,19 @@ HarmonySolver (instance-based, central context)
 
 Board (simplified)
     ├─> grid: Tile[][]
-    └─> getRowTargetColor(row) returns row  # Target color = row index
+    ├─> score: Integer (null until calculated, lazy initialization)
+    ├─> getScore(): int (calculates and caches score if null)
+    ├─> getRowTargetColor(row) returns row  # Target color = row index
+    └─> toString() includes "Score: N" on its own line
 
 BoardState (linked list structure)
     ├─> board: Board
     ├─> lastMove: Move (null for initial state)
     ├─> previousBoardState: BoardState (null for initial state)
-    └─> remainingMoves: int (cached)
+    ├─> remainingMoves: int (cached)
+    ├─> first: boolean (true if on primary search path)
+    ├─> applyMove(Move, int possibleMoveCount): propagates first if only one move
+    └─> isFirst(), setFirst(): accessors for first flag
 
 Tile (immutable)
     ├─> color: int
@@ -75,7 +88,93 @@ Tile (immutable)
     └─> decrementMoves() - returns new Tile with moves-1
 ```
 
-## Recent Changes (Session 13 - January 20, 2026)
+## Recent Changes (Session 15 - January 24, 2026)
+
+### 1. Score-Based Queue Indexing
+**Changed PendingStates from moves-remaining to board-score indexing**:
+- Constructor now takes `initialScore` instead of `maxMoveCount`
+- `maxScore = initialScore + 6` (scores above max stored in max queue)
+- `add()` uses `state.getBoard().getScore()` for queue index
+- `poll()` returns from LOWEST score queue first (lower = closer to solution)
+- `getQueueRangeInfo()` still returns all non-empty queues
+
+### 2. Score-Based Cache Threshold (-c flag)
+**Changed -c meaning from moves-taken to board-score**:
+- Old: "cache states with N+ moves taken"
+- New: "cache states with board score >= N"
+- High-score states (far from solution) cached locally
+- Low-score states (close to solution) go to shared queue for priority
+
+### 3. ProgressReporter Queue Display Order
+**Reversed display order to show max score down to 0**:
+- Was: lowest score to highest (left to right)
+- Now: highest score to lowest (left to right)
+- Lower scores (closer to solution) appear on the right
+
+### 4. BoardState 'first' Flag
+**New boolean flag tracking primary search path**:
+- Added `boolean first` field with `isFirst()` / `setFirst()` accessors
+- BoardParser sets `first=true` on initial state returned to HarmonySolver
+- `applyMove(Move, int possibleMoveCount)` propagates `first=true` only when:
+  - Parent state has `first=true` AND
+  - There is exactly one possible move from parent
+- Otherwise new state has `first=false`
+
+### 5. storeBoardStates() First Flag Logic
+**Cache all states when parent is on primary path**:
+- If `parent.isFirst()` is true, all child states cached locally
+- Child states get `first = (states.size() == 1)`
+- Otherwise, normal score-based caching logic applies
+- This keeps the primary search path together in one thread's cache
+
+### 6. Resume State Sorting
+**Sort restored states by remaining moves when resuming**:
+- Added sort in `HarmonySolver.solve()` before adding resumed states
+- Sorts by `getRemainingMoves()` ascending (least first)
+- States closest to solution are added to queues first
+
+### 7. Display Board Score on Startup
+**HarmonySolver now shows initial board score**:
+- Added "Board score: N" line after "Board size: NxN"
+- Helps understand puzzle complexity before solving
+
+## Earlier Changes (Session 14 - January 23, 2026)
+
+### 1. Board Scoring System
+**Added lazy-calculated heuristic score to Board class**:
+- Added `Integer score` attribute with default value null
+- Added `getScore()` method that calculates and caches score on first access
+- Score formula (sum of):
+  - Number of tiles NOT in their target row (target row = color ID)
+  - For each column: (tiles in column) - (unique colors in column)
+  - For each tile with > 2 remaining moves: (remaining moves - 2)
+- Updated both `toString()` methods to include "Score: N" on its own line
+- Lower score = closer to solution (solved board has score 0)
+
+### 2. ScoreWatcher Utility
+**New class to analyze scoring heuristic effectiveness**:
+- Created `ScoreWatcher.java` in main package
+- Generates random puzzles and reports score progression through solution
+- Shows for each move: score, valid moves count, min/max possible scores, rank, percentile
+- Only marks score increases with ↑ (score going up = getting worse)
+- Displays statistics: average percentile, optimal move rate, score increase rate
+- Usage: `java ScoreWatcher <rows> <cols> <numMoves>`
+
+### 3. TestBuilder.generatePuzzleWithSolution()
+**New static method for programmatic puzzle generation**:
+- Added `generatePuzzleWithSolution(int rows, int cols, int numMoves)` method
+- Returns `BoardState[]` where element 0 is initial scrambled state
+- Subsequent elements show state after each solution move
+- Overloaded version accepts `Random` for reproducible puzzles
+
+### 4. StateProcessor Batch Storage
+**Refactored processState() to collect valid states before storing**:
+- Changed from immediate `storeBoardState(state)` calls to batch collection
+- Renamed `storeBoardState(BoardState)` to `storeBoardStates(List<BoardState>)`
+- Valid states collected in ArrayList, then stored in batch after all moves processed
+- Enables future enhancements like sorting by score before storage
+
+## Earlier Changes (Session 13 - January 20, 2026)
 
 ### 1. New FutureStuckTilesTest
 **Replaced StuckTilesTest with more general FutureStuckTilesTest**:
@@ -101,119 +200,33 @@ Tile (immutable)
 
 **Scenario now caught**: If a move places a tile T2 with 0 remaining moves in a position where it blocks another tile T1 (which has 1 move and needs to reach T2's row), the board is now correctly detected as invalid.
 
-## Earlier Changes (Session 11 - January 15, 2026)
-
-### 2. Board.toString() Hides Zero Moves
-**Tiles with 0 remaining moves now display only the color name**:
-- Modified `Board.java` toString methods (lines 161-167, 206-214)
-- Old: `RED 0` → New: `RED`
-- Tiles with non-zero moves still show the count: `RED 2`
-
-### 2. BoardParser Validates Unique Positions
-**Added validation to detect duplicate tile positions**:
-- Modified `BoardParser.java` (lines 193-200)
-- Uses HashSet to track seen positions during parsing
-- Throws `IllegalArgumentException` if duplicate position found
-
-### 3. BoardParser Case-Insensitive Parsing
-**Lowercase letters are now treated as uppercase**:
-- Color names: `dkbrown` → `DKBROWN`
-- Tile positions: `a1` → `A1`
-- Applied in COLORS, TILES, BOARD, and TARGETS sections
-
-### 4. Optional MOVES Section in BoardParser
-**Added support for MOVES section to transform board state**:
-- MOVES section appears after BOARD or TILES section
-- Move notation: `P1-P2` (e.g., `A1-B1`, `C3-C6`)
-- Moves applied to create actual initial state for solving
-- Fresh BoardState created from final board (discards move history)
-
-Example:
-```
-BOARD
-RED a1 2 a2 2
-BLUE b1 2 b2 2
-MOVES
-a1-b1
-a2-b2
-```
-
-## Earlier Changes (Session 10b - January 14, 2026)
-
-### 5. Enhanced Solution File with Board Visualization
-**Solution files now show step-by-step board states**:
-- Modified `printSolution()` in `HarmonySolver.java` (lines 376-435)
-- Two sections: move sequence (compact) + step-by-step board states
-- Shows initial state and board after each move for visualization
-
-### 6. Fixed-Width Progress Time Format
-**Changed elapsed time to `[hhh:mm:ss]` format**:
-- Modified `formatDuration()` in `ProgressReporter.java` (lines 192-199)
-- Old: `[1m 15s]` → New: `[000:01:15]`
-- Aligns output better in logs, supports runs up to 999 hours
-
-## Earlier Changes (Session 10 - January 14, 2026)
-
-### 3. Enhanced Duration Argument (-dur)
-**Support time units for flexible duration specification**:
-- Modified `parseDuration()` method in `HarmonySolver.java`
-- Supported units: `s` (seconds), `m` (minutes, default), `h` (hours), `d` (days), `w` (weeks)
-- Examples: `30` = 30 min, `30h` = 30 hours, `5d` = 5 days, `1w` = 1 week
-
-### 4. Solution File Output
-**Write solutions to file in addition to console**:
-- Modified `printSolution()` and added `getSolutionFilePath()` in `HarmonySolver.java`
-- If puzzle is `name.txt`, solution writes to `name.solution.txt`
-- Solution file includes header comments and numbered move sequence
-
-### 5. New BOARD Section Format
-**Simpler puzzle specification format**:
-- Added BOARD section parsing in `BoardParser.java`
-- Format: `BOARD` header followed by lines of `<color_name> <tile1> <moves1> ...`
-- Colors listed in target row order (first color = row 0 target)
-- Old COLORS/TARGETS/TILES format still fully supported
-
-### 6. Updated PuzzleGenerator and TestBuilder
-**Output puzzles in new BOARD format**:
-- Both utilities now output the simpler BOARD format
-- Groups tiles by color for better readability
-- TestBuilder adds "End of Puzzle Specification" marker before solution
-
-## Previous Session (Session 9 - January 13, 2026)
-
-- **Conditional Invalidity Stats**: Only track when -i flag set
-- **Active Queues Optimization**: Boolean array to skip never-used queues
-- **Queue Replication**: -repl flag for reduced contention
-- **QueueContext Class**: Per-thread random queue selection
-- **State Persistence**: Timer-based checkpointing and resumption
-- **StateSerializer**: State file save/load utilities
-
 ## File Structure
 
 ```
 harmony/
 ├── src/main/java/org/gerken/harmony/
-│   ├── HarmonySolver.java          # ⭐ UPDATED - duration units, solution file
-│   ├── PuzzleGenerator.java        # ⭐ UPDATED - BOARD format output
-│   ├── TestBuilder.java            # ⭐ UPDATED - BOARD format output
+│   ├── HarmonySolver.java          # ⭐ UPDATED - displays board score, sorts resume states
+│   ├── PuzzleGenerator.java        # BOARD format output
+│   ├── TestBuilder.java            # generatePuzzleWithSolution() method
+│   ├── ScoreWatcher.java           # scoring heuristic analysis utility
 │   ├── TileBenchmark.java
 │   ├── model/
 │   │   ├── Tile.java
-│   │   ├── Board.java              # ⭐ UPDATED - hides zero moves in toString()
+│   │   ├── Board.java              # score attribute, getScore(), toString() shows score
 │   │   ├── Move.java
-│   │   └── BoardState.java
+│   │   └── BoardState.java         # ⭐ UPDATED - first flag, applyMove with possibleMoveCount
 │   ├── logic/
-│   │   ├── PendingStates.java      # ⭐ REFACTORED - 2D queues, activeQueues, collectAllStates
-│   │   ├── QueueContext.java       # ⭐ NEW - per-thread random queue selection
-│   │   ├── StateSerializer.java    # ⭐ NEW - state persistence and loading
-│   │   ├── StateProcessor.java     # ⭐ UPDATED - trackInvalidity, getCachedStates
-│   │   ├── ProgressReporter.java   # ⭐ UPDATED - fixed-width time format [hhh:mm:ss]
-│   │   └── BoardParser.java        # ⭐ UPDATED - MOVES section, case-insensitive, validation
+│   │   ├── PendingStates.java      # ⭐ UPDATED - score-based indexing, poll from lowest score
+│   │   ├── QueueContext.java       # per-thread random queue selection
+│   │   ├── StateSerializer.java    # state persistence and loading
+│   │   ├── StateProcessor.java     # ⭐ UPDATED - first flag logic in storeBoardStates
+│   │   ├── ProgressReporter.java   # ⭐ UPDATED - reversed queue display order
+│   │   └── BoardParser.java        # ⭐ UPDATED - sets first=true on initial state
 │   └── invalidity/
 │       ├── InvalidityTest.java
-│       ├── InvalidityTestCoordinator.java  # ⭐ UPDATED - uses FutureStuckTilesTest
+│       ├── InvalidityTestCoordinator.java
 │       ├── BlockedSwapTest.java
-│       ├── FutureStuckTilesTest.java       # ⭐ NEW - replaces StuckTilesTest
+│       ├── FutureStuckTilesTest.java
 │       ├── StuckTilesTest.java             # Legacy - not active
 │       ├── StuckTileTest.java              # Legacy - not active
 │       ├── IsolatedTileTest.java
@@ -221,7 +234,7 @@ harmony/
 │       └── WrongRowZeroMovesTest.java
 ├── docs/
 │   ├── ARCHITECTURE.md
-│   ├── DATA_MODELS.md
+│   ├── DATA_MODELS.md              # ⭐ NEEDS UPDATE - BoardState first flag
 │   ├── OPTIMIZATIONS.md
 │   ├── INVALIDITY_TESTS.md
 │   └── DEVELOPMENT.md
@@ -234,7 +247,9 @@ harmony/
 │   ├── 3x3_8moves.txt
 │   ├── 4x4_9moves.txt
 │   └── 3x3_12moves.txt
-├── SESSION_2026-01-19.md           # ⭐ NEW - this session
+├── SESSION_2026-01-24.md           # ⭐ NEW - this session
+├── SESSION_2026-01-23.md
+├── SESSION_2026-01-19.md
 ├── SESSION_2026-01-15.md
 ├── SESSION_2026-01-14.md
 ├── SESSION_2026-01-13.md
@@ -254,7 +269,7 @@ harmony/
 Options:
   -t, --threads <N>     Number of worker threads (default: 2)
   -r, --report <N>      Progress report interval in seconds (default: 30, 0 to disable)
-  -c, --cache <N>       Cache threshold: states with N+ moves taken are cached locally (default: 4)
+  -c, --cache <N>       Cache threshold: states with board score >= N are cached locally (default: 4)
   -repl <N>             Replication factor for queue distribution (default: 3)
   -dur, --duration <N>  Run duration with optional unit suffix (default: 120m)
                         Units: s (seconds), m (minutes), h (hours), d (days), w (weeks)
@@ -269,16 +284,29 @@ Options:
 ## Testing Status
 
 ### Verified Working ✅
-| Puzzle | Size | Moves | Processed | Pruned |
-|--------|------|-------|-----------|--------|
-| tiny.txt | 2x2 | 4 | 4 | 0% |
-| easy.txt | 2x2 | 3 | 4 | 0% |
-| simple.txt | 3x3 | 9 | 23.0K | 30.7% |
-| 3x3_8moves.txt | 3x3 | 8 | 147 | 26.0% |
-| 4x4_9moves.txt | 4x4 | 9 | 37 | 20.0% |
-| 3x3_12moves.txt | 3x3 | 12 | 21 | 6.6% |
+| Puzzle | Size | Score | Moves | Processed | Pruned |
+|--------|------|-------|-------|-----------|--------|
+| puzzle-4x4-easy.txt | 4x4 | 4 | 8 | 80 | 10.7% |
+| test_001.txt | 4x4 | 10 | 7 | 10 | 0% |
+| 5x5x12.txt | 4x4 | 48 | 30 | 334 | 42.9% |
 
 ## Session History
+
+### Session 15 (January 24, 2026)
+- **Score-Based Queuing**: PendingStates indexes by board score, polls lowest first
+- **Cache Threshold**: -c now refers to board score (>= N cached locally)
+- **Queue Display**: ProgressReporter shows max score down to 0
+- **First Flag**: BoardState.first tracks primary search path
+- **storeBoardStates()**: Caches all states when parent.isFirst()
+- **Resume Sorting**: Restored states sorted by remaining moves (least first)
+- **Board Score Display**: Shown on startup after board size
+
+### Session 14 (January 23, 2026)
+- **Board Scoring**: Added lazy-calculated heuristic score to Board class
+- Score = (tiles not in target row) + (duplicate colors per column) + (excess moves per tile)
+- **ScoreWatcher**: New utility to analyze scoring heuristic effectiveness
+- **TestBuilder.generatePuzzleWithSolution()**: Static method returning BoardState array
+- **StateProcessor Refactored**: processState() collects valid states, storeBoardStates(List)
 
 ### Session 13 (January 20, 2026)
 - **FutureStuckTilesTest**: New invalidity test replacing StuckTilesTest
@@ -316,27 +344,9 @@ Options:
 - **State Persistence**: -dur flag, StateSerializer, resume from state file
 - **Graceful Shutdown**: 10 second wait for in-progress states to finish
 
-### Session 8 (January 12, 2026)
-- **PendingStates Refactored**: Array-based queues, simplified atomics
-- **Move Sorting**: --smallestFirst / --largestFirst flags
-- **StateProcessor Optimized**: Batch counters, pre-sized cache
-- **BlockedSwapTest Simplified**: Direct color→row mapping
-- **Tile.copy()**: Added and benchmarked (clone() 20x faster)
-- **New Puzzles**: 3x3_8moves, 4x4_9moves, 3x3_12moves
-- **BoardState.isSolved() Early Exit**: Check remainingMoves before tile iteration
-- **Grid Copy Benchmark**: Confirmed clone() 4-5x faster than manual copy
-
-### Session 7 Afternoon (January 11, 2026)
-- **StalemateTest**: New invalidity test
-- **Board Simplified**: Target color = row index
-- **Invalidity Stats**: -i flag with table display
-- **Test Reordering**: BlockedSwap first
-
-### Session 7 Morning (January 11, 2026)
-- **BoardState Refactored**: Linked list structure
-- **Timing Instrumentation**: Processing time tracking
-
 ### Previous Sessions
+- Session 8: PendingStates refactored, move sorting, StateProcessor optimized
+- Session 7: StalemateTest, Board simplified, invalidity stats, BoardState linked list
 - Session 6b: ProgressReporter redesign
 - Session 6: Horizontal perfect swap optimization
 - Session 5: TestBuilder utility
@@ -359,14 +369,14 @@ mvn package                          # Build
 
 ### Key Files for Next Session
 1. `CURRENT_STATE.md` - This file (start here!)
-2. `FutureStuckTilesTest.java` - New invalidity test replacing StuckTilesTest
-3. `InvalidityTestCoordinator.java` - Updated to use FutureStuckTilesTest
-4. `docs/INVALIDITY_TESTS.md` - Updated with FutureStuckTilesTest documentation
-5. `ProgressReporter.java` - Updated test name for invalidity stats
-6. `HarmonySolver.java` - Duration with time units, solution file with board visualization
+2. `BoardState.java` - Added first flag, applyMove with possibleMoveCount
+3. `PendingStates.java` - Score-based indexing, poll from lowest score
+4. `StateProcessor.java` - First flag caching logic in storeBoardStates
+5. `ProgressReporter.java` - Reversed queue display order (max to 0)
+6. `HarmonySolver.java` - Displays board score, sorts resume states
 
 ---
 
-**Ready for**: Production use, long-running puzzles with state persistence
+**Ready for**: Production use, score-based search optimization
 **Status**: ✅ Stable, documented, tested
-**Last Test**: January 20, 2026 (Session 13)
+**Last Test**: January 24, 2026 (Session 15)

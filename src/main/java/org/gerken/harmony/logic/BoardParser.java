@@ -266,6 +266,9 @@ public class BoardParser {
                 boardState = new BoardState(boardState.getBoard());
             }
 
+            // Mark the initial state as "first" (primary search path)
+            boardState.setFirst(true);
+
             return boardState;
         }
     }

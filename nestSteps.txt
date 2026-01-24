@@ -1,11 +1,5 @@
-1) Support the idea of a board's score. We need to add an Integer attribute with default value null to Board to hold the score when we calculate the score, but there will be times that we do not, for now, calculate a board's score. Once calcuated, a board's score needs to be persisted and recovered when writing and reading board states. For the board score's getter method, if the score is null then calculate and save the score.
+1) When restoring state, sort the board states in each queue by remaining moves, so that the first board state in the queue has the least number of remaining moves
 
-2) The score is calculated by adding all of the following:
-- the number of tiles that are not in their target row
-- for each column, the number of tiles in the column minus the number of uniquely colored tiles in that column
-- for each tile with more than two remaining moves, the number of remaining moves minus 2.
+2) Add a boolean flag named first to BoardState. When the first board state is returned to HarmonySolver from BoardParser then set the first value for that state to true.  When applying a move to board state S1 to get a new board state S2, if S1 has only one possible move then set the first value for S2 to the first vale for S1, otherwise set the first value for S2 to false;
 
-3) The toString() method of Board should write the score on it's own line
-
-4) TestBuilder should display the score of each board in the sequence of boards shown in the solution
-
+3) In the storeBoardStates() method in class StateProcessor, if the parent state for each of the states in the list has a first value of true, then add all of the states to the state processor's cache, otherwise perform the current method logic.

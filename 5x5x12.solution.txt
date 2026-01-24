@@ -3,36 +3,36 @@
 # Moves: 30
 
 Move sequence:
-  1. A3-A4
-  2. A1-A3
-  3. C1-C2
+  1. C4-D4
+  2. C4-D4
+  3. C4-D4
   4. C4-D4
-  5. C4-D4
-  6. C4-D4
-  7. C4-D4
-  8. B4-C4
-  9. A4-D4
+  5. B4-C4
+  6. A4-D4
+  7. C3-D3
+  8. B3-C3
+  9. A3-D3
  10. C3-D3
- 11. B3-C3
- 12. A3-D3
- 13. C3-D3
- 14. C3-D3
- 15. C3-D3
- 16. C2-D2
- 17. B2-C2
- 18. A2-C2
- 19. A2-C2
- 20. A1-B1
- 21. A1-C1
- 22. D1-D4
- 23. A1-D1
- 24. A1-D1
- 25. C1-C2
- 26. A2-C2
- 27. A2-B2
- 28. C1-C3
- 29. C1-C4
- 30. A1-C1
+ 11. C3-D3
+ 12. C2-D2
+ 13. C2-D2
+ 14. B2-C2
+ 15. B2-C2
+ 16. A2-D2
+ 17. B2-D2
+ 18. B1-C1
+ 19. A1-C1
+ 20. D2-D3
+ 21. C3-D3
+ 22. D2-D4
+ 23. C1-C4
+ 24. C2-C4
+ 25. B2-C2
+ 26. B2-D2
+ 27. A1-C1
+ 28. D1-D2
+ 29. C1-D1
+ 30. B1-D1
 
 ============================================================
 Step-by-step board states:
@@ -45,210 +45,210 @@ C | PURPLE 2 | YELLOW 5 | RED 2    | BLUE 5   |
 D | PURPLE 1 | RED 3    | BLUE 2   | RED 5    |
 Score: 48
 
-After move 1: A3-A4
-A | YELLOW 7 | YELLOW 3 | BLUE 2   | PURPLE 4 |
+After move 1: C4-D4
+A | YELLOW 7 | YELLOW 3 | PURPLE 5 | BLUE 3   |
 B | BLUE 5   | YELLOW 5 | PURPLE 4 | RED 3    |
-C | PURPLE 2 | YELLOW 5 | RED 2    | BLUE 5   |
-D | PURPLE 1 | RED 3    | BLUE 2   | RED 5    |
-Score: 45
+C | PURPLE 2 | YELLOW 5 | RED 2    | RED 4    |
+D | PURPLE 1 | RED 3    | BLUE 2   | BLUE 4   |
+Score: 46
 
-After move 2: A1-A3
-A | BLUE 1   | YELLOW 3 | YELLOW 6 | PURPLE 4 |
+After move 2: C4-D4
+A | YELLOW 7 | YELLOW 3 | PURPLE 5 | BLUE 3   |
 B | BLUE 5   | YELLOW 5 | PURPLE 4 | RED 3    |
-C | PURPLE 2 | YELLOW 5 | RED 2    | BLUE 5   |
-D | PURPLE 1 | RED 3    | BLUE 2   | RED 5    |
+C | PURPLE 2 | YELLOW 5 | RED 2    | BLUE 3   |
+D | PURPLE 1 | RED 3    | BLUE 2   | RED 3    |
 Score: 44
 
-After move 3: C1-C2
-A | BLUE 1   | YELLOW 3 | YELLOW 6 | PURPLE 4 |
+After move 3: C4-D4
+A | YELLOW 7 | YELLOW 3 | PURPLE 5 | BLUE 3   |
 B | BLUE 5   | YELLOW 5 | PURPLE 4 | RED 3    |
-C | YELLOW 4 | PURPLE 1 | RED 2    | BLUE 5   |
-D | PURPLE 1 | RED 3    | BLUE 2   | RED 5    |
-Score: 41
+C | PURPLE 2 | YELLOW 5 | RED 2    | RED 2    |
+D | PURPLE 1 | RED 3    | BLUE 2   | BLUE 2   |
+Score: 42
 
 After move 4: C4-D4
-A | BLUE 1   | YELLOW 3 | YELLOW 6 | PURPLE 4 |
+A | YELLOW 7 | YELLOW 3 | PURPLE 5 | BLUE 3   |
 B | BLUE 5   | YELLOW 5 | PURPLE 4 | RED 3    |
-C | YELLOW 4 | PURPLE 1 | RED 2    | RED 4    |
-D | PURPLE 1 | RED 3    | BLUE 2   | BLUE 4   |
-Score: 39
-
-After move 5: C4-D4
-A | BLUE 1   | YELLOW 3 | YELLOW 6 | PURPLE 4 |
-B | BLUE 5   | YELLOW 5 | PURPLE 4 | RED 3    |
-C | YELLOW 4 | PURPLE 1 | RED 2    | BLUE 3   |
-D | PURPLE 1 | RED 3    | BLUE 2   | RED 3    |
-Score: 37
-
-After move 6: C4-D4
-A | BLUE 1   | YELLOW 3 | YELLOW 6 | PURPLE 4 |
-B | BLUE 5   | YELLOW 5 | PURPLE 4 | RED 3    |
-C | YELLOW 4 | PURPLE 1 | RED 2    | RED 2    |
-D | PURPLE 1 | RED 3    | BLUE 2   | BLUE 2   |
-Score: 35
-
-After move 7: C4-D4
-A | BLUE 1   | YELLOW 3 | YELLOW 6 | PURPLE 4 |
-B | BLUE 5   | YELLOW 5 | PURPLE 4 | RED 3    |
-C | YELLOW 4 | PURPLE 1 | RED 2    | BLUE 1   |
+C | PURPLE 2 | YELLOW 5 | RED 2    | BLUE 1   |
 D | PURPLE 1 | RED 3    | BLUE 2   | RED 1    |
-Score: 35
+Score: 42
 
-After move 8: B4-C4
-A | BLUE 1   | YELLOW 3 | YELLOW 6 | PURPLE 4 |
+After move 5: B4-C4
+A | YELLOW 7 | YELLOW 3 | PURPLE 5 | BLUE 3   |
 B | BLUE 5   | YELLOW 5 | PURPLE 4 | BLUE     |
-C | YELLOW 4 | PURPLE 1 | RED 2    | RED 2    |
+C | PURPLE 2 | YELLOW 5 | RED 2    | RED 2    |
 D | PURPLE 1 | RED 3    | BLUE 2   | RED 1    |
+Score: 40
+
+After move 6: A4-D4
+A | YELLOW 7 | YELLOW 3 | PURPLE 5 | RED      |
+B | BLUE 5   | YELLOW 5 | PURPLE 4 | BLUE     |
+C | PURPLE 2 | YELLOW 5 | RED 2    | RED 2    |
+D | PURPLE 1 | RED 3    | BLUE 2   | BLUE 2   |
+Score: 38
+
+After move 7: C3-D3
+A | YELLOW 7 | YELLOW 3 | PURPLE 5 | RED      |
+B | BLUE 5   | YELLOW 5 | PURPLE 4 | BLUE     |
+C | PURPLE 2 | YELLOW 5 | BLUE 1   | RED 2    |
+D | PURPLE 1 | RED 3    | RED 1    | BLUE 2   |
+Score: 38
+
+After move 8: B3-C3
+A | YELLOW 7 | YELLOW 3 | PURPLE 5 | RED      |
+B | BLUE 5   | YELLOW 5 | BLUE     | BLUE     |
+C | PURPLE 2 | YELLOW 5 | PURPLE 3 | RED 2    |
+D | PURPLE 1 | RED 3    | RED 1    | BLUE 2   |
+Score: 36
+
+After move 9: A3-D3
+A | YELLOW 7 | YELLOW 3 | RED      | RED      |
+B | BLUE 5   | YELLOW 5 | BLUE     | BLUE     |
+C | PURPLE 2 | YELLOW 5 | PURPLE 3 | RED 2    |
+D | PURPLE 1 | RED 3    | PURPLE 4 | BLUE 2   |
 Score: 33
 
-After move 9: A4-D4
-A | BLUE 1   | YELLOW 3 | YELLOW 6 | RED      |
-B | BLUE 5   | YELLOW 5 | PURPLE 4 | BLUE     |
-C | YELLOW 4 | PURPLE 1 | RED 2    | RED 2    |
-D | PURPLE 1 | RED 3    | BLUE 2   | PURPLE 3 |
-Score: 30
-
 After move 10: C3-D3
-A | BLUE 1   | YELLOW 3 | YELLOW 6 | RED      |
-B | BLUE 5   | YELLOW 5 | PURPLE 4 | BLUE     |
-C | YELLOW 4 | PURPLE 1 | BLUE 1   | RED 2    |
-D | PURPLE 1 | RED 3    | RED 1    | PURPLE 3 |
+A | YELLOW 7 | YELLOW 3 | RED      | RED      |
+B | BLUE 5   | YELLOW 5 | BLUE     | BLUE     |
+C | PURPLE 2 | YELLOW 5 | PURPLE 3 | RED 2    |
+D | PURPLE 1 | RED 3    | PURPLE 2 | BLUE 2   |
+Score: 31
+
+After move 11: C3-D3
+A | YELLOW 7 | YELLOW 3 | RED      | RED      |
+B | BLUE 5   | YELLOW 5 | BLUE     | BLUE     |
+C | PURPLE 2 | YELLOW 5 | PURPLE 1 | RED 2    |
+D | PURPLE 1 | RED 3    | PURPLE 2 | BLUE 2   |
 Score: 30
 
-After move 11: B3-C3
-A | BLUE 1   | YELLOW 3 | YELLOW 6 | RED      |
+After move 12: C2-D2
+A | YELLOW 7 | YELLOW 3 | RED      | RED      |
 B | BLUE 5   | YELLOW 5 | BLUE     | BLUE     |
-C | YELLOW 4 | PURPLE 1 | PURPLE 3 | RED 2    |
-D | PURPLE 1 | RED 3    | RED 1    | PURPLE 3 |
-Score: 28
+C | PURPLE 2 | RED 2    | PURPLE 1 | RED 2    |
+D | PURPLE 1 | YELLOW 4 | PURPLE 2 | BLUE 2   |
+Score: 29
 
-After move 12: A3-D3
-A | BLUE 1   | YELLOW 3 | RED      | RED      |
+After move 13: C2-D2
+A | YELLOW 7 | YELLOW 3 | RED      | RED      |
 B | BLUE 5   | YELLOW 5 | BLUE     | BLUE     |
-C | YELLOW 4 | PURPLE 1 | PURPLE 3 | RED 2    |
-D | PURPLE 1 | RED 3    | YELLOW 5 | PURPLE 3 |
-Score: 26
+C | PURPLE 2 | YELLOW 3 | PURPLE 1 | RED 2    |
+D | PURPLE 1 | RED 1    | PURPLE 2 | BLUE 2   |
+Score: 27
 
-After move 13: C3-D3
-A | BLUE 1   | YELLOW 3 | RED      | RED      |
-B | BLUE 5   | YELLOW 5 | BLUE     | BLUE     |
-C | YELLOW 4 | PURPLE 1 | YELLOW 4 | RED 2    |
-D | PURPLE 1 | RED 3    | PURPLE 2 | PURPLE 3 |
+After move 14: B2-C2
+A | YELLOW 7 | YELLOW 3 | RED      | RED      |
+B | BLUE 5   | YELLOW 2 | BLUE     | BLUE     |
+C | PURPLE 2 | YELLOW 4 | PURPLE 1 | RED 2    |
+D | PURPLE 1 | RED 1    | PURPLE 2 | BLUE 2   |
+Score: 25
+
+After move 15: B2-C2
+A | YELLOW 7 | YELLOW 3 | RED      | RED      |
+B | BLUE 5   | YELLOW 3 | BLUE     | BLUE     |
+C | PURPLE 2 | YELLOW 1 | PURPLE 1 | RED 2    |
+D | PURPLE 1 | RED 1    | PURPLE 2 | BLUE 2   |
+Score: 24
+
+After move 16: A2-D2
+A | YELLOW 7 | RED      | RED      | RED      |
+B | BLUE 5   | YELLOW 3 | BLUE     | BLUE     |
+C | PURPLE 2 | YELLOW 1 | PURPLE 1 | RED 2    |
+D | PURPLE 1 | YELLOW 2 | PURPLE 2 | BLUE 2   |
 Score: 22
 
-After move 14: C3-D3
-A | BLUE 1   | YELLOW 3 | RED      | RED      |
-B | BLUE 5   | YELLOW 5 | BLUE     | BLUE     |
-C | YELLOW 4 | PURPLE 1 | PURPLE 1 | RED 2    |
-D | PURPLE 1 | RED 3    | YELLOW 3 | PURPLE 3 |
-Score: 23
+After move 17: B2-D2
+A | YELLOW 7 | RED      | RED      | RED      |
+B | BLUE 5   | YELLOW 1 | BLUE     | BLUE     |
+C | PURPLE 2 | YELLOW 1 | PURPLE 1 | RED 2    |
+D | PURPLE 1 | YELLOW 2 | PURPLE 2 | BLUE 2   |
+Score: 21
 
-After move 15: C3-D3
-A | BLUE 1   | YELLOW 3 | RED      | RED      |
-B | BLUE 5   | YELLOW 5 | BLUE     | BLUE     |
-C | YELLOW 4 | PURPLE 1 | YELLOW 2 | RED 2    |
-D | PURPLE 1 | RED 3    | PURPLE   | PURPLE 3 |
-Score: 20
+After move 18: B1-C1
+A | YELLOW 7 | RED      | RED      | RED      |
+B | PURPLE 1 | YELLOW 1 | BLUE     | BLUE     |
+C | BLUE 4   | YELLOW 1 | PURPLE 1 | RED 2    |
+D | PURPLE 1 | YELLOW 2 | PURPLE 2 | BLUE 2   |
+Score: 21
 
-After move 16: C2-D2
-A | BLUE 1   | YELLOW 3 | RED      | RED      |
-B | BLUE 5   | YELLOW 5 | BLUE     | BLUE     |
-C | YELLOW 4 | RED 2    | YELLOW 2 | RED 2    |
-D | PURPLE 1 | PURPLE   | PURPLE   | PURPLE 3 |
+After move 19: A1-C1
+A | BLUE 3   | RED      | RED      | RED      |
+B | PURPLE 1 | YELLOW 1 | BLUE     | BLUE     |
+C | YELLOW 6 | YELLOW 1 | PURPLE 1 | RED 2    |
+D | PURPLE 1 | YELLOW 2 | PURPLE 2 | BLUE 2   |
 Score: 18
 
-After move 17: B2-C2
-A | BLUE 1   | YELLOW 3 | RED      | RED      |
-B | BLUE 5   | RED 1    | BLUE     | BLUE     |
-C | YELLOW 4 | YELLOW 4 | YELLOW 2 | RED 2    |
-D | PURPLE 1 | PURPLE   | PURPLE   | PURPLE 3 |
+After move 20: D2-D3
+A | BLUE 3   | RED      | RED      | RED      |
+B | PURPLE 1 | YELLOW 1 | BLUE     | BLUE     |
+C | YELLOW 6 | YELLOW 1 | PURPLE 1 | RED 2    |
+D | PURPLE 1 | PURPLE 1 | YELLOW 1 | BLUE 2   |
 Score: 16
 
-After move 18: A2-C2
-A | BLUE 1   | YELLOW 3 | RED      | RED      |
-B | BLUE 5   | RED 1    | BLUE     | BLUE     |
-C | YELLOW 4 | YELLOW 2 | YELLOW 2 | RED 2    |
-D | PURPLE 1 | PURPLE   | PURPLE   | PURPLE 3 |
+After move 21: C3-D3
+A | BLUE 3   | RED      | RED      | RED      |
+B | PURPLE 1 | YELLOW 1 | BLUE     | BLUE     |
+C | YELLOW 6 | YELLOW 1 | YELLOW   | RED 2    |
+D | PURPLE 1 | PURPLE 1 | PURPLE   | BLUE 2   |
 Score: 14
 
-After move 19: A2-C2
-A | BLUE 1   | YELLOW 1 | RED      | RED      |
-B | BLUE 5   | RED 1    | BLUE     | BLUE     |
-C | YELLOW 4 | YELLOW 2 | YELLOW 2 | RED 2    |
-D | PURPLE 1 | PURPLE   | PURPLE   | PURPLE 3 |
+After move 22: D2-D4
+A | BLUE 3   | RED      | RED      | RED      |
+B | PURPLE 1 | YELLOW 1 | BLUE     | BLUE     |
+C | YELLOW 6 | YELLOW 1 | YELLOW   | RED 2    |
+D | PURPLE 1 | BLUE 1   | PURPLE   | PURPLE   |
 Score: 13
 
-After move 20: A1-B1
-A | BLUE 4   | YELLOW 1 | RED      | RED      |
-B | BLUE     | RED 1    | BLUE     | BLUE     |
-C | YELLOW 4 | YELLOW 2 | YELLOW 2 | RED 2    |
-D | PURPLE 1 | PURPLE   | PURPLE   | PURPLE 3 |
-Score: 12
-
-After move 21: A1-C1
-A | YELLOW 3 | YELLOW 1 | RED      | RED      |
-B | BLUE     | RED 1    | BLUE     | BLUE     |
-C | BLUE 3   | YELLOW 2 | YELLOW 2 | RED 2    |
-D | PURPLE 1 | PURPLE   | PURPLE   | PURPLE 3 |
+After move 23: C1-C4
+A | BLUE 3   | RED      | RED      | RED      |
+B | PURPLE 1 | YELLOW 1 | BLUE     | BLUE     |
+C | RED 1    | YELLOW 1 | YELLOW   | YELLOW 5 |
+D | PURPLE 1 | BLUE 1   | PURPLE   | PURPLE   |
 Score: 11
 
-After move 22: D1-D4
-A | YELLOW 3 | YELLOW 1 | RED      | RED      |
-B | BLUE     | RED 1    | BLUE     | BLUE     |
-C | BLUE 3   | YELLOW 2 | YELLOW 2 | RED 2    |
-D | PURPLE 2 | PURPLE   | PURPLE   | PURPLE   |
+After move 24: C2-C4
+A | BLUE 3   | RED      | RED      | RED      |
+B | PURPLE 1 | YELLOW 1 | BLUE     | BLUE     |
+C | RED 1    | YELLOW 4 | YELLOW   | YELLOW   |
+D | PURPLE 1 | BLUE 1   | PURPLE   | PURPLE   |
 Score: 10
 
-After move 23: A1-D1
-A | PURPLE 1 | YELLOW 1 | RED      | RED      |
-B | BLUE     | RED 1    | BLUE     | BLUE     |
-C | BLUE 3   | YELLOW 2 | YELLOW 2 | RED 2    |
-D | YELLOW 2 | PURPLE   | PURPLE   | PURPLE   |
-Score: 10
-
-After move 24: A1-D1
-A | YELLOW 1 | YELLOW 1 | RED      | RED      |
-B | BLUE     | RED 1    | BLUE     | BLUE     |
-C | BLUE 3   | YELLOW 2 | YELLOW 2 | RED 2    |
-D | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
+After move 25: B2-C2
+A | BLUE 3   | RED      | RED      | RED      |
+B | PURPLE 1 | YELLOW 3 | BLUE     | BLUE     |
+C | RED 1    | YELLOW   | YELLOW   | YELLOW   |
+D | PURPLE 1 | BLUE 1   | PURPLE   | PURPLE   |
 Score: 9
 
-After move 25: C1-C2
-A | YELLOW 1 | YELLOW 1 | RED      | RED      |
-B | BLUE     | RED 1    | BLUE     | BLUE     |
-C | YELLOW 1 | BLUE 2   | YELLOW 2 | RED 2    |
-D | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
+After move 26: B2-D2
+A | BLUE 3   | RED      | RED      | RED      |
+B | PURPLE 1 | BLUE     | BLUE     | BLUE     |
+C | RED 1    | YELLOW   | YELLOW   | YELLOW   |
+D | PURPLE 1 | YELLOW 2 | PURPLE   | PURPLE   |
 Score: 7
 
-After move 26: A2-C2
-A | YELLOW 1 | BLUE 1   | RED      | RED      |
-B | BLUE     | RED 1    | BLUE     | BLUE     |
-C | YELLOW 1 | YELLOW   | YELLOW 2 | RED 2    |
-D | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
-Score: 6
+After move 27: A1-C1
+A | RED      | RED      | RED      | RED      |
+B | PURPLE 1 | BLUE     | BLUE     | BLUE     |
+C | BLUE 2   | YELLOW   | YELLOW   | YELLOW   |
+D | PURPLE 1 | YELLOW 2 | PURPLE   | PURPLE   |
+Score: 5
 
-After move 27: A2-B2
-A | YELLOW 1 | RED      | RED      | RED      |
-B | BLUE     | BLUE     | BLUE     | BLUE     |
-C | YELLOW 1 | YELLOW   | YELLOW 2 | RED 2    |
-D | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
-Score: 4
+After move 28: D1-D2
+A | RED      | RED      | RED      | RED      |
+B | PURPLE 1 | BLUE     | BLUE     | BLUE     |
+C | BLUE 2   | YELLOW   | YELLOW   | YELLOW   |
+D | YELLOW 1 | PURPLE   | PURPLE   | PURPLE   |
+Score: 3
 
-After move 28: C1-C3
-A | YELLOW 1 | RED      | RED      | RED      |
-B | BLUE     | BLUE     | BLUE     | BLUE     |
-C | YELLOW 1 | YELLOW   | YELLOW   | RED 2    |
-D | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
-Score: 4
-
-After move 29: C1-C4
-A | YELLOW 1 | RED      | RED      | RED      |
-B | BLUE     | BLUE     | BLUE     | BLUE     |
-C | RED 1    | YELLOW   | YELLOW   | YELLOW   |
-D | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
+After move 29: C1-D1
+A | RED      | RED      | RED      | RED      |
+B | PURPLE 1 | BLUE     | BLUE     | BLUE     |
+C | YELLOW   | YELLOW   | YELLOW   | YELLOW   |
+D | BLUE 1   | PURPLE   | PURPLE   | PURPLE   |
 Score: 2
 
-After move 30: A1-C1
+After move 30: B1-D1
 A | RED      | RED      | RED      | RED      |
 B | BLUE     | BLUE     | BLUE     | BLUE     |
 C | YELLOW   | YELLOW   | YELLOW   | YELLOW   |

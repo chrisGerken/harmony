@@ -9,26 +9,25 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Thread-safe container for pending board states and processing statistics.
- * Encapsulates multiple queues organized by move depth, counters, and
+ * Encapsulates multiple queues organized by board score, counters, and
  * coordination flags used by the multi-threaded solver.
  *
  * This class provides a clean abstraction layer for:
- * - Managing pending states using depth-first search strategy (multiple queues by move count)
+ * - Managing pending states using score-based search strategy (multiple queues by score)
  * - Tracking processing statistics (processed, generated, pruned counts)
  * - Coordinating solution discovery across threads
  *
- * The depth-first approach prevents queue explosion by always processing
- * states with the most moves first, diving deep into the search tree
- * before exploring other branches.
+ * The score-based approach prioritizes states with lower scores (closer to solution).
+ * States are always polled from the lowest-score queue first.
  *
  * All operations are thread-safe and can be safely accessed by multiple
  * worker threads and the progress reporter simultaneously.
  */
 public class PendingStates {
 
-    private final ConcurrentLinkedQueue<BoardState>[][] queuesByMoveCount;
+    private final ConcurrentLinkedQueue<BoardState>[][] queuesByScore;
     private final boolean[][] activeQueues;
-    private final int maxMoveCount;
+    private final int maxScore;
     private final int replicationFactor;
     private volatile boolean solutionFound;
     private final AtomicReference<BoardState> solution;
@@ -41,21 +40,21 @@ public class PendingStates {
 
     /**
      * Creates a new pending states container with all counters initialized to zero.
-     * Pre-creates all queues for the depth-first queue structure based on the
-     * known maximum number of moves and replication factor.
+     * Pre-creates all queues for the score-based queue structure.
+     * Maximum score is initialScore + 6. States with higher scores are stored in maxScore queue.
      *
-     * @param maxMoveCount the maximum number of moves (from initial state's remaining moves)
-     * @param replicationFactor the number of replicated queues per move count
+     * @param initialScore the score of the initial board state
+     * @param replicationFactor the number of replicated queues per score level
      */
     @SuppressWarnings("unchecked")
-    public PendingStates(int maxMoveCount, int replicationFactor) {
-        this.maxMoveCount = maxMoveCount;
+    public PendingStates(int initialScore, int replicationFactor) {
+        this.maxScore = initialScore + 6;
         this.replicationFactor = replicationFactor;
-        this.queuesByMoveCount = (ConcurrentLinkedQueue<BoardState>[][]) new ConcurrentLinkedQueue[maxMoveCount + 1][replicationFactor];
-        this.activeQueues = new boolean[maxMoveCount + 1][replicationFactor];  // All false by default
-        for (int i = 0; i <= maxMoveCount; i++) {
+        this.queuesByScore = (ConcurrentLinkedQueue<BoardState>[][]) new ConcurrentLinkedQueue[maxScore + 1][replicationFactor];
+        this.activeQueues = new boolean[maxScore + 1][replicationFactor];  // All false by default
+        for (int i = 0; i <= maxScore; i++) {
             for (int j = 0; j < replicationFactor; j++) {
-                this.queuesByMoveCount[i][j] = new ConcurrentLinkedQueue<>();
+                this.queuesByScore[i][j] = new ConcurrentLinkedQueue<>();
             }
         }
         this.solutionFound = false;
@@ -75,54 +74,58 @@ public class PendingStates {
         return new QueueContext(replicationFactor);
     }
 
-    // ========== Queue Operations (Depth-First Strategy) ==========
+    // ========== Queue Operations (Score-Based Strategy) ==========
 
     /**
-     * Adds a board state to a randomly selected replicated queue at the appropriate depth.
-     * States are organized by move count to implement depth-first search.
+     * Adds a board state to a randomly selected replicated queue at the appropriate score level.
+     * States are organized by board score to prioritize lower-score states.
+     * States with scores above maxScore are stored in the maxScore queue.
      * This operation is thread-safe and non-blocking.
      *
      * @param state the board state to add
      * @param context the QueueContext providing random queue selection
      */
     public void add(BoardState state, QueueContext context) {
-        int moveCount = state.getMoveCount();
+        int score = state.getBoard().getScore();
+        int scoreIndex = Math.min(score, maxScore);
         int queueIndex = context.getRandomQueueIndex();
-        activeQueues[moveCount][queueIndex] = true;
-        queuesByMoveCount[moveCount][queueIndex].add(state);
+        activeQueues[scoreIndex][queueIndex] = true;
+        queuesByScore[scoreIndex][queueIndex].add(state);
     }
 
     /**
-     * Adds a board state to the first replicated queue at the appropriate depth.
+     * Adds a board state to the first replicated queue at the appropriate score level.
      * Used for initial state when no QueueContext is available.
+     * States with scores above maxScore are stored in the maxScore queue.
      * This operation is thread-safe and non-blocking.
      *
      * @param state the board state to add
      */
     public void add(BoardState state) {
-        int moveCount = state.getMoveCount();
-        activeQueues[moveCount][0] = true;
-        queuesByMoveCount[moveCount][0].add(state);
+        int score = state.getBoard().getScore();
+        int scoreIndex = Math.min(score, maxScore);
+        activeQueues[scoreIndex][0] = true;
+        queuesByScore[scoreIndex][0].add(state);
     }
 
     /**
-     * Retrieves and removes the next pending board state using depth-first strategy.
-     * Always polls from the deepest queue (highest move count) first, then works
-     * backward to shallower queues. Uses the QueueContext to select which replicated
-     * queue to poll. Returns null if the selected queues are empty.
+     * Retrieves and removes the next pending board state using score-based strategy.
+     * Always polls from the lowest score queue first (lower score = closer to solution),
+     * then works upward to higher score queues. Uses the QueueContext to select which
+     * replicated queue to poll. Returns null if the selected queues are empty.
      * This operation is thread-safe and non-blocking.
      *
      * @param context the QueueContext providing random queue selection
-     * @return the next board state from the deepest available queue, or null if selected queues are empty
+     * @return the next board state from the lowest available score queue, or null if selected queues are empty
      */
     public BoardState poll(QueueContext context) {
         int queueIndex = context.getRandomQueueIndex();
-        // Try polling from deepest to shallowest, only checking active queues
-        for (int moveCount = maxMoveCount; moveCount >= 0; moveCount--) {
-            if (!activeQueues[moveCount][queueIndex]) {
+        // Try polling from lowest score to highest, only checking active queues
+        for (int score = 0; score <= maxScore; score++) {
+            if (!activeQueues[score][queueIndex]) {
                 continue;
             }
-            BoardState state = queuesByMoveCount[moveCount][queueIndex].poll();
+            BoardState state = queuesByScore[score][queueIndex].poll();
             if (state != null) {
                 return state;
             }
@@ -138,9 +141,9 @@ public class PendingStates {
      * @return true if all queues contain no states
      */
     public boolean isEmpty() {
-        for (int i = 0; i <= maxMoveCount; i++) {
+        for (int i = 0; i <= maxScore; i++) {
             for (int j = 0; j < replicationFactor; j++) {
-                if (!queuesByMoveCount[i][j].isEmpty()) {
+                if (!queuesByScore[i][j].isEmpty()) {
                     return false;
                 }
             }
@@ -149,7 +152,7 @@ public class PendingStates {
     }
 
     /**
-     * Returns the total number of pending states across all depth queues.
+     * Returns the total number of pending states across all score queues.
      * This operation is thread-safe but the value may be stale
      * by the time it's used in a multi-threaded environment.
      *
@@ -157,9 +160,9 @@ public class PendingStates {
      */
     public int size() {
         int total = 0;
-        for (int i = 0; i <= maxMoveCount; i++) {
+        for (int i = 0; i <= maxScore; i++) {
             for (int j = 0; j < replicationFactor; j++) {
-                total += queuesByMoveCount[i][j].size();
+                total += queuesByScore[i][j].size();
             }
         }
         return total;
@@ -300,21 +303,21 @@ public class PendingStates {
     }
 
     /**
-     * Finds the smallest move count with a non-empty queue and returns its total size
-     * across all replicated queues at that depth.
-     * Returns an array of [moveCount, queueSize] or null if all queues are empty.
+     * Finds the smallest score with a non-empty queue and returns its total size
+     * across all replicated queues at that score level.
+     * Returns an array of [score, queueSize] or null if all queues are empty.
      *
-     * @return int array with [smallestMoveCount, queueSize], or null if all queues empty
+     * @return int array with [smallestScore, queueSize], or null if all queues empty
      */
     public int[] getSmallestNonEmptyQueueInfo() {
-        // Search from smallest to largest move count
-        for (int moveCount = 0; moveCount <= maxMoveCount; moveCount++) {
+        // Search from smallest to largest score
+        for (int score = 0; score <= maxScore; score++) {
             int size = 0;
             for (int j = 0; j < replicationFactor; j++) {
-                size += queuesByMoveCount[moveCount][j].size();
+                size += queuesByScore[score][j].size();
             }
             if (size > 0) {
-                return new int[] { moveCount, size };
+                return new int[] { score, size };
             }
         }
 
@@ -323,22 +326,22 @@ public class PendingStates {
 
     /**
      * Returns queue sizes for all queues from first non-empty to last non-empty, inclusive.
-     * Returns a 2D array where each element is [moveCount, queueSize].
-     * Queue size is the total across all replicated queues at that depth.
+     * Returns a 2D array where each element is [score, queueSize].
+     * Queue size is the total across all replicated queues at that score level.
      * Returns null if all queues are empty.
      *
-     * @return array of [moveCount, queueSize] pairs, or null if all queues empty
+     * @return array of [score, queueSize] pairs, or null if all queues empty
      */
     public int[][] getQueueRangeInfo() {
         // Find first non-empty queue
         int firstNonEmpty = -1;
-        for (int moveCount = 0; moveCount <= maxMoveCount; moveCount++) {
+        for (int score = 0; score <= maxScore; score++) {
             int size = 0;
             for (int j = 0; j < replicationFactor; j++) {
-                size += queuesByMoveCount[moveCount][j].size();
+                size += queuesByScore[score][j].size();
             }
             if (size > 0) {
-                firstNonEmpty = moveCount;
+                firstNonEmpty = score;
                 break;
             }
         }
@@ -349,13 +352,13 @@ public class PendingStates {
 
         // Find last non-empty queue
         int lastNonEmpty = firstNonEmpty;
-        for (int moveCount = maxMoveCount; moveCount > firstNonEmpty; moveCount--) {
+        for (int score = maxScore; score > firstNonEmpty; score--) {
             int size = 0;
             for (int j = 0; j < replicationFactor; j++) {
-                size += queuesByMoveCount[moveCount][j].size();
+                size += queuesByScore[score][j].size();
             }
             if (size > 0) {
-                lastNonEmpty = moveCount;
+                lastNonEmpty = score;
                 break;
             }
         }
@@ -365,11 +368,11 @@ public class PendingStates {
         int[][] result = new int[rangeSize][2];
 
         for (int i = 0; i < rangeSize; i++) {
-            int moveCount = firstNonEmpty + i;
-            result[i][0] = moveCount;
+            int score = firstNonEmpty + i;
+            result[i][0] = score;
             int size = 0;
             for (int j = 0; j < replicationFactor; j++) {
-                size += queuesByMoveCount[moveCount][j].size();
+                size += queuesByScore[score][j].size();
             }
             result[i][1] = size;
         }
@@ -385,11 +388,20 @@ public class PendingStates {
      */
     public java.util.List<BoardState> collectAllStates() {
         java.util.List<BoardState> allStates = new java.util.ArrayList<>();
-        for (int i = 0; i <= maxMoveCount; i++) {
+        for (int i = 0; i <= maxScore; i++) {
             for (int j = 0; j < replicationFactor; j++) {
-                allStates.addAll(queuesByMoveCount[i][j]);
+                allStates.addAll(queuesByScore[i][j]);
             }
         }
         return allStates;
+    }
+
+    /**
+     * Gets the maximum score value used for queue indexing.
+     *
+     * @return the maximum score (initialScore + 6)
+     */
+    public int getMaxScore() {
+        return maxScore;
     }
 }

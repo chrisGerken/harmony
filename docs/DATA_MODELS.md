@@ -73,11 +73,29 @@ Represents the puzzle board - a 2D grid of tiles with target colors for each row
 ```java
 public class Board {
     private final Tile[][] grid;           // 2D array of tiles
+    private Integer score;                 // Lazy-calculated heuristic score (null until computed)
     // Target color for each row = row index (row 0 → color 0, row 1 → color 1, etc.)
 }
 ```
 
 **Note**: Colors are represented as `int` for efficiency. See Tile documentation for rationale.
+
+### Board Score (Added 2026-01-23)
+
+The board has a lazy-calculated heuristic score that measures "distance from solution":
+- **Lower score = closer to solution** (solved board has score 0)
+- Calculated on first call to `getScore()`, then cached
+
+**Score Formula** (sum of):
+1. Number of tiles NOT in their target row (target row = color ID)
+2. For each column: (tiles in column) - (unique colors in column)
+3. For each tile with > 2 remaining moves: (remaining moves - 2)
+
+```java
+Board board = /* ... */;
+int score = board.getScore();  // Calculates and caches if null
+System.out.println(board);     // Includes "Score: N" on last line
+```
 
 ### Coordinate System
 
@@ -103,6 +121,7 @@ public class Board {
 |--------|---------|-------------|
 | `swap(r1, c1, r2, c2)` | `Board` | Returns new board with tiles swapped and moves decremented |
 | `isSolved()` | `boolean` | Checks if all tiles match row colors and have 0 moves |
+| `getScore()` | `int` | Returns heuristic score (calculates and caches if needed) |
 
 ### Win Condition
 
@@ -188,7 +207,7 @@ diagonal.isValid();    // false
 
 Represents a node in the search space - a board configuration plus a link to the previous state.
 
-### Properties (Updated 2026-01-11)
+### Properties (Updated 2026-01-24)
 
 ```java
 public class BoardState {
@@ -196,6 +215,7 @@ public class BoardState {
     private final Move lastMove;                  // Last move taken (null for initial state)
     private final int remainingMoves;             // Cached count (sum of tile moves / 2)
     private BoardState previousBoardState;        // Link to previous state (null for initial)
+    private boolean first;                        // True if on primary search path
 }
 ```
 
@@ -204,6 +224,9 @@ BoardState now uses a **linked list structure** instead of copying move lists. E
 
 **Optimization Note** (Added 2026-01-08):
 The `remainingMoves` field is cached to avoid recalculating on every state. For the original board state, it's computed by summing all tiles' remaining moves and dividing by 2. For successor states, it's simply decremented by 1 (since each move decrements two tiles by 1 each, net effect is -1 remaining move).
+
+**First Flag** (Added 2026-01-24):
+The `first` boolean tracks the "primary search path" - the path following the first/only valid move at each step. BoardParser sets `first=true` on the initial state. When `applyMove(Move, int possibleMoveCount)` is called, the new state inherits `first=true` only if the parent has `first=true` AND there is exactly one possible move. This enables caching strategies that keep the primary path together in one thread's local cache.
 
 ### Key Methods
 
@@ -218,13 +241,16 @@ The `remainingMoves` field is cached to avoid recalculating on every state. For 
 | `getMoveHistory()` | `List<Move>` | Complete move sequence (builds by traversal) |
 | `getRemainingMoves()` | `int` | Cached count of remaining moves |
 | `isSolved()` | `boolean` | Delegates to `board.isSolved()` |
+| `isFirst()` | `boolean` | True if on primary search path |
 
 #### Operations
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `applyMove(move)` | `BoardState` | Returns new state with move applied |
+| `applyMove(move)` | `BoardState` | Returns new state with move applied (first=false) |
+| `applyMove(move, possibleMoveCount)` | `BoardState` | Returns new state; inherits first if parent.first AND count=1 |
 | `setPreviousBoardState(state)` | `void` | Sets previous state reference |
+| `setFirst(boolean)` | `void` | Sets the first flag value |
 
 ### State Transitions
 
@@ -254,17 +280,19 @@ List<Move> history = state2.getMoveHistory(); // [move1, move2]
 `BoardState` objects form a linked chain structure:
 
 ```
-Initial State (lastMove=null, prev=null)
+Initial State (lastMove=null, prev=null, first=true)
          │
          ▼
-    State A (lastMove=Move1, prev=Initial)
+    State A (lastMove=Move1, prev=Initial, first=true if only move)
          │
          ▼
-    State B (lastMove=Move2, prev=StateA)
+    State B (lastMove=Move2, prev=StateA, first=true if only move AND A.first)
          │
          ▼
-    State C (lastMove=Move3, prev=StateB)
+    State C (lastMove=Move3, prev=StateB, first=false if multiple moves existed)
 ```
+
+The `first` flag traces the "primary search path" - the path that would be taken if only the first valid move was chosen at each step. This path is kept together in one thread's local cache for efficient depth-first processing.
 
 ### Invalidity Test Pattern
 
@@ -283,7 +311,7 @@ int row1 = lastMove.getRow1();
 
 ### Thread Safety
 
-✅ **Thread-safe**: Core properties are immutable. The `previousBoardState` reference is set once during `applyMove()` before the state is shared.
+✅ **Thread-safe**: Core properties are immutable. The `previousBoardState` reference and `first` flag are set once during `applyMove()` before the state is shared.
 
 ## Design Principles
 
