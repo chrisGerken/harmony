@@ -25,6 +25,7 @@ public class StateProcessor implements Runnable {
     private final long pollTimeoutMs;
     private final ArrayList<BoardState> cache;
     private final int cacheThreshold;
+    private final int stepsBack;
     private final SortMode sortMode;
     private final boolean trackInvalidity;
     private QueueContext queueContext;
@@ -34,28 +35,30 @@ public class StateProcessor implements Runnable {
     private long statesProcessedByThisThread = 0;
 
     /**
-     * Creates a new state processor with default cache threshold of 4, no sorting, and no invalidity tracking.
+     * Creates a new state processor with default cache threshold of 4, steps back of 1, no sorting, and no invalidity tracking.
      *
      * @param pendingStates the shared container of pending states and statistics
      */
     public StateProcessor(PendingStates pendingStates) {
-        this(pendingStates, 4, SortMode.NONE, false);
+        this(pendingStates, 4, 1, SortMode.NONE, false);
     }
 
     /**
-     * Creates a new state processor with configurable cache threshold, sort mode, and invalidity tracking.
+     * Creates a new state processor with configurable cache threshold, steps back, sort mode, and invalidity tracking.
      *
      * @param pendingStates the shared container of pending states and statistics
      * @param cacheThreshold states with board score at or above this are cached locally
+     * @param stepsBack maximum score increase from best score before pruning
      * @param sortMode the sort mode for move ordering
      * @param trackInvalidity whether to track invalidity statistics (only when -i flag is set)
      */
-    public StateProcessor(PendingStates pendingStates, int cacheThreshold, SortMode sortMode, boolean trackInvalidity) {
+    public StateProcessor(PendingStates pendingStates, int cacheThreshold, int stepsBack, SortMode sortMode, boolean trackInvalidity) {
         this.pendingStates = pendingStates;
         this.coordinator = InvalidityTestCoordinator.getInstance();
         this.pollTimeoutMs = 1; // Short timeout to check solution flag
         this.cache = new ArrayList<>(100_000);
         this.cacheThreshold = cacheThreshold;
+        this.stepsBack = stepsBack;
         this.sortMode = sortMode;
         this.trackInvalidity = trackInvalidity;
     }
@@ -417,6 +420,8 @@ public class StateProcessor implements Runnable {
      * ConcurrentLinkedQueue. Lower scores (closer to solution) go to the shared
      * queue for priority processing.
      *
+     * In the normal logic, states are pruned if their score exceeds bestScore + stepsBack.
+     *
      * @param states the list of board states to store
      */
     private void storeBoardStates(List<BoardState> states) {
@@ -433,9 +438,18 @@ public class StateProcessor implements Runnable {
             }
         }
 
-        // Normal logic: cache by score threshold
+        // Normal logic: cache by score threshold, with stepsBack pruning
+        int prunedByStepsBack = 0;
         for (BoardState state : states) {
             int boardScore = state.getBoard().getScore();
+            int bestScore = state.getBestScore();
+
+            // Prune states that have drifted too far from the best score
+            if (boardScore > bestScore + stepsBack) {
+                prunedByStepsBack++;
+                continue;
+            }
+
             state.setFirst(false);
             // Cache high-score states locally, send low-score states to shared queue
             if (boardScore >= cacheThreshold) {
@@ -443,6 +457,11 @@ public class StateProcessor implements Runnable {
             } else {
                 pendingStates.add(state, queueContext);
             }
+        }
+
+        // Count states pruned by stepsBack
+        if (prunedByStepsBack > 0) {
+            pendingStates.addStatesPruned(prunedByStepsBack);
         }
     }
 

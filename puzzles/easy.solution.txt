@@ -1,0 +1,32 @@
+# Harmony Puzzle Solution
+# Puzzle: puzzles/easy.txt
+# Moves: 3
+
+Move sequence:
+  1. B1-B2
+  2. A2-B2
+  3. B1-B2
+
+============================================================
+Step-by-step board states:
+============================================================
+
+Initial state:
+A | RED    | BLUE 2 |
+B | RED 2  | BLUE 2 |
+Score: 4
+
+After move 1: B1-B2
+A | RED    | BLUE 2 |
+B | BLUE 1 | RED 1  |
+Score: 2
+
+After move 2: A2-B2
+A | RED    | RED    |
+B | BLUE 1 | BLUE 1 |
+Score: 0
+
+After move 3: B1-B2
+A | RED    | RED    |
+B | BLUE   | BLUE   |
+Score: 0

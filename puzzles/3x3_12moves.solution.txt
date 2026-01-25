@@ -1,0 +1,99 @@
+# Harmony Puzzle Solution
+# Puzzle: puzzles/3x3_12moves.txt
+# Moves: 12
+
+Move sequence:
+  1. B3-C3
+  2. A3-C3
+  3. B2-C2
+  4. A2-B2
+  5. B1-C1
+  6. A1-C1
+  7. C1-C3
+  8. C1-C3
+  9. C1-C2
+ 10. A1-C1
+ 11. A1-A3
+ 12. A1-B1
+
+============================================================
+Step-by-step board states:
+============================================================
+
+Initial state:
+A | GREEN 4 | BLUE 1  | GREEN 3 |
+B | GREEN 3 | RED 4   | BLUE 4  |
+C | RED 2   | RED 2   | BLUE 1  |
+Score: 19
+
+After move 1: B3-C3
+A | GREEN 4 | BLUE 1  | GREEN 3 |
+B | GREEN 3 | RED 4   | BLUE    |
+C | RED 2   | RED 2   | BLUE 3  |
+Score: 18
+
+After move 2: A3-C3
+A | GREEN 4 | BLUE 1  | BLUE 2  |
+B | GREEN 3 | RED 4   | BLUE    |
+C | RED 2   | RED 2   | GREEN 2 |
+Score: 15
+
+After move 3: B2-C2
+A | GREEN 4 | BLUE 1  | BLUE 2  |
+B | GREEN 3 | RED 1   | BLUE    |
+C | RED 2   | RED 3   | GREEN 2 |
+Score: 14
+
+After move 4: A2-B2
+A | GREEN 4 | RED     | BLUE 2  |
+B | GREEN 3 | BLUE    | BLUE    |
+C | RED 2   | RED 3   | GREEN 2 |
+Score: 12
+
+After move 5: B1-C1
+A | GREEN 4 | RED     | BLUE 2  |
+B | RED 1   | BLUE    | BLUE    |
+C | GREEN 2 | RED 3   | GREEN 2 |
+Score: 10
+
+After move 6: A1-C1
+A | GREEN 1 | RED     | BLUE 2  |
+B | RED 1   | BLUE    | BLUE    |
+C | GREEN 3 | RED 3   | GREEN 2 |
+Score: 9
+
+After move 7: C1-C3
+A | GREEN 1 | RED     | BLUE 2  |
+B | RED 1   | BLUE    | BLUE    |
+C | GREEN 1 | RED 3   | GREEN 2 |
+Score: 8
+
+After move 8: C1-C3
+A | GREEN 1 | RED     | BLUE 2  |
+B | RED 1   | BLUE    | BLUE    |
+C | GREEN 1 | RED 3   | GREEN   |
+Score: 8
+
+After move 9: C1-C2
+A | GREEN 1 | RED     | BLUE 2  |
+B | RED 1   | BLUE    | BLUE    |
+C | RED 2   | GREEN   | GREEN   |
+Score: 6
+
+After move 10: A1-C1
+A | RED 1   | RED     | BLUE 2  |
+B | RED 1   | BLUE    | BLUE    |
+C | GREEN   | GREEN   | GREEN   |
+Score: 4
+
+After move 11: A1-A3
+A | BLUE 1  | RED     | RED     |
+B | RED 1   | BLUE    | BLUE    |
+C | GREEN   | GREEN   | GREEN   |
+Score: 2
+
+After move 12: A1-B1
+A | RED     | RED     | RED     |
+B | BLUE    | BLUE    | BLUE    |
+C | GREEN   | GREEN   | GREEN   |
+Score: 0

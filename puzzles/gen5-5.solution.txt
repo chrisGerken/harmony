@@ -1,0 +1,71 @@
+# Harmony Puzzle Solution
+# Puzzle: puzzles/gen5-5.txt
+# Moves: 6
+
+Move sequence:
+  1. B1-D1
+  2. B2-E2
+  3. C5-E5
+  4. A1-A4
+  5. A2-A5
+  6. A5-B5
+
+============================================================
+Step-by-step board states:
+============================================================
+
+Initial state:
+A | RED 1    | YELLOW 2 | RED      | RED 1    | RED 1    |
+B | BLUE 1   | PURPLE 1 | YELLOW   | YELLOW   | RED 1    |
+C | GREEN    | GREEN    | GREEN    | GREEN    | PURPLE 1 |
+D | YELLOW 1 | BLUE     | BLUE     | BLUE     | BLUE     |
+E | PURPLE   | YELLOW 1 | PURPLE   | PURPLE   | GREEN 1  |
+Score: 10
+
+After move 1: B1-D1
+A | RED 1    | YELLOW 2 | RED      | RED 1    | RED 1    |
+B | YELLOW   | PURPLE 1 | YELLOW   | YELLOW   | RED 1    |
+C | GREEN    | GREEN    | GREEN    | GREEN    | PURPLE 1 |
+D | BLUE     | BLUE     | BLUE     | BLUE     | BLUE     |
+E | PURPLE   | YELLOW 1 | PURPLE   | PURPLE   | GREEN 1  |
+Score: 8
+
+After move 2: B2-E2
+A | RED 1    | YELLOW 2 | RED      | RED 1    | RED 1    |
+B | YELLOW   | YELLOW   | YELLOW   | YELLOW   | RED 1    |
+C | GREEN    | GREEN    | GREEN    | GREEN    | PURPLE 1 |
+D | BLUE     | BLUE     | BLUE     | BLUE     | BLUE     |
+E | PURPLE   | PURPLE   | PURPLE   | PURPLE   | GREEN 1  |
+Score: 6
+
+After move 3: C5-E5
+A | RED 1    | YELLOW 2 | RED      | RED 1    | RED 1    |
+B | YELLOW   | YELLOW   | YELLOW   | YELLOW   | RED 1    |
+C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |
+D | BLUE     | BLUE     | BLUE     | BLUE     | BLUE     |
+E | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
+Score: 4
+
+After move 4: A1-A4
+A | RED      | YELLOW 2 | RED      | RED      | RED 1    |
+B | YELLOW   | YELLOW   | YELLOW   | YELLOW   | RED 1    |
+C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |
+D | BLUE     | BLUE     | BLUE     | BLUE     | BLUE     |
+E | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
+Score: 4
+
+After move 5: A2-A5
+A | RED      | RED      | RED      | RED      | YELLOW 1 |
+B | YELLOW   | YELLOW   | YELLOW   | YELLOW   | RED 1    |
+C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |
+D | BLUE     | BLUE     | BLUE     | BLUE     | BLUE     |
+E | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
+Score: 2
+
+After move 6: A5-B5
+A | RED      | RED      | RED      | RED      | RED      |
+B | YELLOW   | YELLOW   | YELLOW   | YELLOW   | YELLOW   |
+C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |
+D | BLUE     | BLUE     | BLUE     | BLUE     | BLUE     |
+E | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
+Score: 0

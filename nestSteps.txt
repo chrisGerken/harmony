@@ -1,5 +1,5 @@
-1) When restoring state, sort the board states in each queue by remaining moves, so that the first board state in the queue has the least number of remaining moves
+1) Add an integer attribute named bestScore to BoardState. The value of bestScore is effectively the minimum of the score of the board state and the score of the parent of the board state. While not necessary at this time, persist and restore this value when writing and reading board states to and from the file system.
 
-2) Add a boolean flag named first to BoardState. When the first board state is returned to HarmonySolver from BoardParser then set the first value for that state to true.  When applying a move to board state S1 to get a new board state S2, if S1 has only one possible move then set the first value for S2 to the first vale for S1, otherwise set the first value for S2 to false;
+2) Add a command line configuration value, named -sb (for steps back), for HarmonyServer with a default value of 1.
 
-3) In the storeBoardStates() method in class StateProcessor, if the parent state for each of the states in the list has a first value of true, then add all of the states to the state processor's cache, otherwise perform the current method logic.
+3) In StateProcessor, change the behavior of the saveBoardStates().  In the normal logic portion of the method only save to cache or PendingStates those board states whose scores are less than or equal to the sum of the board state's current score and the steps back configuration value from (2) above. Any board states who fail that test should be discarded and counted as being pruned.

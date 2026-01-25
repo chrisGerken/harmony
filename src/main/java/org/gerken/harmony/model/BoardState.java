@@ -12,6 +12,7 @@ public class BoardState {
     private final Board board;
     private final Move lastMove;
     private final int remainingMoves;
+    private final int bestScore;
     private BoardState previousBoardState = null;
     private boolean first = false;
 
@@ -28,6 +29,7 @@ public class BoardState {
     /**
      * Creates a new board state with the given board and last move.
      * Calculates remaining moves by summing all tiles' remaining moves divided by 2.
+     * Sets bestScore to the board's score (since there's no parent).
      *
      * @param board the board
      * @param lastMove the last move taken to reach this state
@@ -36,20 +38,23 @@ public class BoardState {
         this.board = board;
         this.lastMove = lastMove;
         this.remainingMoves = calculateRemainingMoves(board);
+        this.bestScore = board.getScore();
     }
 
     /**
-     * Private constructor for creating successor states with pre-calculated remaining moves.
+     * Private constructor for creating successor states with pre-calculated remaining moves and bestScore.
      * Used by applyMove() to avoid recalculating on every state transition.
      *
      * @param board the board
      * @param lastMove the last move taken to reach this state
      * @param remainingMoves the pre-calculated remaining moves count
+     * @param bestScore the minimum score seen along the path from initial state
      */
-    private BoardState(Board board, Move lastMove, int remainingMoves) {
+    private BoardState(Board board, Move lastMove, int remainingMoves, int bestScore) {
         this.board = board;
         this.lastMove = lastMove;
         this.remainingMoves = remainingMoves;
+        this.bestScore = bestScore;
     }
 
     /**
@@ -132,9 +137,20 @@ public class BoardState {
     }
 
     /**
+     * Gets the best (lowest) score seen along the path from the initial state to this state.
+     * This is effectively the minimum of this board's score and the parent's bestScore.
+     *
+     * @return the best score seen along the path
+     */
+    public int getBestScore() {
+        return bestScore;
+    }
+
+    /**
      * Creates a new board state by applying a move to this state.
      * Decrements the remaining moves count by 1 (each move reduces two tiles by 1 each).
      * The new state's first flag is set to false.
+     * The new state's bestScore is the minimum of the new board's score and this state's bestScore.
      *
      * @param move the move to apply
      * @return a new board state with the move applied
@@ -143,7 +159,9 @@ public class BoardState {
         Board newBoard = board.swap(move.getRow1(), move.getCol1(),
                                      move.getRow2(), move.getCol2());
         // Each move decrements two tiles by 1 each, so remaining moves decreases by 1
-        BoardState newState = new BoardState(newBoard, move, remainingMoves - 1);
+        // bestScore is the minimum of the new board's score and the parent's bestScore
+        int newBestScore = Math.min(newBoard.getScore(), this.bestScore);
+        BoardState newState = new BoardState(newBoard, move, remainingMoves - 1, newBestScore);
         newState.setPreviousBoardState(this);
         // Propagate first flag only if this state is first AND there's exactly one possible move
         return newState;
@@ -198,6 +216,6 @@ public class BoardState {
 
 	@Override
 	public String toString() {
-		return board.toString() + "\nRemaining moves: " + remainingMoves ;
+		return board.toString() + "\nRemaining moves: " + remainingMoves + "\nBest score: " + bestScore;
 	}
 }

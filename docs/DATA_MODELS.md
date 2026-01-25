@@ -207,13 +207,14 @@ diagonal.isValid();    // false
 
 Represents a node in the search space - a board configuration plus a link to the previous state.
 
-### Properties (Updated 2026-01-24)
+### Properties (Updated 2026-01-25)
 
 ```java
 public class BoardState {
     private final Board board;                    // Current board configuration
     private final Move lastMove;                  // Last move taken (null for initial state)
     private final int remainingMoves;             // Cached count (sum of tile moves / 2)
+    private final int bestScore;                  // Minimum score seen along path from initial
     private BoardState previousBoardState;        // Link to previous state (null for initial)
     private boolean first;                        // True if on primary search path
 }
@@ -228,6 +229,9 @@ The `remainingMoves` field is cached to avoid recalculating on every state. For 
 **First Flag** (Added 2026-01-24):
 The `first` boolean tracks the "primary search path" - the path following the first/only valid move at each step. BoardParser sets `first=true` on the initial state. When `applyMove(Move, int possibleMoveCount)` is called, the new state inherits `first=true` only if the parent has `first=true` AND there is exactly one possible move. This enables caching strategies that keep the primary path together in one thread's local cache.
 
+**Best Score** (Added 2026-01-25):
+The `bestScore` integer tracks the minimum (best) board score seen along the path from the initial state to this state. For initial states, `bestScore = board.getScore()`. For successor states created via `applyMove()`, `bestScore = Math.min(newBoard.getScore(), parent.bestScore)`. This enables pruning states that have drifted too far from their best score via the `-sb` (steps back) command line option.
+
 ### Key Methods
 
 #### Access
@@ -240,6 +244,7 @@ The `first` boolean tracks the "primary search path" - the path following the fi
 | `getMoveCount()` | `int` | Number of moves taken (traverses chain) |
 | `getMoveHistory()` | `List<Move>` | Complete move sequence (builds by traversal) |
 | `getRemainingMoves()` | `int` | Cached count of remaining moves |
+| `getBestScore()` | `int` | Minimum score seen along path from initial state |
 | `isSolved()` | `boolean` | Delegates to `board.isSolved()` |
 | `isFirst()` | `boolean` | True if on primary search path |
 
@@ -247,8 +252,7 @@ The `first` boolean tracks the "primary search path" - the path following the fi
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `applyMove(move)` | `BoardState` | Returns new state with move applied (first=false) |
-| `applyMove(move, possibleMoveCount)` | `BoardState` | Returns new state; inherits first if parent.first AND count=1 |
+| `applyMove(move)` | `BoardState` | Returns new state with move applied; bestScore = min(newScore, parent.bestScore) |
 | `setPreviousBoardState(state)` | `void` | Sets previous state reference |
 | `setFirst(boolean)` | `void` | Sets the first flag value |
 

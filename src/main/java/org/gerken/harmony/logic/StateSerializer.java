@@ -12,8 +12,9 @@ import java.util.List;
  *
  * State file format:
  * - One line per board state
- * - Each line contains the move history as space-separated move notations
- * - Empty line for initial state (no moves)
+ * - Each line starts with bestScore followed by colon, then move history as space-separated move notations
+ * - Format: "bestScore:move1 move2 move3..."
+ * - "INITIAL" for initial state (no moves)
  *
  * When loading, moves are replayed on the initial state to reconstruct
  * the full BoardState with proper linked list structure.
@@ -63,10 +64,12 @@ public class StateSerializer {
 
             for (BoardState state : states) {
                 List<Move> history = state.getMoveHistory();
+                int bestScore = state.getBestScore();
                 if (history.isEmpty()) {
-                    writer.println("INITIAL");
+                    writer.println(bestScore + ":INITIAL");
                 } else {
                     StringBuilder sb = new StringBuilder();
+                    sb.append(bestScore).append(":");
                     for (int i = 0; i < history.size(); i++) {
                         if (i > 0) sb.append(" ");
                         sb.append(history.get(i).getNotation());
@@ -102,14 +105,29 @@ public class StateSerializer {
                     continue;
                 }
 
+                // Parse bestScore prefix (format: "bestScore:moves...")
+                int colonIndex = line.indexOf(':');
+                int bestScore = -1;
+                String movesPart = line;
+
+                if (colonIndex > 0) {
+                    try {
+                        bestScore = Integer.parseInt(line.substring(0, colonIndex));
+                        movesPart = line.substring(colonIndex + 1);
+                    } catch (NumberFormatException e) {
+                        // Fall back to treating the whole line as moves (backward compatibility)
+                        movesPart = line;
+                    }
+                }
+
                 // Handle initial state
-                if (line.equals("INITIAL")) {
+                if (movesPart.equals("INITIAL")) {
                     states.add(initialState);
                     continue;
                 }
 
                 // Parse move sequence and reconstruct state
-                BoardState state = reconstructState(initialState, line);
+                BoardState state = reconstructState(initialState, movesPart, bestScore);
                 if (state != null) {
                     states.add(state);
                 }
@@ -122,12 +140,14 @@ public class StateSerializer {
 
     /**
      * Reconstructs a board state by replaying a sequence of moves.
+     * The bestScore is recalculated during replay via applyMove.
      *
      * @param initialState the initial state to start from
      * @param moveSequence space-separated move notations
+     * @param savedBestScore the bestScore that was persisted (for verification, -1 if not available)
      * @return the reconstructed board state, or null if parsing fails
      */
-    private static BoardState reconstructState(BoardState initialState, String moveSequence) {
+    private static BoardState reconstructState(BoardState initialState, String moveSequence, int savedBestScore) {
         String[] moves = moveSequence.split("\\s+");
         BoardState current = initialState;
 
@@ -140,6 +160,8 @@ public class StateSerializer {
             current = current.applyMove(move);
         }
 
+        // Note: bestScore is recalculated during replay via applyMove
+        // The savedBestScore parameter is available for future verification/optimization
         return current;
     }
 

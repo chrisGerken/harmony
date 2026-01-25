@@ -1,5 +1,5 @@
 # Current State of Harmony Puzzle Solver
-**Last Updated**: January 24, 2026 (Session 15)
+**Last Updated**: January 25, 2026 (Session 16)
 
 ## Quick Status
 - ✅ **Production Ready**: All code compiles and tests pass
@@ -27,12 +27,14 @@
 - ✅ **ScoreWatcher Utility**: Analyzes scoring heuristic effectiveness
 - ✅ **Score-Based Queuing**: PendingStates indexes by board score (lower = priority)
 - ✅ **First Flag**: BoardState tracks primary search path for caching strategy
+- ✅ **Best Score Tracking**: BoardState.bestScore tracks minimum score along path
+- ✅ **Steps Back Pruning**: -sb flag prunes states drifting from best score
 
 ## Current Architecture (High Level)
 
 ```
 HarmonySolver (instance-based, central context)
-    ├─> Config (threadCount, reportInterval, cacheThreshold, debugMode,
+    ├─> Config (threadCount, reportInterval, cacheThreshold, stepsBack, debugMode,
     │           invalidityStats, sortMode, replicationFactor, durationMinutes)
     ├─> SortMode enum (NONE, SMALLEST_FIRST, LARGEST_FIRST)
     ├─> colorNames (public static List<String> - global color mapping)
@@ -50,13 +52,14 @@ HarmonySolver (instance-based, central context)
     ├─> List<StateProcessor> (worker threads with local caches + timing)
     │       ├─> cache: ArrayList<BoardState>(100_000)
     │       ├─> queueContext: QueueContext (obtained once at thread start)
+    │       ├─> stepsBack: int (from -sb flag, default 1)
     │       ├─> trackInvalidity: boolean (only track when -i flag set)
-    │       └─> storeBoardStates(): caches all when parent.isFirst()
+    │       └─> storeBoardStates(): caches all when parent.isFirst(), prunes by stepsBack
     ├─> ProgressReporter (takes HarmonySolver, accesses all via getters)
     │       └─> Displays queues from max score down to 0
     ├─> StateSerializer (static utility for state persistence)
-    │       ├─> saveStates(puzzleFile, states)
-    │       ├─> loadStates(puzzleFile, initialState)
+    │       ├─> saveStates(puzzleFile, states) - format: "bestScore:moves..."
+    │       ├─> loadStates(puzzleFile, initialState) - parses bestScore prefix
     │       └─> State file: <puzzle>.state.txt
     └─> InvalidityTestCoordinator (ordered by effectiveness)
             ├─> BlockedSwapTest         (1st - uses targetRow = color directly)
@@ -77,8 +80,10 @@ BoardState (linked list structure)
     ├─> lastMove: Move (null for initial state)
     ├─> previousBoardState: BoardState (null for initial state)
     ├─> remainingMoves: int (cached)
+    ├─> bestScore: int (min score along path from initial state)
     ├─> first: boolean (true if on primary search path)
-    ├─> applyMove(Move, int possibleMoveCount): propagates first if only one move
+    ├─> applyMove(Move): calculates newBestScore = min(newBoard.score, this.bestScore)
+    ├─> getBestScore(): returns bestScore
     └─> isFirst(), setFirst(): accessors for first flag
 
 Tile (immutable)
@@ -88,7 +93,36 @@ Tile (immutable)
     └─> decrementMoves() - returns new Tile with moves-1
 ```
 
-## Recent Changes (Session 15 - January 24, 2026)
+## Recent Changes (Session 16 - January 25, 2026)
+
+### 1. BoardState bestScore Attribute
+**Added `bestScore` field to track minimum score along search path**:
+- New `private final int bestScore` field
+- For initial state: `bestScore = board.getScore()`
+- For successor states: `bestScore = Math.min(newBoard.getScore(), parent.bestScore)`
+- Added `getBestScore()` getter method
+- Updated `toString()` to include "Best score: N"
+
+### 2. Steps Back Command Line Option (-sb)
+**Added `-sb <N>` for score-based pruning control**:
+- Default value: 1
+- States with `boardScore > bestScore + stepsBack` are pruned
+- Lower values = more aggressive pruning, faster but may miss solutions
+- Higher values = less pruning, slower but more thorough search
+
+### 3. StateProcessor stepsBack Pruning
+**Modified storeBoardStates() to prune states drifting from best score**:
+- New `stepsBack` field passed from HarmonySolver
+- In normal logic section: discard states where `boardScore > bestScore + stepsBack`
+- Discarded states counted via `pendingStates.addStatesPruned()`
+
+### 4. StateSerializer bestScore Persistence
+**Updated state file format to include bestScore**:
+- New format: `bestScore:move1 move2 move3...`
+- Example: `38:A1-A2 B1-B3`
+- Backward compatible with old format (no bestScore prefix)
+
+## Earlier Changes (Session 15 - January 24, 2026)
 
 ### 1. Score-Based Queue Indexing
 **Changed PendingStates from moves-remaining to board-score indexing**:
@@ -205,7 +239,7 @@ Tile (immutable)
 ```
 harmony/
 ├── src/main/java/org/gerken/harmony/
-│   ├── HarmonySolver.java          # ⭐ UPDATED - displays board score, sorts resume states
+│   ├── HarmonySolver.java          # ⭐ UPDATED - added -sb option, stepsBack config
 │   ├── PuzzleGenerator.java        # BOARD format output
 │   ├── TestBuilder.java            # generatePuzzleWithSolution() method
 │   ├── ScoreWatcher.java           # scoring heuristic analysis utility
@@ -214,12 +248,12 @@ harmony/
 │   │   ├── Tile.java
 │   │   ├── Board.java              # score attribute, getScore(), toString() shows score
 │   │   ├── Move.java
-│   │   └── BoardState.java         # ⭐ UPDATED - first flag, applyMove with possibleMoveCount
+│   │   └── BoardState.java         # ⭐ UPDATED - bestScore field, getBestScore()
 │   ├── logic/
 │   │   ├── PendingStates.java      # ⭐ UPDATED - score-based indexing, poll from lowest score
 │   │   ├── QueueContext.java       # per-thread random queue selection
-│   │   ├── StateSerializer.java    # state persistence and loading
-│   │   ├── StateProcessor.java     # ⭐ UPDATED - first flag logic in storeBoardStates
+│   │   ├── StateSerializer.java    # ⭐ UPDATED - bestScore persistence in state file
+│   │   ├── StateProcessor.java     # ⭐ UPDATED - stepsBack pruning in storeBoardStates
 │   │   ├── ProgressReporter.java   # ⭐ UPDATED - reversed queue display order
 │   │   └── BoardParser.java        # ⭐ UPDATED - sets first=true on initial state
 │   └── invalidity/
@@ -247,7 +281,8 @@ harmony/
 │   ├── 3x3_8moves.txt
 │   ├── 4x4_9moves.txt
 │   └── 3x3_12moves.txt
-├── SESSION_2026-01-24.md           # ⭐ NEW - this session
+├── SESSION_2026-01-25.md           # ⭐ NEW - this session
+├── SESSION_2026-01-24.md
 ├── SESSION_2026-01-23.md
 ├── SESSION_2026-01-19.md
 ├── SESSION_2026-01-15.md
@@ -270,6 +305,7 @@ Options:
   -t, --threads <N>     Number of worker threads (default: 2)
   -r, --report <N>      Progress report interval in seconds (default: 30, 0 to disable)
   -c, --cache <N>       Cache threshold: states with board score >= N are cached locally (default: 4)
+  -sb <N>               Steps back: max score increase from best score before pruning (default: 1)
   -repl <N>             Replication factor for queue distribution (default: 3)
   -dur, --duration <N>  Run duration with optional unit suffix (default: 120m)
                         Units: s (seconds), m (minutes), h (hours), d (days), w (weeks)
@@ -283,14 +319,24 @@ Options:
 
 ## Testing Status
 
-### Verified Working ✅
-| Puzzle | Size | Score | Moves | Processed | Pruned |
-|--------|------|-------|-------|-----------|--------|
-| puzzle-4x4-easy.txt | 4x4 | 4 | 8 | 80 | 10.7% |
-| test_001.txt | 4x4 | 10 | 7 | 10 | 0% |
-| 5x5x12.txt | 4x4 | 48 | 30 | 334 | 42.9% |
+### Verified Working ✅ (Session 16)
+| Puzzle | Size | Score | Moves | -sb | Processed | Pruned |
+|--------|------|-------|-------|-----|-----------|--------|
+| tiny.txt | 2x2 | 6 | 4 | 1 | 4 | 0% |
+| easy.txt | 2x2 | 4 | 3 | 2 | 5 | 0% |
+| 3x3_8moves.txt | 3x3 | 9 | 8 | 1 | 30 | 51.5% |
+| 3x3_12moves.txt | 3x3 | 19 | 12 | 2 | 21 | 30.4% |
+| 4x4_9moves.txt | 4x4 | 7 | 9 | 1 | 58 | 42.3% |
+| simple.txt | 3x3 | 6 | 9 | 2 | 613 | 42.5% |
+| gen5-5.txt | 5x5 | 10 | 6 | 2 | 8 | 30.8% |
 
 ## Session History
+
+### Session 16 (January 25, 2026)
+- **Best Score Tracking**: BoardState.bestScore tracks minimum score along search path
+- **Steps Back Pruning**: -sb flag controls max score increase from best before pruning
+- **StateProcessor Pruning**: storeBoardStates() discards states where score > bestScore + stepsBack
+- **State File Format**: Now includes bestScore prefix (e.g., `38:A1-A2`)
 
 ### Session 15 (January 24, 2026)
 - **Score-Based Queuing**: PendingStates indexes by board score, polls lowest first
@@ -363,20 +409,21 @@ mvn package                          # Build
 ./solve.sh puzzle.txt                # Solve
 ./solve.sh -t 4 puzzle.txt           # 4 threads
 ./solve.sh -t 4 -repl 4 puzzle.txt   # 4 threads, 4 queue replicas
+./solve.sh -sb 2 puzzle.txt          # Allow score to drift 2 from best
+./solve.sh -sb 0 puzzle.txt          # Strict: never allow score increase
 ./solve.sh -i -r 10 puzzle.txt       # Invalidity stats every 10s
 ./solve.sh --smallestFirst puzzle.txt  # Sort moves by smallest sum
 ```
 
 ### Key Files for Next Session
 1. `CURRENT_STATE.md` - This file (start here!)
-2. `BoardState.java` - Added first flag, applyMove with possibleMoveCount
-3. `PendingStates.java` - Score-based indexing, poll from lowest score
-4. `StateProcessor.java` - First flag caching logic in storeBoardStates
-5. `ProgressReporter.java` - Reversed queue display order (max to 0)
-6. `HarmonySolver.java` - Displays board score, sorts resume states
+2. `BoardState.java` - bestScore field, getBestScore(), tracks min score along path
+3. `StateProcessor.java` - stepsBack pruning in storeBoardStates()
+4. `HarmonySolver.java` - -sb option, stepsBack config passed to StateProcessor
+5. `StateSerializer.java` - bestScore persistence in state file format
 
 ---
 
-**Ready for**: Production use, score-based search optimization
+**Ready for**: Production use, score-based search with stepsBack pruning
 **Status**: ✅ Stable, documented, tested
-**Last Test**: January 24, 2026 (Session 15)
+**Last Test**: January 25, 2026 (Session 16)

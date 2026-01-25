@@ -58,6 +58,7 @@ public class HarmonySolver {
     private static final boolean DEFAULT_DEBUG_MODE = false;
     private static final int DEFAULT_REPLICATION_FACTOR = 3;
     private static final int DEFAULT_DURATION_MINUTES = 120;
+    private static final int DEFAULT_STEPS_BACK = 1; // steps back for score-based pruning
 
     /** Sort mode for move ordering in state processing. */
     public enum SortMode { NONE, SMALLEST_FIRST, LARGEST_FIRST }
@@ -148,6 +149,15 @@ public class HarmonySolver {
      */
     public SortMode getSortMode() {
         return config.sortMode;
+    }
+
+    /**
+     * Gets the steps back value for score-based pruning.
+     *
+     * @return the steps back value
+     */
+    public int getStepsBack() {
+        return config.stepsBack;
     }
 
     /**
@@ -265,7 +275,7 @@ public class HarmonySolver {
 
         System.out.println("Starting " + config.threadCount + " worker threads...");
         for (int i = 0; i < config.threadCount; i++) {
-            StateProcessor processor = new StateProcessor(pendingStates, config.cacheThreshold, config.sortMode, config.invalidityStats);
+            StateProcessor processor = new StateProcessor(pendingStates, config.cacheThreshold, config.stepsBack, config.sortMode, config.invalidityStats);
             processors.add(processor);
             workerPool.submit(processor);
         }
@@ -553,6 +563,21 @@ public class HarmonySolver {
                     return null;
                 }
                 config.durationMinutes = durationMinutes;
+            } else if (arg.equals("-sb")) {
+                if (i + 1 >= args.length) {
+                    System.err.println("Error: " + arg + " requires a value");
+                    return null;
+                }
+                try {
+                    config.stepsBack = Integer.parseInt(args[++i]);
+                    if (config.stepsBack < 0) {
+                        System.err.println("Error: steps back must be non-negative");
+                        return null;
+                    }
+                } catch (NumberFormatException e) {
+                    System.err.println("Error: invalid steps back value: " + args[i]);
+                    return null;
+                }
             } else if (arg.equals("-h") || arg.equals("--help")) {
                 return null; // Will trigger usage message
             } else if (arg.startsWith("-")) {
@@ -653,6 +678,7 @@ public class HarmonySolver {
         System.out.println("  -t, --threads <N>     Number of worker threads (default: 2)");
         System.out.println("  -r, --report <N>      Progress report interval in seconds (default: 30, 0 to disable)");
         System.out.println("  -c, --cache <N>       Cache threshold: states with board score >= N are cached locally (default: 4)");
+        System.out.println("  -sb <N>               Steps back: max score increase from best score before pruning (default: 1)");
         System.out.println("  -repl <N>             Replication factor for queue distribution (default: 3)");
         System.out.println("  -dur, --duration <N>  Run duration with optional unit suffix (default: 120m)");
         System.out.println("                        Units: s (seconds), m (minutes), h (hours), d (days), w (weeks)");
@@ -679,6 +705,7 @@ public class HarmonySolver {
         System.out.println("  Threads: " + config.threadCount);
         System.out.println("  Report interval: " + (config.reportInterval > 0 ? config.reportInterval + " seconds" : "disabled"));
         System.out.println("  Cache threshold: " + config.cacheThreshold + " board score");
+        System.out.println("  Steps back: " + config.stepsBack);
         System.out.println("  Replication factor: " + config.replicationFactor);
         System.out.println("  Duration: " + config.durationMinutes + " minutes");
         System.out.println("  Invalidity tests: " +
@@ -706,5 +733,6 @@ public class HarmonySolver {
         SortMode sortMode = SortMode.NONE;
         int replicationFactor = DEFAULT_REPLICATION_FACTOR;
         int durationMinutes = DEFAULT_DURATION_MINUTES;
+        int stepsBack = DEFAULT_STEPS_BACK;
     }
 }
