@@ -4,12 +4,12 @@
 
 Move sequence:
   1. A3-C3
-  2. B3-C3
-  3. A1-C1
-  4. A2-C2
-  5. A2-A3
-  6. B1-C1
-  7. B1-C1
+  2. A1-B1
+  3. A2-C2
+  4. B3-C3
+  5. A1-B1
+  6. A1-C1
+  7. A2-A3
   8. C1-C3
 
 ============================================================
@@ -20,45 +20,45 @@ Initial state:
 A | GREEN 4 | GREEN 1 | BLUE 2  |
 B | BLUE 2  | BLUE    | GREEN 2 |
 C | RED 1   | RED 2   | RED 2   |
-Score: 9
+Score: 7
 
 After move 1: A3-C3
 A | GREEN 4 | GREEN 1 | RED 1   |
 B | BLUE 2  | BLUE    | GREEN 2 |
 C | RED 1   | RED 2   | BLUE 1  |
-Score: 8
-
-After move 2: B3-C3
-A | GREEN 4 | GREEN 1 | RED 1   |
-B | BLUE 2  | BLUE    | BLUE    |
-C | RED 1   | RED 2   | GREEN 1 |
 Score: 6
 
-After move 3: A1-C1
-A | RED     | GREEN 1 | RED 1   |
-B | BLUE 2  | BLUE    | BLUE    |
-C | GREEN 3 | RED 2   | GREEN 1 |
+After move 2: A1-B1
+A | BLUE 1  | GREEN 1 | RED 1   |
+B | GREEN 3 | BLUE    | GREEN 2 |
+C | RED 1   | RED 2   | BLUE 1  |
+Score: 7
+
+After move 3: A2-C2
+A | BLUE 1  | RED 1   | RED 1   |
+B | GREEN 3 | BLUE    | GREEN 2 |
+C | RED 1   | GREEN   | BLUE 1  |
+Score: 5
+
+After move 4: B3-C3
+A | BLUE 1  | RED 1   | RED 1   |
+B | GREEN 3 | BLUE    | BLUE    |
+C | RED 1   | GREEN   | GREEN 1 |
 Score: 3
 
-After move 4: A2-C2
-A | RED     | RED 1   | RED 1   |
-B | BLUE 2  | BLUE    | BLUE    |
-C | GREEN 3 | GREEN   | GREEN 1 |
-Score: 1
-
-After move 5: A2-A3
-A | RED     | RED     | RED     |
-B | BLUE 2  | BLUE    | BLUE    |
-C | GREEN 3 | GREEN   | GREEN 1 |
-Score: 1
-
-After move 6: B1-C1
-A | RED     | RED     | RED     |
-B | GREEN 2 | BLUE    | BLUE    |
-C | BLUE 1  | GREEN   | GREEN 1 |
+After move 5: A1-B1
+A | GREEN 2 | RED 1   | RED 1   |
+B | BLUE    | BLUE    | BLUE    |
+C | RED 1   | GREEN   | GREEN 1 |
 Score: 2
 
-After move 7: B1-C1
+After move 6: A1-C1
+A | RED     | RED 1   | RED 1   |
+B | BLUE    | BLUE    | BLUE    |
+C | GREEN 1 | GREEN   | GREEN 1 |
+Score: 0
+
+After move 7: A2-A3
 A | RED     | RED     | RED     |
 B | BLUE    | BLUE    | BLUE    |
 C | GREEN 1 | GREEN   | GREEN 1 |

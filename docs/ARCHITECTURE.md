@@ -136,12 +136,14 @@ The `PendingStates` class is the central coordination point for all state manage
 
 ```java
 public class PendingStates {
-    // Depth-organized queues
-    private ConcurrentHashMap<Integer, ConcurrentLinkedQueue<BoardState>> queuesByMoveCount;
-    private AtomicInteger maxMoveCount;
+    // Remaining-moves-organized queues (2D: moveCount × replicationFactor)
+    private ConcurrentLinkedQueue<BoardState>[][] queuesByMoveCount;
+    private boolean[][] activeQueues;
+    private int maxMoveCount;
+    private int replicationFactor;
 
     // Solution coordination
-    private AtomicBoolean solutionFound;
+    private volatile boolean solutionFound;
     private AtomicReference<BoardState> solution;
 
     // Statistics
@@ -153,17 +155,16 @@ public class PendingStates {
 
 **Key Operations**:
 
-1. **add(BoardState)**: Routes states to appropriate depth queue
-   - Extracts move count from state
-   - Updates max depth if necessary
-   - Creates queue on-demand if needed
-   - Thread-safe through `computeIfAbsent()`
+1. **add(BoardState, QueueContext)**: Routes states to appropriate move-count queue
+   - Extracts remaining move count from state
+   - Uses QueueContext for random replica selection
+   - Marks queue as active for efficient polling
 
-2. **poll()**: Retrieves from deepest queue first
-   - Starts at `maxMoveCount` and works backward
-   - Returns first non-null state found
-   - Returns null only when all queues empty
-   - O(depth) complexity, but depth typically small
+2. **poll(QueueContext)**: Retrieves from lowest remaining-moves queue first (best-first)
+   - Starts at move count 0 and works upward
+   - Returns state closest to solution
+   - Returns null only when all selected queues empty
+   - O(maxMoveCount) complexity, but uses activeQueues for efficiency
 
 3. **getSmallestNonEmptyQueueInfo()**: Progress indicator support
    - Returns `int[] {moveCount, queueSize}` for smallest non-empty queue

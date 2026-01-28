@@ -15,12 +15,12 @@ Step-by-step board states:
 Initial state:
 A | BLUE 1 | BLUE 3 |
 B | RED 1  | RED 3  |
-Score: 6
+Score: 4
 
 After move 1: A1-B1
 A | RED    | BLUE 3 |
 B | BLUE   | RED 3  |
-Score: 4
+Score: 2
 
 After move 2: A2-B2
 A | RED    | RED 2  |

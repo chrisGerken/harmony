@@ -438,7 +438,7 @@ public class StateProcessor implements Runnable {
             }
         }
 
-        // Normal logic: cache by score threshold, with stepsBack pruning
+        // Normal logic: cache by remaining moves threshold, with stepsBack pruning
         int prunedByStepsBack = 0;
         for (BoardState state : states) {
             int boardScore = state.getBoard().getScore();
@@ -451,8 +451,9 @@ public class StateProcessor implements Runnable {
             }
 
             state.setFirst(false);
-            // Cache high-score states locally, send low-score states to shared queue
-            if (boardScore >= cacheThreshold) {
+            // Cache states with few remaining moves locally, send others to shared queue
+            int remainingMoves = state.getRemainingMoves();
+            if (remainingMoves < cacheThreshold) {
                 cache.add(state);
             } else {
                 pendingStates.add(state, queueContext);

@@ -25,7 +25,7 @@
 - ✅ **MOVES Section**: Optional section to transform board state
 - ✅ **Board Scoring**: Lazy-calculated heuristic score for board states
 - ✅ **ScoreWatcher Utility**: Analyzes scoring heuristic effectiveness
-- ✅ **Score-Based Queuing**: PendingStates indexes by board score (lower = priority)
+- ✅ **Remaining-Moves Queuing**: PendingStates indexes by remaining moves (lower = priority)
 - ✅ **First Flag**: BoardState tracks primary search path for caching strategy
 - ✅ **Best Score Tracking**: BoardState.bestScore tracks minimum score along path
 - ✅ **Steps Back Pruning**: -sb flag prunes states drifting from best score
@@ -38,13 +38,13 @@ HarmonySolver (instance-based, central context)
     │           invalidityStats, sortMode, replicationFactor, durationMinutes)
     ├─> SortMode enum (NONE, SMALLEST_FIRST, LARGEST_FIRST)
     ├─> colorNames (public static List<String> - global color mapping)
-    ├─> PendingStates (2D array of ConcurrentLinkedQueues by SCORE × replication)
-    │       ├─> queuesByScore: ConcurrentLinkedQueue<BoardState>[][]
+    ├─> PendingStates (2D array of ConcurrentLinkedQueues by REMAINING_MOVES × replication)
+    │       ├─> queuesByMoveCount: ConcurrentLinkedQueue<BoardState>[][]
     │       ├─> activeQueues: boolean[][] (tracks which queues have been used)
-    │       ├─> maxScore: int (initialScore + 6)
+    │       ├─> maxMoveCount: int (from initial remaining moves)
     │       ├─> replicationFactor: int (from -repl flag, default 3)
     │       ├─> solutionFound: volatile boolean
-    │       ├─> poll(): Returns state from LOWEST score queue first
+    │       ├─> poll(): Returns state from LOWEST remaining moves queue first
     │       ├─> getQueueContext(): QueueContext (factory for per-thread context)
     │       └─> addStatesGenerated(int), addStatesPruned(int)
     ├─> QueueContext (per-thread, provides random queue index)
@@ -54,9 +54,9 @@ HarmonySolver (instance-based, central context)
     │       ├─> queueContext: QueueContext (obtained once at thread start)
     │       ├─> stepsBack: int (from -sb flag, default 1)
     │       ├─> trackInvalidity: boolean (only track when -i flag set)
-    │       └─> storeBoardStates(): caches all when parent.isFirst(), prunes by stepsBack
+    │       └─> storeBoardStates(): caches states with remainingMoves < cacheThreshold, prunes by stepsBack
     ├─> ProgressReporter (takes HarmonySolver, accesses all via getters)
-    │       └─> Displays queues from max score down to 0
+    │       └─> Displays queues from max remaining moves down to 0
     ├─> StateSerializer (static utility for state persistence)
     │       ├─> saveStates(puzzleFile, states) - format: "bestScore:moves..."
     │       ├─> loadStates(puzzleFile, initialState) - parses bestScore prefix
@@ -103,6 +103,21 @@ Tile (immutable)
 - Component 3 (excess remaining moves) is commented out but preserved in code
 - This simplifies the heuristic to focus purely on positional factors
 
+### 2. Reverted PendingStates to Remaining-Moves Indexing
+**Changed queue indexing back from board score to remaining moves**:
+- `queuesByScore` → `queuesByMoveCount`
+- `maxScore` → `maxMoveCount`
+- Constructor takes `maxMoveCount` (from initial remaining moves)
+- `add()` indexes by `state.getRemainingMoves()`
+- `poll()` returns from LOWEST remaining moves queue first (best-first search)
+- States closer to solution (fewer moves) are processed first
+
+### 3. Cache Threshold Uses Remaining Moves
+**Changed -c flag to use remaining moves instead of board score**:
+- States with `remainingMoves < cacheThreshold` go to local cache
+- States with `remainingMoves >= cacheThreshold` go to shared queue
+- With `-c 20`, queues 20+ are displayed (states with moves 0-19 are cached)
+
 ## Earlier Changes (Session 16 - January 25, 2026)
 
 ### 1. BoardState bestScore Attribute
@@ -134,26 +149,18 @@ Tile (immutable)
 
 ## Earlier Changes (Session 15 - January 24, 2026)
 
-### 1. Score-Based Queue Indexing
+### 1. Score-Based Queue Indexing (REVERTED in Session 17)
 **Changed PendingStates from moves-remaining to board-score indexing**:
-- Constructor now takes `initialScore` instead of `maxMoveCount`
-- `maxScore = initialScore + 6` (scores above max stored in max queue)
-- `add()` uses `state.getBoard().getScore()` for queue index
-- `poll()` returns from LOWEST score queue first (lower = closer to solution)
-- `getQueueRangeInfo()` still returns all non-empty queues
+- This was reverted in Session 17 back to remaining-moves indexing
 
-### 2. Score-Based Cache Threshold (-c flag)
+### 2. Score-Based Cache Threshold (REVERTED in Session 17)
 **Changed -c meaning from moves-taken to board-score**:
-- Old: "cache states with N+ moves taken"
-- New: "cache states with board score >= N"
-- High-score states (far from solution) cached locally
-- Low-score states (close to solution) go to shared queue for priority
+- This was reverted in Session 17 back to remaining-moves based
 
 ### 3. ProgressReporter Queue Display Order
-**Reversed display order to show max score down to 0**:
-- Was: lowest score to highest (left to right)
-- Now: highest score to lowest (left to right)
-- Lower scores (closer to solution) appear on the right
+**Display order shows max remaining moves down to 0**:
+- Highest remaining moves to lowest (left to right)
+- Lower remaining moves (closer to solution) appear on the right
 
 ### 4. BoardState 'first' Flag
 **New boolean flag tracking primary search path**:
@@ -315,7 +322,7 @@ harmony/
 Options:
   -t, --threads <N>     Number of worker threads (default: 2)
   -r, --report <N>      Progress report interval in seconds (default: 30, 0 to disable)
-  -c, --cache <N>       Cache threshold: states with board score >= N are cached locally (default: 4)
+  -c, --cache <N>       Cache threshold: states with remaining moves < N are cached locally (default: 4)
   -sb <N>               Steps back: max score increase from best score before pruning (default: 1)
   -repl <N>             Replication factor for queue distribution (default: 3)
   -dur, --duration <N>  Run duration with optional unit suffix (default: 120m)
@@ -345,8 +352,9 @@ Options:
 
 ### Session 17 (January 28, 2026)
 - **Simplified Board Scoring**: Removed component 3 (excess remaining moves) from score calculation
+- **Reverted to Remaining-Moves Queuing**: PendingStates indexes by remaining moves, not board score
+- **Cache Threshold by Remaining Moves**: States with moves < threshold cached locally
 - Score now uses only: (tiles not in target row) + (duplicate colors per column)
-- Component 3 code commented out but preserved for potential future use
 
 ### Session 16 (January 25, 2026)
 - **Best Score Tracking**: BoardState.bestScore tracks minimum score along search path
@@ -355,11 +363,11 @@ Options:
 - **State File Format**: Now includes bestScore prefix (e.g., `38:A1-A2`)
 
 ### Session 15 (January 24, 2026)
-- **Score-Based Queuing**: PendingStates indexes by board score, polls lowest first
-- **Cache Threshold**: -c now refers to board score (>= N cached locally)
-- **Queue Display**: ProgressReporter shows max score down to 0
+- **Score-Based Queuing**: (REVERTED in Session 17) Was board score, now remaining moves
+- **Cache Threshold**: (REVERTED in Session 17) Was board score, now remaining moves
+- **Queue Display**: ProgressReporter shows max remaining moves down to 0
 - **First Flag**: BoardState.first tracks primary search path
-- **storeBoardStates()**: Caches all states when parent.isFirst()
+- **storeBoardStates()**: Caches states with remainingMoves < threshold
 - **Resume Sorting**: Restored states sorted by remaining moves (least first)
 - **Board Score Display**: Shown on startup after board size
 
@@ -434,11 +442,11 @@ mvn package                          # Build
 
 ### Key Files for Next Session
 1. `CURRENT_STATE.md` - This file (start here!)
-2. `Board.java` - Simplified score calculation (components 1 & 2 only)
-3. `BoardState.java` - bestScore field, getBestScore(), tracks min score along path
-4. `StateProcessor.java` - stepsBack pruning in storeBoardStates()
-5. `HarmonySolver.java` - -sb option, stepsBack config passed to StateProcessor
-6. `StateSerializer.java` - bestScore persistence in state file format
+2. `PendingStates.java` - Remaining-moves indexing, best-first polling
+3. `StateProcessor.java` - Cache threshold by remaining moves, stepsBack pruning
+4. `Board.java` - Simplified score calculation (components 1 & 2 only)
+5. `BoardState.java` - bestScore field, getBestScore(), tracks min score along path
+6. `HarmonySolver.java` - Passes initialRemainingMoves to PendingStates
 
 ---
 

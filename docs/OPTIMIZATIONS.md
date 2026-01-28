@@ -204,13 +204,16 @@ private final ArrayList<BoardState> cache;
 private final int cacheThreshold;  // Configurable, default 4
 ```
 
-**Storage Logic:**
+**Storage Logic (Updated Session 17):**
 ```java
-private void storeBoardState(BoardState state) {
-    if (state.getRemainingMoves() < cacheThreshold) {
-        cache.add(state);  // Keep locally
-    } else {
-        pendingStates.add(state);  // Share globally
+private void storeBoardStates(List<BoardState> states) {
+    for (BoardState state : states) {
+        int remainingMoves = state.getRemainingMoves();
+        if (remainingMoves < cacheThreshold) {
+            cache.add(state);  // Keep locally - near solution
+        } else {
+            pendingStates.add(state, queueContext);  // Share globally
+        }
     }
 }
 ```
@@ -242,15 +245,17 @@ private BoardState getNextBoardState() {
 ### Configuration
 
 ```bash
-# Default (4 moves)
+# Default (cache states with < 4 remaining moves)
 ./solve.sh -t 4 puzzles/medium.txt
 
-# Higher threshold (more caching)
+# Higher threshold (cache states with < 6 remaining moves)
 ./solve.sh -t 8 -c 6 puzzles/hard.txt
 
-# Disable caching (cache threshold 0)
+# Disable caching (cache threshold 0 - all states go to shared queue)
 ./solve.sh -t 2 -c 0 puzzles/simple.txt
 ```
+
+**Note (Session 17)**: The `-c` flag specifies the remaining moves threshold. States with `remainingMoves < threshold` are cached locally; states with `remainingMoves >= threshold` go to the shared queue and are visible in the ProgressReporter queue display.
 
 ## 6. Cached State Metrics *(Added: 2026-01-08)*
 

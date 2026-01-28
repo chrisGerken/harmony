@@ -6,9 +6,9 @@ Move sequence:
   1. B1-D1
   2. B2-E2
   3. C5-E5
-  4. A1-A4
-  5. A2-A5
-  6. A5-B5
+  4. A2-A5
+  5. A5-B5
+  6. A1-A4
 
 ============================================================
 Step-by-step board states:
@@ -46,23 +46,23 @@ D | BLUE     | BLUE     | BLUE     | BLUE     | BLUE     |
 E | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
 Score: 4
 
-After move 4: A1-A4
-A | RED      | YELLOW 2 | RED      | RED      | RED 1    |
-B | YELLOW   | YELLOW   | YELLOW   | YELLOW   | RED 1    |
-C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |
-D | BLUE     | BLUE     | BLUE     | BLUE     | BLUE     |
-E | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
-Score: 4
-
-After move 5: A2-A5
-A | RED      | RED      | RED      | RED      | YELLOW 1 |
+After move 4: A2-A5
+A | RED 1    | RED      | RED      | RED 1    | YELLOW 1 |
 B | YELLOW   | YELLOW   | YELLOW   | YELLOW   | RED 1    |
 C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |
 D | BLUE     | BLUE     | BLUE     | BLUE     | BLUE     |
 E | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
 Score: 2
 
-After move 6: A5-B5
+After move 5: A5-B5
+A | RED 1    | RED      | RED      | RED 1    | RED      |
+B | YELLOW   | YELLOW   | YELLOW   | YELLOW   | YELLOW   |
+C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |
+D | BLUE     | BLUE     | BLUE     | BLUE     | BLUE     |
+E | PURPLE   | PURPLE   | PURPLE   | PURPLE   | PURPLE   |
+Score: 0
+
+After move 6: A1-A4
 A | RED      | RED      | RED      | RED      | RED      |
 B | YELLOW   | YELLOW   | YELLOW   | YELLOW   | YELLOW   |
 C | GREEN    | GREEN    | GREEN    | GREEN    | GREEN    |

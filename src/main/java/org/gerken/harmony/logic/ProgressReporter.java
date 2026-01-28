@@ -80,12 +80,12 @@ public class ProgressReporter implements Runnable {
         int totalQueueSize = queueSize + totalCacheSize;
         double overallAvgTimeMs = processorCount > 0 ? totalAvgTimeMs / processorCount : 0.0;
 
-        // Get progress info: all queues from highest score down to lowest (0)
+        // Get progress info: all queues from highest to lowest move count
         int[][] queueRangeInfo = pendingStates.getQueueRangeInfo();
         String progressStr;
         if (queueRangeInfo != null) {
             StringBuilder sb = new StringBuilder();
-            // Iterate in reverse order (highest score to lowest)
+            // Iterate in reverse order (highest move count to lowest)
             for (int i = queueRangeInfo.length - 1; i >= 0; i--) {
                 if (i < queueRangeInfo.length - 1) {
                     sb.append(" ");

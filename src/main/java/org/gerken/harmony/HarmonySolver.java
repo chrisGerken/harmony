@@ -253,8 +253,7 @@ public class HarmonySolver {
 
         // Initialize shared data structures
         this.initialRemainingMoves = initialState.getRemainingMoves();
-        int initialScore = initialState.getBoard().getScore();
-        this.pendingStates = new PendingStates(initialScore, config.replicationFactor);
+        this.pendingStates = new PendingStates(initialRemainingMoves, config.replicationFactor);
 
         // Add states to queue - either resume states or initial state
         if (resumeStates != null && !resumeStates.isEmpty()) {

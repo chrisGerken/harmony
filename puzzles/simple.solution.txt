@@ -4,14 +4,14 @@
 
 Move sequence:
   1. B3-C3
-  2. B2-C2
-  3. A3-C3
-  4. A1-B1
-  5. A1-B1
-  6. A2-B2
-  7. B2-B3
-  8. C1-C3
-  9. C2-C3
+  2. A3-C3
+  3. B2-C2
+  4. A2-B2
+  5. A1-C1
+  6. A1-C1
+  7. C2-C3
+  8. B1-B3
+  9. B2-B3
 
 ============================================================
 Step-by-step board states:
@@ -29,49 +29,49 @@ B | BLUE 2  | GREEN 2 | BLUE 1  |
 C | GREEN 2 | RED 2   | RED 1   |
 Score: 5
 
-After move 2: B2-C2
-A | RED 2   | BLUE 2  | GREEN 2 |
-B | BLUE 2  | RED 1   | BLUE 1  |
-C | GREEN 2 | GREEN 1 | RED 1   |
-Score: 4
+After move 2: A3-C3
+A | RED 2   | BLUE 2  | RED     |
+B | BLUE 2  | GREEN 2 | BLUE 1  |
+C | GREEN 2 | RED 2   | GREEN 1 |
+Score: 3
 
-After move 3: A3-C3
+After move 3: B2-C2
 A | RED 2   | BLUE 2  | RED     |
 B | BLUE 2  | RED 1   | BLUE 1  |
 C | GREEN 2 | GREEN 1 | GREEN 1 |
 Score: 2
 
-After move 4: A1-B1
-A | BLUE 1  | BLUE 2  | RED     |
-B | RED 1   | RED 1   | BLUE 1  |
+After move 4: A2-B2
+A | RED 2   | RED     | RED     |
+B | BLUE 2  | BLUE 1  | BLUE 1  |
 C | GREEN 2 | GREEN 1 | GREEN 1 |
-Score: 4
+Score: 0
 
-After move 5: A1-B1
-A | RED     | BLUE 2  | RED     |
-B | BLUE    | RED 1   | BLUE 1  |
-C | GREEN 2 | GREEN 1 | GREEN 1 |
+After move 5: A1-C1
+A | GREEN 1 | RED     | RED     |
+B | BLUE 2  | BLUE 1  | BLUE 1  |
+C | RED 1   | GREEN 1 | GREEN 1 |
 Score: 2
 
-After move 6: A2-B2
+After move 6: A1-C1
 A | RED     | RED     | RED     |
-B | BLUE    | BLUE 1  | BLUE 1  |
-C | GREEN 2 | GREEN 1 | GREEN 1 |
-Score: 0
-
-After move 7: B2-B3
-A | RED     | RED     | RED     |
-B | BLUE    | BLUE    | BLUE    |
-C | GREEN 2 | GREEN 1 | GREEN 1 |
-Score: 0
-
-After move 8: C1-C3
-A | RED     | RED     | RED     |
-B | BLUE    | BLUE    | BLUE    |
+B | BLUE 2  | BLUE 1  | BLUE 1  |
 C | GREEN   | GREEN 1 | GREEN 1 |
 Score: 0
 
-After move 9: C2-C3
+After move 7: C2-C3
+A | RED     | RED     | RED     |
+B | BLUE 2  | BLUE 1  | BLUE 1  |
+C | GREEN   | GREEN   | GREEN   |
+Score: 0
+
+After move 8: B1-B3
+A | RED     | RED     | RED     |
+B | BLUE    | BLUE 1  | BLUE 1  |
+C | GREEN   | GREEN   | GREEN   |
+Score: 0
+
+After move 9: B2-B3
 A | RED     | RED     | RED     |
 B | BLUE    | BLUE    | BLUE    |
 C | GREEN   | GREEN   | GREEN   |

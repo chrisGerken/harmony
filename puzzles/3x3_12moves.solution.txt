@@ -24,55 +24,55 @@ Initial state:
 A | GREEN 4 | BLUE 1  | GREEN 3 |
 B | GREEN 3 | RED 4   | BLUE 4  |
 C | RED 2   | RED 2   | BLUE 1  |
-Score: 19
+Score: 11
 
 After move 1: B3-C3
 A | GREEN 4 | BLUE 1  | GREEN 3 |
 B | GREEN 3 | RED 4   | BLUE    |
 C | RED 2   | RED 2   | BLUE 3  |
-Score: 18
+Score: 11
 
 After move 2: A3-C3
 A | GREEN 4 | BLUE 1  | BLUE 2  |
 B | GREEN 3 | RED 4   | BLUE    |
 C | RED 2   | RED 2   | GREEN 2 |
-Score: 15
+Score: 10
 
 After move 3: B2-C2
 A | GREEN 4 | BLUE 1  | BLUE 2  |
 B | GREEN 3 | RED 1   | BLUE    |
 C | RED 2   | RED 3   | GREEN 2 |
-Score: 14
+Score: 10
 
 After move 4: A2-B2
 A | GREEN 4 | RED     | BLUE 2  |
 B | GREEN 3 | BLUE    | BLUE    |
 C | RED 2   | RED 3   | GREEN 2 |
-Score: 12
+Score: 8
 
 After move 5: B1-C1
 A | GREEN 4 | RED     | BLUE 2  |
 B | RED 1   | BLUE    | BLUE    |
 C | GREEN 2 | RED 3   | GREEN 2 |
-Score: 10
+Score: 7
 
 After move 6: A1-C1
 A | GREEN 1 | RED     | BLUE 2  |
 B | RED 1   | BLUE    | BLUE    |
 C | GREEN 3 | RED 3   | GREEN 2 |
-Score: 9
+Score: 7
 
 After move 7: C1-C3
 A | GREEN 1 | RED     | BLUE 2  |
 B | RED 1   | BLUE    | BLUE    |
 C | GREEN 1 | RED 3   | GREEN 2 |
-Score: 8
+Score: 7
 
 After move 8: C1-C3
 A | GREEN 1 | RED     | BLUE 2  |
 B | RED 1   | BLUE    | BLUE    |
 C | GREEN 1 | RED 3   | GREEN   |
-Score: 8
+Score: 7
 
 After move 9: C1-C2
 A | GREEN 1 | RED     | BLUE 2  |
