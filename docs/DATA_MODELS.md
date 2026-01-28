@@ -80,7 +80,7 @@ public class Board {
 
 **Note**: Colors are represented as `int` for efficiency. See Tile documentation for rationale.
 
-### Board Score (Added 2026-01-23)
+### Board Score (Added 2026-01-23, Updated 2026-01-28)
 
 The board has a lazy-calculated heuristic score that measures "distance from solution":
 - **Lower score = closer to solution** (solved board has score 0)
@@ -89,7 +89,8 @@ The board has a lazy-calculated heuristic score that measures "distance from sol
 **Score Formula** (sum of):
 1. Number of tiles NOT in their target row (target row = color ID)
 2. For each column: (tiles in column) - (unique colors in column)
-3. For each tile with > 2 remaining moves: (remaining moves - 2)
+
+*Note: Component 3 (excess remaining moves) was removed in Session 17 to simplify the heuristic.*
 
 ```java
 Board board = /* ... */;

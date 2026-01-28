@@ -113,7 +113,6 @@ public class Board {
      * Score calculation:
      * - Number of tiles not in their target row (target row = color ID)
      * - For each column: (tiles in column) - (unique colors in column)
-     * - For each tile with > 2 remaining moves: (remaining moves - 2)
      *
      * @return the board score
      */
@@ -154,15 +153,16 @@ public class Board {
         }
 
         // Component 3: For each tile with > 2 remaining moves, add (remaining moves - 2)
-        for (int row = 0; row < getRowCount(); row++) {
-            for (int col = 0; col < getColumnCount(); col++) {
-                Tile tile = grid[row][col];
-                int moves = tile.getRemainingMoves();
-                if (moves > 2) {
-                    total += moves - 2;
-                }
-            }
-        }
+        // (Disabled - score now uses only components 1 and 2)
+        // for (int row = 0; row < getRowCount(); row++) {
+        //     for (int col = 0; col < getColumnCount(); col++) {
+        //         Tile tile = grid[row][col];
+        //         int moves = tile.getRemainingMoves();
+        //         if (moves > 2) {
+        //             total += moves - 2;
+        //         }
+        //     }
+        // }
 
         return total;
     }

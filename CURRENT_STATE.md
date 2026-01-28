@@ -1,5 +1,5 @@
 # Current State of Harmony Puzzle Solver
-**Last Updated**: January 25, 2026 (Session 16)
+**Last Updated**: January 28, 2026 (Session 17)
 
 ## Quick Status
 - ✅ **Production Ready**: All code compiles and tests pass
@@ -71,7 +71,7 @@ HarmonySolver (instance-based, central context)
 Board (simplified)
     ├─> grid: Tile[][]
     ├─> score: Integer (null until calculated, lazy initialization)
-    ├─> getScore(): int (calculates and caches score if null)
+    ├─> getScore(): int (components 1 & 2 only: tiles out of place + duplicate colors)
     ├─> getRowTargetColor(row) returns row  # Target color = row index
     └─> toString() includes "Score: N" on its own line
 
@@ -93,7 +93,17 @@ Tile (immutable)
     └─> decrementMoves() - returns new Tile with moves-1
 ```
 
-## Recent Changes (Session 16 - January 25, 2026)
+## Recent Changes (Session 17 - January 28, 2026)
+
+### 1. Simplified Board Scoring
+**Removed component 3 from board score calculation**:
+- Score now only uses components 1 and 2:
+  - Component 1: Number of tiles NOT in their target row
+  - Component 2: For each column: (tiles in column) - (unique colors in column)
+- Component 3 (excess remaining moves) is commented out but preserved in code
+- This simplifies the heuristic to focus purely on positional factors
+
+## Earlier Changes (Session 16 - January 25, 2026)
 
 ### 1. BoardState bestScore Attribute
 **Added `bestScore` field to track minimum score along search path**:
@@ -246,9 +256,9 @@ harmony/
 │   ├── TileBenchmark.java
 │   ├── model/
 │   │   ├── Tile.java
-│   │   ├── Board.java              # score attribute, getScore(), toString() shows score
+│   │   ├── Board.java              # ⭐ UPDATED - simplified score (components 1 & 2 only)
 │   │   ├── Move.java
-│   │   └── BoardState.java         # ⭐ UPDATED - bestScore field, getBestScore()
+│   │   └── BoardState.java         # bestScore field, getBestScore()
 │   ├── logic/
 │   │   ├── PendingStates.java      # ⭐ UPDATED - score-based indexing, poll from lowest score
 │   │   ├── QueueContext.java       # per-thread random queue selection
@@ -281,7 +291,8 @@ harmony/
 │   ├── 3x3_8moves.txt
 │   ├── 4x4_9moves.txt
 │   └── 3x3_12moves.txt
-├── SESSION_2026-01-25.md           # ⭐ NEW - this session
+├── SESSION_2026-01-28.md           # ⭐ NEW - this session
+├── SESSION_2026-01-25.md
 ├── SESSION_2026-01-24.md
 ├── SESSION_2026-01-23.md
 ├── SESSION_2026-01-19.md
@@ -332,6 +343,11 @@ Options:
 
 ## Session History
 
+### Session 17 (January 28, 2026)
+- **Simplified Board Scoring**: Removed component 3 (excess remaining moves) from score calculation
+- Score now uses only: (tiles not in target row) + (duplicate colors per column)
+- Component 3 code commented out but preserved for potential future use
+
 ### Session 16 (January 25, 2026)
 - **Best Score Tracking**: BoardState.bestScore tracks minimum score along search path
 - **Steps Back Pruning**: -sb flag controls max score increase from best before pruning
@@ -349,7 +365,8 @@ Options:
 
 ### Session 14 (January 23, 2026)
 - **Board Scoring**: Added lazy-calculated heuristic score to Board class
-- Score = (tiles not in target row) + (duplicate colors per column) + (excess moves per tile)
+- Score = (tiles not in target row) + (duplicate colors per column)
+- Note: Original formula included (excess moves per tile), removed in Session 17
 - **ScoreWatcher**: New utility to analyze scoring heuristic effectiveness
 - **TestBuilder.generatePuzzleWithSolution()**: Static method returning BoardState array
 - **StateProcessor Refactored**: processState() collects valid states, storeBoardStates(List)
@@ -417,13 +434,14 @@ mvn package                          # Build
 
 ### Key Files for Next Session
 1. `CURRENT_STATE.md` - This file (start here!)
-2. `BoardState.java` - bestScore field, getBestScore(), tracks min score along path
-3. `StateProcessor.java` - stepsBack pruning in storeBoardStates()
-4. `HarmonySolver.java` - -sb option, stepsBack config passed to StateProcessor
-5. `StateSerializer.java` - bestScore persistence in state file format
+2. `Board.java` - Simplified score calculation (components 1 & 2 only)
+3. `BoardState.java` - bestScore field, getBestScore(), tracks min score along path
+4. `StateProcessor.java` - stepsBack pruning in storeBoardStates()
+5. `HarmonySolver.java` - -sb option, stepsBack config passed to StateProcessor
+6. `StateSerializer.java` - bestScore persistence in state file format
 
 ---
 
 **Ready for**: Production use, score-based search with stepsBack pruning
 **Status**: ✅ Stable, documented, tested
-**Last Test**: January 25, 2026 (Session 16)
+**Last Test**: January 28, 2026 (Session 17)
